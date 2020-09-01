@@ -1,0 +1,1 @@
+This folder contains analysis subjects. Any new analysis can be proposed with a new markdown file and a python program allowing to perform the analysis. 
