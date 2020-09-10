@@ -9,62 +9,68 @@ from sklearn import linear_model
 from datetime import time
 from datetime import datetime
 
-#os.chdir("D:\GIT\Etude_TP_CapaExpPlaning-Python") #pour vous placer dans le dossier où se trouvent les donnnées csv
-#ConsoTemp=pd.read_csv('CSV/input/ConsumptionTemperature_1996TO2019-sanschangementheure.csv', parse_dates = True, index_col = 0)
 
-# fonction décomposant la consommation électrique d'une année en une part thermosensible et une part non thermosensible
-def Decomposeconso(year, templimite=14) :
-    ConsoTemp1=SelectYear(year)
-    ConsoSeparee1=np.zeros(shape=(ConsoTemp1.shape[0],2))
-    ConsoSeparee=pd.DataFrame(data=ConsoSeparee1, index=ConsoTemp1.index, columns=['Conso thermo','Conso Nonthermo'])
-    ConsoSeparee['Conso Nonthermo']=ConsoTemp1['Consumption']
-    ConsoSeparee['Temperature']=ConsoTemp1['Temperature'].values
-    Thermosensibilite1=np.zeros((24,1))
-    Thermosensibilite=pd.DataFrame(data=Thermosensibilite1, columns=['Thermosensibilite'])
-    Thermosensibilite.index.name='Heure de la journee'
+
+def Decomposeconso(data_df, TemperatureThreshold=14, TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='Date') :
+    '''
+    fonction décomposant la consommation électrique d'une année en une part thermosensible et une part non thermosensible
+    :param data: panda data frame with "Temperature" and "Consumption" as columns
+    :param TemperatureThreshold: the threshold heating temperature
+    :param TemperatureName default 'Temperature' name of column with Temperature
+    :param ConsumptionName default 'Consumption' name of column with consumption
+    :param TimeName default 'Date' name of column with time
+    :return: a dictionary with Thermosensibilite, and a panda data frame with two new columns NTS_C and TS_C
+    '''
+    dataNoNA_df=data_df.dropna()
+    ## Remove NA
+    ConsoSeparee_df=dataNoNA_df.assign(NTS_C=dataNoNA_df[ConsumptionName], TS_C=dataNoNA_df[ConsumptionName]*0)
+
+    Thermosensibilite={}
+    #pd.DataFrame(data=np.zeros((24,1)), columns=['Thermosensibilite'])## one value per hour of the day
+    #Thermosensibilite.index.name='hour of the day'
     for hour in range(24):
-        match_timestamp=time(hour).isoformat()
-        tabhour=ConsoTemp1.loc[ConsoTemp1.index.strftime("%H:%M:%S") == match_timestamp]
-        (date, DJU)=GetDatesDJU(tabhour,templimite)
-        n=len(date)
-        Tabreglin1=np.zeros((n,2))
-        Tabreglin=pd.DataFrame(data=Tabreglin1, columns=['Conso','Température'])
-        for j in range(n):
-            Tabreglin.iloc[j,0]=ConsoTemp1.loc[date[j]][0]
-            Tabreglin.iloc[j,1]=ConsoTemp1.loc[date[j]][1]
-        x=Tabreglin.Température.values.reshape(n,1)
-        y=Tabreglin.Conso.values.reshape(n,1)
-        lr=linear_model.LinearRegression().fit(x,y)
-        thermosensibilitecoef=lr.coef_[0][0]
-        Thermosensibilite.iloc[hour,0]=thermosensibilitecoef
-        for k in range(n):
-            ConsoSeparee.loc[date[k]][0]=DJU[k]*thermosensibilitecoef
-    ConsoSeparee['Conso Nonthermo']=ConsoSeparee['Conso Nonthermo']-ConsoSeparee['Conso thermo']
-#   pd.set_option('display.max_rows', None)
-    return(ConsoSeparee, Thermosensibilite)
+        indexesWinterHour = (dataNoNA_df[TemperatureName] <= TemperatureThreshold) & (pd.to_datetime(dataNoNA_df[TimeName]).dt.hour == hour)
+        dataWinterHour_df = dataNoNA_df.loc[indexesWinterHour,:]
+        lr = linear_model.LinearRegression().fit(dataWinterHour_df[[TemperatureName]],dataWinterHour_df[ConsumptionName])
+        Thermosensibilite[hour]=lr.coef_[0]
+        ConsoSeparee_df.loc[indexesWinterHour,'TS_C']=Thermosensibilite[hour]*dataWinterHour_df.loc[:, TemperatureName]-Thermosensibilite[hour]*TemperatureThreshold
+        ConsoSeparee_df.loc[indexesWinterHour,'NTS_C']=dataWinterHour_df.loc[:, ConsumptionName]-ConsoSeparee_df.TS_C.loc[indexesWinterHour]
 
-# fonction qui extrait les dates et heures et les DJU d'une timeserie pour les heures de l'année où la température est inférieure à templimite (ici 14°C)
-def GetDatesDJU(Tablconsotemp, templimite=14) :
-    dates=[]
-    DJU=[]
-    for i in range(Tablconsotemp.shape[0]):
-        if Tablconsotemp['Temperature'].iloc[i]<templimite:
-            dates.append(Tablconsotemp.index[i])
-            DJU.append(Tablconsotemp['Temperature'].iloc[i]-templimite)
-    return(dates,DJU)
+    return(ConsoSeparee_df, Thermosensibilite)
 
-# fonction permettant de redécomposer la conso électrique en part thermosensible et non thermosensible de l'année x à partir de la thermosensibilité (calculée pour chaque heure de la journée) de l'année x et les température d'une année y
-## BE CAREFUL WITH THE BISEXTIL YEAR FOR THE DIMENSION MATCH
-def ChangeTemperature(decomposedconso, thermosensibilite, yeartemperature, templimite=14):
-    temphourly=SelectYear(yeartemperature)
-    decomposedconso['Temperature']=temphourly['Temperature'].values
+
+
+def Recompose(ConsoSeparee_df,Thermosensibilite,Newdata_df=-1, TemperatureThreshold=14,TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='Date'):
+    '''
+    fonction permettant de redécomposer la conso électrique en part thermosensible et
+    non thermosensible de l'année x à partir de la thermosensibilité
+    (calculée pour chaque heure de la journée) de l'année x et les température d'une année y
+    should handle the dimension match problem related to bisextile years
+    :param ConsoSeparee_df:
+    :param Newdata_df:
+    :param Thermosensibilite:
+    :param TemperatureThreshold:
+    :param TemperatureName:
+    :param ConsumptionName:
+    :param TimeName:
+    :return:
+    '''
+    if (Newdata_df==-1): Newdata_df=ConsoSeparee_df
+    indexes_Old = np.nonzero(np.in1d(np.arange(0,ConsoSeparee_df.__len__()), np.arange(0,Newdata_df[TemperatureName].__len__())))[0]
+    indexes_New = np.nonzero(np.in1d(np.arange(0,Newdata_df[TemperatureName].__len__()), np.arange(0,ConsoSeparee_df.__len__())))[0]
+
+    ConsoSepareeNew_df=ConsoSeparee_df.iloc[indexes_Old,:]
+    ConsoSepareeNew_df.iloc[:, :][TemperatureName]=Newdata_df.iloc[indexes_New, :][TemperatureName].tolist()
+    ConsoSepareeNew_df.TS_C=0
+    ConsoSepareeNew_df.NTS_C=ConsoSeparee_df.NTS_C
+
     for hour in range(24):
-        match_timestamp=time(hour).isoformat()
-        tabhour=decomposedconso.loc[decomposedconso.index.strftime("%H:%M:%S") == match_timestamp]
-        (date, DJU)=GetDatesDJU(tabhour,templimite)
-        for k in range(len(date)):
-            decomposedconso.loc[date[k]][0]=DJU[k]*thermosensibilite.iloc[hour,0]
-    return(decomposedconso)
+        indexesWinterHour = (ConsoSepareeNew_df[TemperatureName] <= TemperatureThreshold) & (pd.to_datetime(ConsoSepareeNew_df[TimeName]).dt.hour == hour)
+        ## remove thermal sensitive part according to old temperature
+        ConsoSepareeNew_df.loc[indexesWinterHour, 'TS_C'] = Thermosensibilite[hour] * ConsoSepareeNew_df.loc[:,TemperatureName] - Thermosensibilite[hour] * TemperatureThreshold
+
+    ConsoSepareeNew_df[ConsumptionName]=ConsoSepareeNew_df.TS_C+ConsoSepareeNew_df.NTS_C
+    return(ConsoSepareeNew_df)
 
 # fonction permettant de redécomposer la conso électrique en une part thermosensible et non thermosensible avec un nouveau tableau de thermosensibilité
 def RecomposeTemperature(decomposedconso, newthermosensibilite, templimite=14):
@@ -77,8 +83,8 @@ def RecomposeTemperature(decomposedconso, newthermosensibilite, templimite=14):
     return(decomposedconso)
 
 # fonction qui fournit le tableau de thermosensibilité (pour chaque heure de la journée) pour une année choisie
-def EstimateThermosensibilite(year, templimite=14):
-    ConsoYear=SelectYear(year)
+def EstimateThermosensibilite(year, templimite=14,data='CSV/input/ConsumptionTemperature_1996TO2019-sanschangementheure.csv'):
+    ConsoYear=SelectYear(year,data)
     Thermosensibilite1=np.zeros((24,1))
     Thermosensibilite=pd.DataFrame(data=Thermosensibilite1, columns=['Thermosensibilite'])
     Thermosensibilite.index.name='Heure de la journee'
@@ -111,14 +117,13 @@ def SelectYear(year,data='CSV/input/ConsumptionTemperature_1996TO2019-sanschange
         return('Pas de données')
     return(ConsoTempan)
 
-year0=2013
-Consotmp=SelectYear(year0)
+
 # plt.plot(Consotmp['Consumption'])
 # plt.show()
 
 # fonction permettant de décomposer la consommation annuelle d'un véhicule électrique en une part thermosensible et non thermosensible (la conso non thermosensible étant la conso type d'une semaine d'été)
-def GetVEconso(year, templimite=14, mintemp=0):
-    TempAnnee=SelectYear(year)
+def GetVEconso(year, templimite=14, mintemp=0,data='CSV/input/ConsumptionTemperature_1996TO2019-sanschangementheure.csv'):
+    TempAnnee=SelectYear(year,data)
     ConsoAnnee1=np.zeros((TempAnnee.shape[0],3))
     ConsoAnnee=pd.DataFrame(data=ConsoAnnee1, columns=['Conso TH','Conso NTH','Temperature']) #Conso en Puissance.MW.par.million
     ConsoAnnee.index=TempAnnee.index
