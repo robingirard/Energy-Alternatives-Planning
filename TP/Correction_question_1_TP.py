@@ -1,8 +1,6 @@
 import plotly.graph_objects as go
+from functions.functions_Consumption import *
 
-from functions.functions_decompose_thermosensibilite import *
-
-os.chdir("le dossier où se trouve les fichiers données") #pour vous placer dans le dossier où se trouvent les donnnées csv
 
 
 # Question 1 : Handling production and consumption data
@@ -10,7 +8,7 @@ os.chdir("le dossier où se trouve les fichiers données") #pour vous placer dan
 
 
 # facteur de charge pour conso sans thermo pour des pays d'Europe
-ConsoEuro2016=pd.read_csv('../CSV/input/areaConsumption2016_FR_DE_GB_ES.csv')
+ConsoEuro2016=pd.read_csv('CSV/input/areaConsumption2016_FR_DE_GB_ES.csv')
 pd.set_option('display.max_columns', None)
 ConsoEuro2016=ConsoEuro2016.pivot(index = 'TIMESTAMP', columns = 'AREAS', values = 'areaConsumption')
 CF1=np.zeros(shape=(ConsoEuro2016.shape[1],1))
