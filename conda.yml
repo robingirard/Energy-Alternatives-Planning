@@ -1,0 +1,18 @@
+name : Etude_TP
+dependencies :
+    - python>=3.6
+    - pandas
+    - jupyter
+    - numpy
+    - cython
+    - pytest
+    - pip
+    - pip :
+     - pyomo
+     - dynprogstorage
+     - Mosek
+     - xarray
+     - plotly
+     - matplotlib
+     - sklearn
+

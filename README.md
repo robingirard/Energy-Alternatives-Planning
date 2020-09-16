@@ -13,9 +13,10 @@ Ce projet contient le code et les données pour faire le TP de simulation du sys
 
 ## 1 - Installations préalables <a class="anchor" id="1.introduction"></a>
 
-    pip install git+https://github.com/robingirard/dynprogstorage#egg=dynprogstorage
-    pip install -r requirements.txt
-
+    conda env create -f conda.yml
+    conda activate Etude_TP
+    
+Si vous utilisez PyCharm vous devez fixer l'environnement dans les préférences "python interpreter" il faut 
 ## 2 - Repertoire CSV <a class="anchor" id="CSV"></a>
 contient des données .csv pour le projet (production éolienne, consommarion, disponibilité nucléaire, données technico-économiques), ces fichiers sont chargés dans les différents codes "run"
 

@@ -1,9 +1,0 @@
-Pyomo==5.7
-Mosek==9.2.16
-xarray==0.16.0
-plotly
-matplotlib==3.3.0
-numpy==1.18.5
-pandas==1.1.0
-jupyter==1.0.0
-sklearn
