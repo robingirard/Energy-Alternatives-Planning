@@ -1,0 +1,1 @@
+InputFolder='Data/input/'

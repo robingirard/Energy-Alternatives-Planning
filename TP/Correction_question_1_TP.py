@@ -20,7 +20,7 @@ print(CF)
 
 
 # facteur de charge pour conso avec thermo pour la France
-ConsoTemp=pd.read_csv('../CSV/input/ConsumptionTemperature_1996TO2019_FR.csv')
+ConsoTemp=pd.read_csv('../Data/input/ConsumptionTemperature_1996TO2019_FR.csv')
 del ConsoTemp['Date']
 ConsoTemp=ConsoTemp.sort_values(by = 'Temperature')
 ConsoTemp.set_index('Temperature', inplace=True)
@@ -31,7 +31,7 @@ ConsoTemp.columns=['Load factor']
 #plt.show(graph) #on voit pas grand chose (trop de points)
 
 #On refait juste sur l'année 2016
-ConsoTemp1=pd.read_csv('../CSV/input/ConsumptionTemperature_1996TO2019_FR.csv')
+ConsoTemp1=pd.read_csv('../Data/input/ConsumptionTemperature_1996TO2019_FR.csv')
 ConsoTemp1['Date'] = pd.to_datetime(ConsoTemp1['Date'])
 ConsoTemp1=ConsoTemp1[(ConsoTemp1['Date'] > '2017-12-31 23:00:00') & (ConsoTemp1['Date'] < '2019-01-01 00:00:00')]
 del ConsoTemp1['Date']
@@ -48,10 +48,10 @@ ConsoTemp1.columns=['Load factor']
 #    --- b --- all hourly energy consumption of 1 country, resp. 5 countries.
 
 # Uniquement pour la France pour l'année 2013
-AvFactor2013=pd.read_csv("../CSV/input/availabilityFactor2013_FR.csv")
+AvFactor2013=pd.read_csv("../Data/input/availabilityFactor2013_FR.csv")
 pd.set_option('display.max_columns', None)
 AvFactor2013=AvFactor2013.pivot(index = 'TIMESTAMP', columns = 'TECHNOLOGIES', values = 'availabilityFactor')
-ConsoFR2013=pd.read_csv('../CSV/input/areaConsumption2013_FR.csv')
+ConsoFR2013=pd.read_csv('../Data/input/areaConsumption2013_FR.csv')
 ConsoAnnuelleFR2013=ConsoFR2013.sum()['areaConsumption'] #en MWh
 
 InstalledCapa1=np.zeros(shape=(1,3))
@@ -71,7 +71,7 @@ print(InstalledCapa)
 
 def EffetThermosensibilite(alpha):
     # alpha est un coefficient (choisi arbitrairement) que l'on fait varier entre 0 et 3 (par exemple) pour amplifier ou diminuer l'effet de la thermosensibilité sur la consommation d'électricité
-    AvFactor2013=pd.read_csv("../CSV/input/availabilityFactor2013_FR.csv")
+    AvFactor2013=pd.read_csv("../Data/input/availabilityFactor2013_FR.csv")
     pd.set_option('display.max_columns', None)
     AvFactor2013=AvFactor2013.pivot(index = 'TIMESTAMP', columns = 'TECHNOLOGIES', values = 'availabilityFactor')
     (DecomposedConso, Thermosens)=Decomposeconso(2013)
@@ -97,7 +97,7 @@ print('La puissance nucléaire installée devrait être', InstalledCapaNuke, 'GW
 
 def EffetThermosensibiliteNuke(alpha):
     # alpha est un coefficient (choisi arbitrairement) que l'on fait varier entre 0 et 3 (par exemple) pour amplifier ou diminuer l'effet de la thermosensibilité sur la consommation d'électricité
-    AvFactor2013=pd.read_csv("../CSV/input/availabilityFactor2013_FR.csv")
+    AvFactor2013=pd.read_csv("../Data/input/availabilityFactor2013_FR.csv")
     pd.set_option('display.max_columns', None)
     AvFactor2013=AvFactor2013.pivot(index = 'TIMESTAMP', columns = 'TECHNOLOGIES', values = 'availabilityFactor')
     (DecomposedConso, Thermosens)=Decomposeconso(2013)
@@ -110,7 +110,7 @@ def EffetThermosensibiliteNuke(alpha):
 
 # Q1.5) Suppose you have a storage with infinite energy capacity, a WP installed capacity of 300 GW, a storage capacity of 65GW, what are the percentages (for a year) of storage WP energy, WP energy losses (if the effiency is 60%) and curtailment ?
 
-AvFactor2013=pd.read_csv("../CSV/input/availabilityFactor2013_FR.csv")
+AvFactor2013=pd.read_csv("../Data/input/availabilityFactor2013_FR.csv")
 AvFactor2013WP=AvFactor2013[AvFactor2013['TECHNOLOGIES']=='WindOnShore']
 del AvFactor2013WP['TECHNOLOGIES']
 InstallCapaWP=300000 #puissance éolienne intallée en MW

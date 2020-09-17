@@ -16,7 +16,7 @@ areaConsumption = pd.read_csv('CSV/input/areaConsumption'+str(year)+'_'+str(Zone
                                 sep=',',decimal='.',skiprows=0)
 availabilityFactor = pd.read_csv('CSV/input/availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
-TechParameters = pd.read_csv('CSV/input/Gestion-SimpleCas3_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0)
+TechParameters = pd.read_csv('Data/input/Gestion-SimpleCas3_TECHNOLOGIES.csv', sep=';', decimal=',', skiprows=0)
 
 #### Selection of subset
 availabilityFactor=availabilityFactor[ availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
@@ -127,7 +127,7 @@ areaConsumption = pd.read_csv('CSV/input/areaConsumption'+str(year)+'_'+str(Zone
                                 sep=',',decimal='.',skiprows=0)
 availabilityFactor = pd.read_csv('CSV/input/availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
-TechParameters = pd.read_csv('CSV/input/Planing-SimpleCas3_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0,comment="#")
+TechParameters = pd.read_csv('Data/input/Planing-SimpleCas3_TECHNOLOGIES.csv', sep=';', decimal=',', skiprows=0, comment="#")
 
 #### Selection of subset
 availabilityFactor=availabilityFactor[ availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]

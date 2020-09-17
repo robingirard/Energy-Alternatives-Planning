@@ -1,3 +1,15 @@
+
+This folder contains examples for basic functionalities : 
+
+ - extraction, manipulation tools, and analysis of input data 
+    - Availability of different production means (nuke, wind power, photovoltaic, hydro)
+    - Consumption  (thermal sensitivity tools, electric vehicle, sectorial decomposition)
+    - Economic data (operation cost, investment cost, technical constraints, 
+ - optimisation 
+    - Operation, 
+    - a separate file for storage operation, 
+    - and planing)
+
 ## Fichiers Operation_Singlezone.ipynb Operation_Multizone.ipypnb
 Ces fichier permettent de simuler l'opération du système électrique et reposent sur l'utilisation de pyomo ainsi que les fonctions contenues dans functions_Operation.py
 Ces fichiers permettent plus précisément grâce à Pyomo de construire un modèle à optimiser en rentrant :

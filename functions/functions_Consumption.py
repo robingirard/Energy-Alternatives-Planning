@@ -10,7 +10,6 @@ from datetime import time
 from datetime import datetime
 
 
-
 def Decomposeconso(data_df, TemperatureThreshold=14, TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='Date') :
     '''
     fonction décomposant la consommation électrique d'une année en une part thermosensible et une part non thermosensible
@@ -55,7 +54,7 @@ def Recompose(ConsoSeparee_df,Thermosensibilite,Newdata_df=-1, TemperatureThresh
     :param TimeName:
     :return:
     '''
-    if (Newdata_df==-1): Newdata_df=ConsoSeparee_df
+    if (Newdata_df.__class__==int): Newdata_df=ConsoSeparee_df
     indexes_Old = np.nonzero(np.in1d(np.arange(0,ConsoSeparee_df.__len__()), np.arange(0,Newdata_df[TemperatureName].__len__())))[0]
     indexes_New = np.nonzero(np.in1d(np.arange(0,Newdata_df[TemperatureName].__len__()), np.arange(0,ConsoSeparee_df.__len__())))[0]
 
@@ -72,82 +71,28 @@ def Recompose(ConsoSeparee_df,Thermosensibilite,Newdata_df=-1, TemperatureThresh
     ConsoSepareeNew_df[ConsumptionName]=ConsoSepareeNew_df.TS_C+ConsoSepareeNew_df.NTS_C
     return(ConsoSepareeNew_df)
 
-# fonction permettant de redécomposer la conso électrique en une part thermosensible et non thermosensible avec un nouveau tableau de thermosensibilité
-def RecomposeTemperature(decomposedconso, newthermosensibilite, templimite=14):
-    for hour in range(24):
-        match_timestamp=time(hour).isoformat()
-        tabhour=decomposedconso.loc[decomposedconso.index.strftime("%H:%M:%S") == match_timestamp]
-        (date, DJU)=GetDatesDJU(tabhour,templimite)
-        for k in range(len(date)):
-            decomposedconso.loc[date[k]][0]=DJU[k]*newthermosensibilite.iloc[hour,0]
-    return(decomposedconso)
-
-# fonction qui fournit le tableau de thermosensibilité (pour chaque heure de la journée) pour une année choisie
-def EstimateThermosensibilite(year, templimite=14,data='CSV/input/ConsumptionTemperature_1996TO2019-sanschangementheure.csv'):
-    ConsoYear=SelectYear(year,data)
-    Thermosensibilite1=np.zeros((24,1))
-    Thermosensibilite=pd.DataFrame(data=Thermosensibilite1, columns=['Thermosensibilite'])
-    Thermosensibilite.index.name='Heure de la journee'
-    for hour in range(24):
-        match_timestamp=time(hour).isoformat()
-        tabhour=ConsoYear.loc[ConsoYear.index.strftime("%H:%M:%S") == match_timestamp]
-        (date, DJU)=GetDatesDJU(tabhour,templimite)
-        n=len(date)
-        Tabreglin1=np.zeros((n,2))
-        Tabreglin=pd.DataFrame(data=Tabreglin1, columns=['Conso','Température'])
-        for j in range(n):
-            Tabreglin.iloc[j,0]=ConsoYear.loc[date[j]][0]
-            Tabreglin.iloc[j,1]=ConsoYear.loc[date[j]][1]
-        x=Tabreglin.Température.values.reshape(n,1)
-        y=Tabreglin.Conso.values.reshape(n,1)
-        lr=linear_model.LinearRegression().fit(x,y)
-        thermosensibilitecoef=lr.coef_[0][0]
-        Thermosensibilite.iloc[hour,0]=thermosensibilitecoef
-    return(Thermosensibilite)
-
-# fonction qui permet d'extraire la timiserie de l'année qui nous intéresse à partir d'une timeserie qui couvre les années de 1996 à 2018
-def SelectYear(year,data='CSV/input/ConsumptionTemperature_1996TO2019-sanschangementheure.csv'):
-    ConsoTemp=pd.read_csv(data, parse_dates = True, index_col = 0)
-    if year>=1996 and year<=2018 :
-        date_start = pd.Timestamp(year, 1, 1, 0)
-        date_end =pd.Timestamp(year+1, 1, 1, 0)
-        mask=(ConsoTemp.index >= date_start) & (ConsoTemp.index <  date_end )
-        ConsoTempan= ConsoTemp.loc[mask]
-    else :
-        return('Pas de données')
-    return(ConsoTempan)
-
-
-# plt.plot(Consotmp['Consumption'])
-# plt.show()
 
 # fonction permettant de décomposer la consommation annuelle d'un véhicule électrique en une part thermosensible et non thermosensible (la conso non thermosensible étant la conso type d'une semaine d'été)
-def GetVEconso(year, templimite=14, mintemp=0,data='CSV/input/ConsumptionTemperature_1996TO2019-sanschangementheure.csv'):
-    TempAnnee=SelectYear(year,data)
-    ConsoAnnee1=np.zeros((TempAnnee.shape[0],3))
-    ConsoAnnee=pd.DataFrame(data=ConsoAnnee1, columns=['Conso TH','Conso NTH','Temperature']) #Conso en Puissance.MW.par.million
-    ConsoAnnee.index=TempAnnee.index
-    ConsoAnnee['Temperature']=TempAnnee['Temperature']
-    tmpVE=pd.read_csv('EVModel.csv', sep=';')
-    VESummer=tmpVE[tmpVE['Saison'] == 'Ete'].reset_index(drop=True)
-    i=0
-    while i<TempAnnee.shape[0]:
-        ConsoAnnee['Conso NTH'][i]=VESummer['Puissance.MW.par.million'][i%VESummer.shape[0]]
-        i=i+1
+def Profile2Consumption(Profile_df,Temperature_df, TemperatureThreshold=14,
+                        TemperatureMinimum=0,TemperatureName='Temperature',
+                        ConsumptionName='Consumption',TimeName='Date',
+                        VarName='Puissance.MW.par.million'):
 
-    difference=tmpVE[tmpVE['Saison'] == 'Hiver']['Puissance.MW.par.million'].reset_index(drop=True)-tmpVE[tmpVE['Saison'] == 'Ete']['Puissance.MW.par.million'].reset_index(drop=True)
-    difference.index.name='Heure de la semaine'
+    ## initialisation
+    ConsoSepareeNew_df=Temperature_df[[TimeName,TemperatureName]]
+    ConsoSepareeNew_df[ConsumptionName]=np.NaN
+    ConsoSepareeNew_df['NTS_C']=0
+    ConsoSepareeNew_df['TS_C']=0
 
-    Thermosensibilite1=np.zeros((24,1))
-    Thermosensibilite=pd.DataFrame(data=Thermosensibilite1, columns=['Thermosensibilite'])
-    Thermosensibilite.index.name='Heure de la semaine'
-    Thermosensibilite['Thermosensibilite']=-difference.loc[0:23]/(templimite-mintemp)
+    PivotedProfile_df = Profile_df.pivot( index=['Heure','Jour'], columns='Saison', values=VarName ).reset_index()
+    cte=(TemperatureThreshold-TemperatureMinimum)
 
+    for index, row in PivotedProfile_df.iterrows():
+        indexesWD=pd.to_datetime(ConsoSepareeNew_df['Date']).dt.weekday   == (PivotedProfile_df.loc[index,'Jour']-1)
+        indexesHours= pd.to_datetime(ConsoSepareeNew_df['Date']).dt.hour   == (PivotedProfile_df.loc[index,'Heure']-1)
+        ConsoSepareeNew_df.loc[indexesWD&indexesHours, 'NTS_C']=PivotedProfile_df.loc[index,'Ete']
 
-    for hour in range(24):
-        match_timestamp=time(hour).isoformat()
-        tabhour=TempAnnee.loc[TempAnnee.index.strftime("%H:%M:%S") == match_timestamp]
-        (date, DJU)=GetDatesDJU(tabhour,templimite)
-        for k in range(len(date)):
-            ConsoAnnee.loc[date[k]][0]=DJU[k]*Thermosensibilite.iloc[hour,0]
-    return(ConsoAnnee)
+    PivotedProfile_df['NDifference'] = (PivotedProfile_df['Ete'] - PivotedProfile_df['Hiver'])
+    Thermosensibilite = (PivotedProfile_df['NDifference'].loc[0:23] / cte).tolist()
+    ConsoSepareeNew_df=Recompose(ConsoSepareeNew_df,Thermosensibilite)
+    return(ConsoSepareeNew_df)
