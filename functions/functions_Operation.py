@@ -112,7 +112,7 @@ def GetElectricSystemModel_GestionSingleNode(areaConsumption,availabilityFactor,
 
     #Capacity constraint
     def Capacity_rule(model,t,tech): #INEQ forall t, tech
-    	return model.capacity[tech] * model.availabilityFactor[t,tech] >= model.energy[t,tech]
+    	return model.energy[t,tech] <=  model.capacity[tech] * model.availabilityFactor[t,tech]
     model.CapacityCtr = Constraint(model.TIMESTAMP,model.TECHNOLOGIES, rule=Capacity_rule)
 
     #contrainte de stock annuel
@@ -364,13 +364,13 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
     #Exchange capacity constraint (duplicate of variable definition)
     # AREAS x AREAS x TIMESTAMP
     def exchangeCtr_rule(model,a, b, t): #INEQ forall area.axarea.b in AREASxAREAS  t in TIMESTAMP
-        return model.maxExchangeCapacity[a,b] >= model.exchange[a,b,t];
+        return model.exchange[a,b,t]  <= model.maxExchangeCapacity[a,b] ;
     model.exchangeCtr = Constraint(model.AREAS,model.AREAS,model.TIMESTAMP, rule=exchangeCtr_rule)
 
     #Capacity constraint
     #AREAS x TIMESTAMP x TECHNOLOGIES
     def CapacityCtr_rule(model,area,t,tech): #INEQ forall t, tech
-    	return model.capacity[area,tech] * model.availabilityFactor[area,t,tech] >= model.energy[area,t,tech]
+    	return  model.energy[area,t,tech] <= model.capacity[area,tech] * model.availabilityFactor[area,t,tech]
     model.CapacityCtr = Constraint(model.AREAS,model.TIMESTAMP,model.TECHNOLOGIES, rule=CapacityCtr_rule)
 
 
@@ -457,7 +457,7 @@ def get_SimpleSets(model):
     for v in model.component_objects(Set, active=True):
         setobject = getattr(model, str(v))
         if not (isinstance(setobject,pyomo.core.base.set.SetProduct)):
-            res[str(v)]=setobject.value
+            res[str(v)]=setobject.data()
     return res;
 
 def getSetNames(model,setobject):
@@ -472,9 +472,9 @@ def getSetNames(model,setobject):
         print("warning setobject should be a SetProduct")
     cpt=0;
     res={}
-    for subset in setobject.set_tuple:
+    for subset in setobject.subsets():
         for i in SimpleSets:
-            if SimpleSets[i]==subset.value:
+            if SimpleSets[i]==subset.data():
                 res[cpt]=i
         cpt+=1;
     return res;
