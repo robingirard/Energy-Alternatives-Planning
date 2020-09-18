@@ -1,6 +1,14 @@
 
 ## intro
 InputFolder='Data/input/'
+## solver can be found here
+# https://ampl.com/products/solvers/open-source/
+
+solverpath={}
+solverpath['cbc']='/Users/robin.girard/Documents/Code/Packages/solvers/cbc'
+solverpath['cplex']='/Users/robin.girard/Documents/Code/Packages/solvers/cplex'
+
+solver= 'mosek' ## glpk
 import numpy as np
 import pandas as pd
 import csv
@@ -27,7 +35,8 @@ availabilityFactor=availabilityFactor[ availabilityFactor.TECHNOLOGIES.isin(Sele
 TechParameters=TechParameters[TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 
 model = GetElectricSystemModel_GestionSingleNode(areaConsumption,availabilityFactor,TechParameters)
-opt = SolverFactory('mosek')
+if solver in solverpath :  opt = SolverFactory(solver,executable=solverpath[solver])
+else : opt = SolverFactory(solver)
 results=opt.solve(model)
 
 ## result analysis
@@ -78,7 +87,7 @@ availabilityFactor=availabilityFactor[availabilityFactor.TECHNOLOGIES.isin(Selec
 TechParameters=TechParameters[TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 
 model = GetElectricSystemModel_GestionSingleNode(areaConsumption,availabilityFactor,TechParameters)
-opt = SolverFactory('mosek')
+opt = SolverFactory(solver)
 results=opt.solve(model)
 Variables=getVariables_panda(model)
 
@@ -131,7 +140,7 @@ availabilityFactor=availabilityFactor[availabilityFactor.AREAS.isin(Selected_ARE
 ### small data cleaning
 availabilityFactor.availabilityFactor[availabilityFactor.availabilityFactor>1]=1
 model = GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,TechParameters,ExchangeParameters)
-opt = SolverFactory('mosek')
+opt = SolverFactory(solver)
 results=opt.solve(model)
 Variables=getVariables_panda(model)
 Variables.keys()

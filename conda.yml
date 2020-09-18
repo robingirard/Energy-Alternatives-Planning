@@ -8,11 +8,11 @@ dependencies :
     - pytest
     - pip
     - pip :
-     - pyomo
-     - dynprogstorage
-     - Mosek
-     - xarray
-     - plotly
-     - matplotlib
-     - sklearn
+      - pyomo
+      - dynprogstorage
+      - Mosek
+      - xarray
+      - plotly
+      - matplotlib
+      - sklearn
 

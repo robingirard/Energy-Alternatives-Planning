@@ -53,13 +53,13 @@ def GetElectricSystemModel_GestionSingleNode(areaConsumption,availabilityFactor,
     ###############
     # Sets       ##
     ###############
-    model.TECHNOLOGIES = Set(initialize=TECHNOLOGIES)
-    model.TIMESTAMP = Set(initialize=TIMESTAMP)
+    model.TECHNOLOGIES = Set(initialize=TECHNOLOGIES,ordered=False)
+    model.TIMESTAMP = Set(initialize=TIMESTAMP,ordered=True)
     model.TIMESTAMP_TECHNOLOGIES =  model.TIMESTAMP *model.TECHNOLOGIES
 
     #Subset of Simple only required if ramp constraint
-    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 1])
-    model.TIMESTAMP_MinusThree = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 3])
+    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 1],ordered=True)
+    model.TIMESTAMP_MinusThree = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 3],ordered=True)
 
 
     ###############
@@ -88,7 +88,7 @@ def GetElectricSystemModel_GestionSingleNode(areaConsumption,availabilityFactor,
     model.energyCosts=Var(model.TECHNOLOGIES)  ### Cost of energy for a production mean, explicitely defined by definition energyCostsDef
     model.dual = Suffix(direction=Suffix.IMPORT)
     model.rc = Suffix(direction=Suffix.IMPORT)
-    model.slack = Suffix(direction=Suffix.IMPORT)
+    #model.slack = Suffix(direction=Suffix.IMPORT)
 
     ########################
     # Objective Function   #
