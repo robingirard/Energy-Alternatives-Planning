@@ -219,7 +219,7 @@ StorageParameters={"p_max" : p_max , "c_max": p_max*10,"efficiency_in": 0.9,"eff
 #endregion
 
 #region IV Ramp+Storage single area : solving and loading results
-res= GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availabilityFactor,
+res= GetElectricSystemModel_PlaningSingleNode_with1Storage(areaConsumption,availabilityFactor,
                                                       TechParameters,StorageParameters)
 
 Variables = getVariables_panda(res['model'])

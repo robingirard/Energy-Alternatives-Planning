@@ -19,6 +19,7 @@ import csv
 import os
 import datetime
 import matplotlib.pyplot as plt 
+from functions.f_optimization import *
 
 def GetElectricSystemModel_PlaningSingleNode(areaConsumption,availabilityFactor,TechParameters,isAbstract=False):
 
@@ -193,6 +194,106 @@ def GetElectricSystemModel_PlaningSingleNode(areaConsumption,availabilityFactor,
     ##################################
     # Loop Optimisation with Storage #
     ##################################
+
+
+def GetElectricSystemModel_PlaningSingleNode_with1Storage(areaConsumption,availabilityFactor,
+                                                          TechParameters,StorageParameters,solverpath=-1,isAbstract=False,
+                                                          solver='mosek',n=10,tol=exp(-4)):
+    """
+    This function takes storage caracteristics, system caracteristics and optimise operation Set values
+    :param areaConsumption: panda table with consumption
+    :param availabilityFactor: panda table
+    :param isAbstract: boolean true is the model should be abstract. ConcreteModel otherwise
+    :param StorageParameters is a dictionary with p_max (maximal power), c_max (energy capacity in the storage : maximal energy),
+    :efficiency_in (input efficiency of storage),
+    :efficiency_out (output efficiency of storage).
+    :return: a dictionary with model : pyomo model without storage, storage : storage infos
+    """
+    import pandas as pd
+    import numpy as np
+    from dynprogstorage.wrappers import GenCostFunctionFromMarketPrices
+    from dynprogstorage.wrappers import GenCostFunctionFromMarketPrices_dict
+    #isAbstract=False
+
+    model = GetElectricSystemModel_PlaningSingleNode(areaConsumption, availabilityFactor, TechParameters,isAbstract=isAbstract)
+    if solverpath==-1 : opt = SolverFactory(solver)
+    else : opt = MySolverFactory(solver, solverpath)
+   # results = opt.solve(model)
+   # Variables = getVariables_panda(model) #### obtain optimized variables in panda form
+   # Constraints = getConstraintsDual_panda(model)  #### obtain lagrange multipliers in panda form
+
+    ##### Loop
+    PrixTotal = {}
+    Consommation = {}
+    LMultipliers = {}
+    DeltaPrix = {}
+    Deltazz = {}
+    CostFunction = {}
+    TotalCols = {}
+    zz = {}
+    # p_max_out=100.; p_max_in=100.; c_max=10.;
+
+    areaConsumption["NewConsumption"] = areaConsumption["areaConsumption"]
+    nbTime = len(areaConsumption["areaConsumption"])
+    cpt = 0
+    for i in model.areaConsumption:  model.areaConsumption[i] = areaConsumption.NewConsumption[i - 1]
+    DeltaPrix_=tol+1
+    while ( (DeltaPrix_ >  tol) & (n>cpt) ) :
+        print(cpt)
+        if (cpt == 0):
+            zz[cpt] = [0] * nbTime
+        else:
+            zz[cpt] = areaConsumption["Storage"]
+
+        #if solver=="mosek" :
+        #    results = opt.solve(model, options= {"dparam.optimizer_max_time":  100.0, "iparam.outlev" : 2,                                                 "iparam.optimizer":     mosek.optimizertype.primal_simplex},tee=True)
+        #else :
+        if (solver=='cplex')| (solver=='cbc'):
+            results = opt.solve(model,warmstart = True)
+        else : results = opt.solve(model)
+
+        Constraints = getConstraintsDual_panda(model)
+        #if solver=='cbc':
+        #    Variables = getVariables_panda(model)['energy'].set_index(['TIMESTAMP','TECHNOLOGIES'])
+        #    for i in model.energy:  model.energy[i] = Variables.energy[i]
+
+
+        TotalCols[cpt] = getVariables_panda(model)['energyCosts'].sum()[1]
+        Prix = Constraints["energyCtr"].assign(Prix=lambda x: x.energyCtr * 10 ** 6).Prix.to_numpy()
+        valueAtZero = Prix * (TotalCols[cpt] / sum(Prix * Prix) - zz[cpt])
+        tmpCost = GenCostFunctionFromMarketPrices_dict(Prix, r_in=StorageParameters['efficiency_in'],
+                                                       r_out=StorageParameters['efficiency_out'],
+                                                       valueAtZero=valueAtZero)
+        if (cpt == 0):
+            CostFunction[cpt] = GenCostFunctionFromMarketPrices(Prix, r_in=StorageParameters['efficiency_in'],
+                                                                r_out=StorageParameters['efficiency_out'], valueAtZero=valueAtZero)
+        else:
+            tmpCost = GenCostFunctionFromMarketPrices_dict(Prix, r_in=StorageParameters['efficiency_in'],
+                                                           r_out=StorageParameters['efficiency_out'], valueAtZero=valueAtZero)
+            tmpCost2 = CostFunction[cpt - 1]
+            if StorageParameters['efficiency_in']*StorageParameters['efficiency_out']==1:
+                tmpCost2.Maxf_1Breaks_withO(tmpCost['S1'], tmpCost['B1'], tmpCost[
+                    'f0'])
+            else:
+                tmpCost2.Maxf_2Breaks_withO(tmpCost['S1'], tmpCost['S2'], tmpCost['B1'], tmpCost['B2'], tmpCost[
+                'f0'])  ### etape clé, il faut bien comprendre ici l'utilisation du max de deux fonction de coût
+            CostFunction[cpt] = tmpCost2
+        LMultipliers[cpt] = Prix
+        if cpt > 0:
+            DeltaPrix[cpt] = sum(abs(LMultipliers[cpt] - LMultipliers[cpt - 1]))/sum(abs(LMultipliers[cpt]))
+            Deltazz[cpt] = sum(abs(zz[cpt] - zz[cpt - 1]))/sum(abs(zz[cpt]))
+            DeltaPrix_= DeltaPrix[cpt]
+
+        areaConsumption["Storage"] = CostFunction[cpt].OptimMargInt([-StorageParameters['p_max']] * nbTime,
+                                                                    [StorageParameters['p_max']] * nbTime, [0] * nbTime,
+                                                                    [StorageParameters['c_max']] * nbTime)
+        areaConsumption["NewConsumption"] = areaConsumption["areaConsumption"] + areaConsumption["Storage"]
+        for i in model.areaConsumption:  model.areaConsumption[i] = areaConsumption.NewConsumption[i-1]
+        cpt=cpt+1
+
+    stats = {"DeltaPrix" : DeltaPrix,"Deltazz" : Deltazz}
+    return {"areaConsumption" : areaConsumption, "model" : model, "stats" : stats};
+
 
 def OptimStockage(n,i=4):
     prixBatterie=200 #€/kWh On peut changer le prix pour voir à partir de quel prix le stockage est rentable

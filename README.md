@@ -21,11 +21,11 @@ Ou juste pour mettre à jour l'environnement
     conda env update --file conda.yml 
     
 Si vous utilisez PyCharm vous devez fixer l'environnement dans les préférences "python interpreter" il faut 
-## 2 - Repertoire CSV <a class="anchor" id="CSV"></a>
+## 2 - Repertoire Data <a class="anchor" id="CSV"></a>
 contient des données .csv pour le projet (production éolienne, consommarion, disponibilité nucléaire, données technico-économiques), ces fichiers sont chargés dans les différents codes "run"
 
-## 3- Repertoire CasDEtude <a class="anchor" id="CasDEtude"></a>
-contient les fichiers Jupyter Notebook qui permettent de simuler la planification et l'opération du système électrique avec et sans stockage
+## 3- Repertoire BasicFunctionalities <a class="anchor" id="CasDEtude"></a>
+contient des fichiers pythons avec les fonctionnalités de base. Associé à chaque .py, un Jupyter Notebook qui permettent de simuler la planification et l'opération du système électrique avec et sans stockage
 
 ## 4- Repertoire TP <a class="anchor" id="TP"></a>
 contient les fichiers Jupyter Notebook présentant les enjeux des différentes parties du TP ainsi quelques questions auxquelles il faut répondre. On y trouve également les scripts Python regroupant les questions et réponses des  quatre parties du TP
