@@ -1,15 +1,24 @@
 import pytest
 import time
 
-from functions.functions_Operation import *
+from functions.f_operationModels import *
+from functions.f_optimization import *
+import sys
 
 def test_solvers_operation_multizone():
     InputFolder = '../Data/input/'
 
+    BaseSolverPath = '/Users/robin.girard/Documents/Code/Packages/solvers/ampl_macosx64'
+    sys.path.append(BaseSolverPath)
+    solvers = [ 'knitro', 'cbc']  # 'glpk' is too slow 'cplex' and 'xpress' do not work
     solverpath = {}
-    solverpath['cbc'] = '/Users/robin.girard/Documents/Code/Packages/cbc-osx'
-    solverpath['mosek'] = '/Users/robin.girard/Documents/Code/Packages/cbc-osx'
-    solvers = solverpath.keys()
+    for solver in solvers: solverpath[solver] = BaseSolverPath + '/' + solver
+    solvers.append('mosek')
+    cplexPATH = '/Applications/CPLEX_Studio1210/cplex/bin/x86-64_osx'
+    sys.path.append(cplexPATH)
+    solvers.append('cplex')
+    solverpath['cplex'] = cplexPATH + "/" + "cplex"
+
     Zones = "FR_DE_GB_ES"
     year = 2016
     Selected_AREAS = {"FR", "DE"}
@@ -40,11 +49,54 @@ def test_solvers_operation_multizone():
 
     for solver in solvers:
         start = time.time()
-        opt = SolverFactory(solver)
+        opt = opt = MySolverFactory(solver,solverpath)
         results = opt.solve(model)
         print('Elapsed time for ' + solver + ': ' + str(time.time() - start))
 
 
 
+def test_solvers_operation_StorageSinglezone():
+    InputFolder = '../Data/input/'
+
+    BaseSolverPath = '/Users/robin.girard/Documents/Code/Packages/solvers/ampl_macosx64'
+    sys.path.append(BaseSolverPath)
+    solvers = [ 'knitro', 'cbc']  # 'glpk' is too slow 'cplex' and 'xpress' do not work
+    solverpath = {}
+    for solver in solvers: solverpath[solver] = BaseSolverPath + '/' + solver
+    solvers.append('mosek')
+    cplexPATH = '/Applications/CPLEX_Studio1210/cplex/bin/x86-64_osx'
+    sys.path.append(cplexPATH)
+    solvers.append('cplex')
+    solverpath['cplex'] = cplexPATH + "/" + "cplex"
+    Zones = "FR"
+    year = 2013
+
+    Selected_TECHNOLOGIES = {'Thermal', 'OldNuke', 'WindOnShore', "Curtailement"}
+
+    #### reading CSV files
+    areaConsumption = pd.read_csv(InputFolder + 'areaConsumption' + str(year) + '_' + str(Zones) + '.csv',
+                                  sep=',', decimal='.', skiprows=0)
+    availabilityFactor = pd.read_csv(InputFolder + 'availabilityFactor' + str(year) + '_' + str(Zones) + '.csv',
+                                     sep=',', decimal='.', skiprows=0)
+    TechParameters = pd.read_csv(InputFolder + 'Gestion-Simple_TECHNOLOGIES.csv', sep=';', decimal=',', skiprows=0)
+
+    #### Selection of subset
+    availabilityFactor = availabilityFactor[availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
+    TechParameters = TechParameters[TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
+
+    p_max = 10000
+    StorageParameters = {"p_max": p_max, "c_max": p_max * 10, "efficiency_in": 0.9, "efficiency_out": 0.9}
+    # endregion
+
+    # region IV Ramp+Storage single area : solving and loading results
+
+
+    for solver in solvers:
+        start = time.time()
+        res = GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption, availabilityFactor,
+                                                                    TechParameters, StorageParameters,solver=solver,
+                                                                    solverpath=solverpath)
+        #results = opt.solve(model)
+        print('Elapsed time for ' + solver + ': ' + str(time.time() - start))
 
 

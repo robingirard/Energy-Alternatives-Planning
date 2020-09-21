@@ -10,14 +10,14 @@ Created on Wed Apr 22 19:07:50 2020
 from __future__ import division
 from pyomo.environ import *
 from pyomo.core import *
-from pyomo.opt import SolverFactory
 from dynprogstorage.Wrapper_dynprogstorage import Pycplfunction, Pycplfunctionvec
 from dynprogstorage.wrappers import *
 import xarray as xr
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
+import mosek
+from functions.f_optimization import *
 
 def GetElectricSystemModel_GestionSingleNode(areaConsumption,availabilityFactor,TechParameters,isAbstract=False):
     """
@@ -54,12 +54,12 @@ def GetElectricSystemModel_GestionSingleNode(areaConsumption,availabilityFactor,
     # Sets       ##
     ###############
     model.TECHNOLOGIES = Set(initialize=TECHNOLOGIES,ordered=False)
-    model.TIMESTAMP = Set(initialize=TIMESTAMP,ordered=True)
+    model.TIMESTAMP = Set(initialize=TIMESTAMP,ordered=False)
     model.TIMESTAMP_TECHNOLOGIES =  model.TIMESTAMP *model.TECHNOLOGIES
 
     #Subset of Simple only required if ramp constraint
-    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 1],ordered=True)
-    model.TIMESTAMP_MinusThree = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 3],ordered=True)
+    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 1],ordered=False)
+    model.TIMESTAMP_MinusThree = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 3],ordered=False)
 
 
     ###############
@@ -169,18 +169,16 @@ def GetElectricSystemModel_GestionSingleNode(areaConsumption,availabilityFactor,
     return model ;
 
 def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availabilityFactor,
-                                                          TechParameters,p_max,c_max,isAbstract=False,
-                                                          solver='mosek',n=10,efficiency_in=1,
-                                                          efficiency_out=1,tol=exp(-4)):
+                                                          TechParameters,StorageParameters,solverpath=-1,isAbstract=False,
+                                                          solver='mosek',n=10,tol=exp(-4)):
     """
     This function takes storage caracteristics, system caracteristics and optimise operation Set values
     :param areaConsumption: panda table with consumption
     :param availabilityFactor: panda table
     :param isAbstract: boolean true is the model should be abstract. ConcreteModel otherwise
-    :p_max is maximal power
-    :c_max is energy capacity in the storage (maximal energy)
-    :efficiency_in is input efficiency of storage
-    :efficiency_out is output efficiency of storage
+    :param StorageParameters is a dictionary with p_max (maximal power), c_max (energy capacity in the storage : maximal energy),
+    :efficiency_in (input efficiency of storage),
+    :efficiency_out (output efficiency of storage).
     :return: a dictionary with model : pyomo model without storage, storage : storage infos
     """
     import pandas as pd
@@ -190,7 +188,8 @@ def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availa
     #isAbstract=False
 
     model = GetElectricSystemModel_GestionSingleNode(areaConsumption, availabilityFactor, TechParameters,isAbstract=isAbstract)
-    opt = SolverFactory(solver)
+    if solverpath==-1 : opt = SolverFactory(solver)
+    else : opt = MySolverFactory(solver, solverpath)
    # results = opt.solve(model)
    # Variables = getVariables_panda(model) #### obtain optimized variables in panda form
    # Constraints = getConstraintsDual_panda(model)  #### obtain lagrange multipliers in panda form
@@ -211,24 +210,40 @@ def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availa
     cpt = 0
     for i in model.areaConsumption:  model.areaConsumption[i] = areaConsumption.NewConsumption[i - 1]
     DeltaPrix_=tol+1
-    while ((DeltaPrix_ >  tol)&(n<cpt)) :
+    while ( (DeltaPrix_ >  tol) & (n>cpt) ) :
         print(cpt)
         if (cpt == 0):
             zz[cpt] = [0] * nbTime
         else:
             zz[cpt] = areaConsumption["Storage"]
-        results = opt.solve(model)
+
+        #if solver=="mosek" :
+        #    results = opt.solve(model, options= {"dparam.optimizer_max_time":  100.0, "iparam.outlev" : 2,                                                 "iparam.optimizer":     mosek.optimizertype.primal_simplex},tee=True)
+        #else :
+        if (solver=='cplex')| (solver=='cbc'):
+            results = opt.solve(model,warmstart = True)
+        else : results = opt.solve(model)
+
         Constraints = getConstraintsDual_panda(model)
+        #if solver=='cbc':
+        #    Variables = getVariables_panda(model)['energy'].set_index(['TIMESTAMP','TECHNOLOGIES'])
+        #    for i in model.energy:  model.energy[i] = Variables.energy[i]
+
+
         TotalCols[cpt] = getVariables_panda(model)['energyCosts'].sum()[1]
         Prix = Constraints["energyCtr"].assign(Prix=lambda x: x.energyCtr * 10 ** 6).Prix.to_numpy()
         valueAtZero = Prix * (TotalCols[cpt] / sum(Prix * Prix) - zz[cpt])
-        tmpCost = GenCostFunctionFromMarketPrices_dict(Prix, r_in=efficiency_in, r_out=efficiency_out, valueAtZero=valueAtZero)
+        tmpCost = GenCostFunctionFromMarketPrices_dict(Prix, r_in=StorageParameters['efficiency_in'],
+                                                       r_out=StorageParameters['efficiency_out'],
+                                                       valueAtZero=valueAtZero)
         if (cpt == 0):
-            CostFunction[cpt] = GenCostFunctionFromMarketPrices(Prix, r_in=efficiency_in, r_out=efficiency_out, valueAtZero=valueAtZero)
+            CostFunction[cpt] = GenCostFunctionFromMarketPrices(Prix, r_in=StorageParameters['efficiency_in'],
+                                                                r_out=StorageParameters['efficiency_out'], valueAtZero=valueAtZero)
         else:
-            tmpCost = GenCostFunctionFromMarketPrices_dict(Prix, r_in=efficiency_in, r_out=efficiency_out, valueAtZero=valueAtZero)
+            tmpCost = GenCostFunctionFromMarketPrices_dict(Prix, r_in=StorageParameters['efficiency_in'],
+                                                           r_out=StorageParameters['efficiency_out'], valueAtZero=valueAtZero)
             tmpCost2 = CostFunction[cpt - 1]
-            if efficiency_in*efficiency_out==1:
+            if StorageParameters['efficiency_in']*StorageParameters['efficiency_out']==1:
                 tmpCost2.Maxf_1Breaks_withO(tmpCost['S1'], tmpCost['B1'], tmpCost[
                     'f0'])
             else:
@@ -241,11 +256,13 @@ def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availa
             Deltazz[cpt] = sum(abs(zz[cpt] - zz[cpt - 1]))/sum(abs(zz[cpt]))
             DeltaPrix_= DeltaPrix[cpt]
 
-        areaConsumption["Storage"] = CostFunction[cpt].OptimMargInt([-p_max] * nbTime, [p_max] * nbTime, [0] * nbTime,
-                                                                    [c_max] * nbTime)
+        areaConsumption["Storage"] = CostFunction[cpt].OptimMargInt([-StorageParameters['p_max']] * nbTime,
+                                                                    [StorageParameters['p_max']] * nbTime, [0] * nbTime,
+                                                                    [StorageParameters['c_max']] * nbTime)
         areaConsumption["NewConsumption"] = areaConsumption["areaConsumption"] + areaConsumption["Storage"]
-        for i in model.areaConsumption:  model.areaConsumption[i] = areaConsumption.NewConsumption[i - 1]
+        for i in model.areaConsumption:  model.areaConsumption[i] = areaConsumption.NewConsumption[i-1]
         cpt=cpt+1
+
     stats = {"DeltaPrix" : DeltaPrix,"Deltazz" : Deltazz}
     return {"areaConsumption" : areaConsumption, "model" : model, "stats" : stats};
 
@@ -288,18 +305,18 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
     ###############
 
     #Simple
-    model.AREAS= Set(initialize=AREAS,doc = "Area")
-    model.TECHNOLOGIES = Set(initialize=TECHNOLOGIES)
-    model.TIMESTAMP = Set(initialize=TIMESTAMP)
+    model.AREAS= Set(initialize=AREAS,doc = "Area",ordered=False)
+    model.TECHNOLOGIES = Set(initialize=TECHNOLOGIES,ordered=False)
+    model.TIMESTAMP = Set(initialize=TIMESTAMP,ordered=False)
 
     #Subset of Simple only required if ramp constraint
-    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP.remove(max(TIMESTAMP)))
-    model.TIMESTAMP_MinusThree = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 3])
+    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP.remove(max(TIMESTAMP)),ordered=False)
+    model.TIMESTAMP_MinusThree = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 3],ordered=False)
 
     #Products
     model.TIMESTAMP_TECHNOLOGIES =  model.TIMESTAMP *model.TECHNOLOGIES
-    model.AREAS_AREAS= model.AREAS* model.AREAS
-    model.AREAS_TECHNOLOGIES= model.AREAS *model.TECHNOLOGIES
+    model.AREAS_AREAS= model.AREAS * model.AREAS
+    model.AREAS_TECHNOLOGIES= model.AREAS * model.TECHNOLOGIES
     model.AREAS_TIMESTAMP=model.AREAS * model.TIMESTAMP
     model.AREAS_TIMESTAMP_TECHNOLOGIES= model.AREAS*model.TIMESTAMP * model.TECHNOLOGIES
 
@@ -309,7 +326,7 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
     ###############
 
     model.areaConsumption =     Param(model.AREAS_TIMESTAMP,
-                                      initialize=areaConsumption.set_index(["AREAS", "TIMESTAMP",]).areaConsumption.squeeze().to_dict(), domain=Any)
+                                      initialize=areaConsumption.set_index(["AREAS", "TIMESTAMP",]).areaConsumption.squeeze().to_dict(), domain=Any,mutable=True)
     model.availabilityFactor =  Param(  model.AREAS_TIMESTAMP_TECHNOLOGIES, domain=PercentFraction,default=1,
                                       initialize=availabilityFactor.set_index(["AREAS","TIMESTAMP", "TECHNOLOGIES"]).squeeze().to_dict())
 
@@ -335,7 +352,7 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
 
     model.dual = Suffix(direction=Suffix.IMPORT)
     model.rc = Suffix(direction=Suffix.IMPORT)
-    model.slack = Suffix(direction=Suffix.IMPORT)
+    #model.slack = Suffix(direction=Suffix.IMPORT)
 
     ########################
     # Objective Function   #
@@ -445,97 +462,113 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
     return model ;
 
 
-
-
-def get_SimpleSets(model):
+def GetElectricSystemModel_GestionMultiNode_with1Storage(areaConsumption,availabilityFactor,
+                                                          TechParameters,ExchangeParameters,StorageParameters,isAbstract=False,
+                                                          solver='mosek',n=10,tol=exp(-4)):
     """
-    This function finds all SimpleSets and returns a set with pyomo Sets and associated values
-    :param model: pyomo model
-    :return: a Set (not a pyomo set) with names
-    """
-    res={}
-    for v in model.component_objects(Set, active=True):
-        setobject = getattr(model, str(v))
-        if not (isinstance(setobject,pyomo.core.base.set.SetProduct)):
-            res[str(v)]=setobject.data()
-    return res;
-
-def getSetNames(model,setobject):
-    """
-    This function finds the sets associated to a flat set product object
-    :param model: pyomo model
-    :param setobject: a pyomo set object
-    :return: a Set (not a pyomo set) with names
-    """
-    SimpleSets=get_SimpleSets(model)
-    if not isinstance(setobject,pyomo.core.base.set.SetProduct):
-        print("warning setobject should be a SetProduct")
-    cpt=0;
-    res={}
-    for subset in setobject.subsets():
-        for i in SimpleSets:
-            if SimpleSets[i]==subset.data():
-                res[cpt]=i
-        cpt+=1;
-    return res;
-
-def getVariables_panda(model):
-    """
-    This function takes variables and return values in panda form
-    :param model: pyomo model
-    :return: a Set (not a pyomo set) with names of variables and associated values in panda table
+    This function takes storage caracteristics, system caracteristics and optimise operation Set values
+    :param areaConsumption: panda table with consumption
+    :param availabilityFactor: panda table
+    :param isAbstract: boolean true is the model should be abstract. ConcreteModel otherwise
+    :param StorageParameters is a panda with p_max (maximal power), c_max (energy capacity in the storage : maximal energy),
+    :efficiency_in (input efficiency of storage),
+    :efficiency_out (output efficiency of storage).
+    :return: a dictionary with model : pyomo model without storage, storage : storage infos
     """
     import pandas as pd
-    Variables = {}
-    for v in model.component_objects(Var, active=True):
-        # print ("Variables",v)
-        varobject = getattr(model, str(v))
-        VAL = pd.DataFrame.from_dict(varobject.extract_values(), orient='index', columns=[str(varobject)])
-        #print(get_set_name(model,varobject))
-        if isinstance(varobject.index_set(),pyomo.core.base.set.SetProduct):
-            #Variables[str(v)].rename_axis(index=[str(varobject.index_set())])
-            DIM = pd.DataFrame(VAL.index.tolist()).rename(columns=getSetNames(model,varobject.index_set())).reset_index(drop=True)
-            VAL.reset_index(drop=True, inplace=True)
-            Variables[str(v)]= pd.concat([DIM,VAL],axis=1,sort=False)
-        else:
-            DIM= pd.DataFrame(VAL.index.tolist()).reset_index(drop=True)
-            VAL.reset_index(drop=True, inplace=True)
-            Variables[str(v)]= pd.concat([DIM,VAL],axis=1,sort=False)
-            Variables[str(v)]=Variables[str(v)].rename(columns={0:str(varobject.index_set())})
-    return Variables;
+    import numpy as np
+    from dynprogstorage.wrappers import GenCostFunctionFromMarketPrices
+    from dynprogstorage.wrappers import GenCostFunctionFromMarketPrices_dict
+    #isAbstract=False
+    AREAS = areaConsumption["AREAS"].unique().tolist()
+    model = GetElectricSystemModel_GestionMultiNode(areaConsumption, availabilityFactor, TechParameters,ExchangeParameters,isAbstract=isAbstract)
+    opt = SolverFactory(solver)
+   # results = opt.solve(model)
+   # Variables = getVariables_panda(model) #### obtain optimized variables in panda form
+   # Constraints = getConstraintsDual_panda(model)  #### obtain lagrange multipliers in panda form
 
-def getConstraintsDual_panda(model):
-    """
-    This function takes dual values associated to Constraints and return values in panda form
-    :param model: pyomo model
-    :return: a Set (not a pyomo set) with names of Constraints and associated dual values in panda table
-    """
-    import pandas as pd
-    Constraints = {}
-    for v in model.component_objects(Constraint, active=True):
-        # print ("Constraints",v)
-        cobject = getattr(model, str(v))
-        VAL = pd.DataFrame.from_dict(get_dualValues(model,cobject), orient='index', columns=[str(cobject)])
-        #print(get_set_name(model,varobject))
-        if isinstance(cobject.index_set(),pyomo.core.base.set.SetProduct):
-            #Constraints[str(v)].rename_axis(index=[str(varobject.index_set())])
-            DIM = pd.DataFrame(VAL.index.tolist()).rename(columns=getSetNames(model,cobject.index_set())).reset_index(drop=True)
-            VAL.reset_index(drop=True, inplace=True)
-            Constraints[str(v)]= pd.concat([DIM,VAL],axis=1,sort=False)
-        else:
-            DIM= pd.DataFrame(VAL.index.tolist()).reset_index(drop=True)
-            VAL.reset_index(drop=True, inplace=True)
-            Constraints[str(v)]= pd.concat([DIM,VAL],axis=1,sort=False)
-            Constraints[str(v)]=Constraints[str(v)].rename(columns={0:str(cobject.index_set())})
-    return Constraints;
+    ##### Loop
+    Consommation = {};
+    for AREA in AREAS : Consommation[AREA]={}
+    LMultipliers = {};
+    for AREA in AREAS : LMultipliers[AREA]={}
+    CostFunction = {};
+    for AREA in AREAS : CostFunction[AREA] = {}
+    zz = {};
+    for AREA in AREAS: zz[AREA] = {}
 
-def get_dualValues(model,cobject):
-    """
-    This function takes variables and return values in panda form
-    :param model: pyomo model
-    :return: a Set (not a pyomo set) with names of variables and associated values in panda table
-    """
-    res={};
-    for index in cobject:
-         res[index] = model.dual[cobject[index]]
-    return res;
+    OptimControl=pd.DataFrame(columns=["Step","AREAS","TotalCols","DeltaPrix","Deltazz"])
+
+    areaConsumption["NewConsumption"] = areaConsumption["areaConsumption"]
+    nbTime = len(areaConsumption["TIMESTAMP"].unique())
+    cpt = 0
+    areaConsumption=areaConsumption.set_index(["AREAS","TIMESTAMP"])
+    for i in model.areaConsumption:
+        model.areaConsumption[i] = areaConsumption.NewConsumption[i]
+    DeltaPrix_=tol+1
+    while ( (DeltaPrix_ >  tol) & (n>cpt) ) :
+        print(cpt)
+
+        if (cpt == 0):
+            for AREA in AREAS: zz[AREA][cpt] = [0] * nbTime
+            areaConsumption["Storage"] = 0
+        else:
+            DeltaPrix_ = 0
+            for AREA in AREAS:
+                zz[AREA][cpt] = areaConsumption.loc[areaConsumption.index.get_level_values('AREAS') == AREA,"Storage"]
+
+        results = opt.solve(model)
+        Constraints = getConstraintsDual_panda(model)
+        Variables = getVariables_panda(model)['energyCosts']
+
+
+        for AREA in AREAS:
+            indexStorage =  StorageParameters["AREA"]==AREA
+            TotalCols = Variables[Variables.AREAS==AREA].energyCosts.sum()
+            #Constraints["energyCtr"]=Constraints["energyCtr"].set_index(["AREAS","TIMESTAMP"])
+
+            Prix = Constraints["energyCtr"][Constraints["energyCtr"].AREAS==AREA].assign(Prix=lambda x: x.energyCtr * 10 ** 6).Prix.to_numpy()
+            valueAtZero = Prix * (TotalCols / sum(Prix * Prix) - zz[AREA][cpt])
+            tmpCost = GenCostFunctionFromMarketPrices_dict(Prix, r_in=StorageParameters[indexStorage].efficiency_in.tolist()[0],
+                                                       r_out=StorageParameters[indexStorage].efficiency_out.tolist()[0],
+                                                       valueAtZero=valueAtZero)
+            if (cpt == 0):
+                CostFunction[AREA][cpt] = GenCostFunctionFromMarketPrices(Prix,
+                                                                          r_in=StorageParameters[indexStorage].efficiency_in.tolist()[0],
+                                                                          r_out=StorageParameters[indexStorage].efficiency_out.tolist()[0],
+                                                                          valueAtZero=valueAtZero)
+            else:
+                tmpCost = GenCostFunctionFromMarketPrices_dict(Prix,
+                                                               r_in=StorageParameters[indexStorage].efficiency_in.tolist()[0],
+                                                               r_out=StorageParameters[indexStorage].efficiency_out.tolist()[0],
+                                                               valueAtZero=valueAtZero)
+                tmpCost2 = CostFunction[AREA][cpt - 1]
+                if StorageParameters[indexStorage].efficiency_in.tolist()[0]*StorageParameters[indexStorage].efficiency_out.tolist()[0]==1:
+                    tmpCost2.Maxf_1Breaks_withO(tmpCost['S1'], tmpCost['B1'], tmpCost['f0'])
+                else:
+                    tmpCost2.Maxf_2Breaks_withO(tmpCost['S1'], tmpCost['S2'], tmpCost['B1'], tmpCost['B2'], tmpCost['f0'])  ### etape clé, il faut bien comprendre ici l'utilisation du max de deux fonction de coût
+                CostFunction[AREA][cpt] = tmpCost2
+            LMultipliers[AREA][cpt] = Prix
+            if cpt > 0:
+                DeltaPrix = sum(abs(LMultipliers[AREA][cpt] - LMultipliers[AREA][cpt - 1]))/sum(abs(LMultipliers[AREA][cpt]))
+                if (sum(abs(zz[AREA][cpt]))==0) & (sum(abs(zz[AREA][cpt] - zz[AREA][cpt - 1]))==0) :
+                    Deltazz = 0
+                else:
+                    Deltazz = sum(abs(zz[AREA][cpt] - zz[AREA][cpt - 1]))/sum(abs(zz[AREA][cpt]))
+                DeltaPrix_= DeltaPrix_+ DeltaPrix
+                OptimControl_tmp=pd.DataFrame([cpt, AREA, TotalCols, DeltaPrix, Deltazz]).transpose()
+                OptimControl_tmp.columns=["Step", "AREAS", "TotalCols", "DeltaPrix", "Deltazz"]
+                OptimControl=pd.concat([OptimControl,OptimControl_tmp],axis=0)
+
+
+            areaConsumption.loc[areaConsumption.index.get_level_values('AREAS') == AREA,"Storage"] = CostFunction[AREA][cpt].OptimMargInt([-StorageParameters[indexStorage].p_max.tolist()[0]] * nbTime,
+                                                                    [StorageParameters[indexStorage].p_max.tolist()[0]] * nbTime, [0] * nbTime,
+                                                                    [StorageParameters[indexStorage].c_max.tolist()[0]] * nbTime)
+
+            areaConsumption.loc[areaConsumption.index.get_level_values('AREAS') == AREA,"NewConsumption"] = areaConsumption.loc[areaConsumption.index.get_level_values('AREAS') == AREA,"areaConsumption"] + areaConsumption.loc[areaConsumption.index.get_level_values('AREAS') == AREA,"Storage"]
+        for i in model.areaConsumption:  model.areaConsumption[i] = areaConsumption.NewConsumption[i]
+        cpt=cpt+1
+
+    stats = {"DeltaPrix" : DeltaPrix,"Deltazz" : Deltazz}
+    return {"areaConsumption" : areaConsumption, "model" : model, "stats" : stats};
+

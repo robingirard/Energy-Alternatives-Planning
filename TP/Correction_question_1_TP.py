@@ -1,5 +1,5 @@
 import plotly.graph_objects as go
-from functions.functions_Consumption import *
+from functions.f_consumptionModels import *
 
 
 

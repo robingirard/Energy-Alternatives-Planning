@@ -16,6 +16,10 @@ Ce projet contient le code et les données pour faire le TP de simulation du sys
     conda env create -f conda.yml
     conda activate Etude_TP
     
+Ou juste pour mettre à jour l'environnement 
+
+    conda env update --file conda.yml 
+    
 Si vous utilisez PyCharm vous devez fixer l'environnement dans les préférences "python interpreter" il faut 
 ## 2 - Repertoire CSV <a class="anchor" id="CSV"></a>
 contient des données .csv pour le projet (production éolienne, consommarion, disponibilité nucléaire, données technico-économiques), ces fichiers sont chargés dans les différents codes "run"
