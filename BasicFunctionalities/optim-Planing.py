@@ -92,24 +92,24 @@ round(CapacityCtrDual.OldNuke,2).unique() ## if you increase by Delta the instal
 round(CapacityCtrDual.Thermal,2).unique() ## increasing the capacity of Thermal as no effect on prices
 #endregion
 
-#region II - Ramp Ctrs Single area : loading parameters loading parameterscase with ramp constraints
+#region II - Ramp Single area : loading parameters loading parameterscase with ramp constraints
 Zones="FR"
 year=2013
-Selected_TECHNOLOGIES={'OldNuke','Thermal'} #you'll add 'Solar' after
+Selected_TECHNOLOGIES={'OldNuke','Thermal'} #you'll add 'Solar' ,'WindOnShore' after
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
-TechParameters = pd.read_csv(InputFolder+'Gestion-RAMP1_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0)
+TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0,comment="#")
 
 #### Selection of subset
 availabilityFactor=availabilityFactor[availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 TechParameters=TechParameters[TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 #endregion
 
-#region II - Ramp Ctrs Single area : solving and loading results
-model = GetElectricSystemModel_GestionSingleNode(areaConsumption,availabilityFactor,TechParameters)
+#region II - Ramp Single area : solving and loading results
+model = GetElectricSystemModel_PlaningSingleNode(areaConsumption,availabilityFactor,TechParameters)
 opt = SolverFactory(solver)
 results=opt.solve(model)
 Variables=getVariables_panda(model)
@@ -120,7 +120,7 @@ production_df.sum(axis=0)/10**6 ### energies produites TWh
 print(Variables['energyCosts']) #pour avoir le coût de chaque moyen de prod à l'année
 #endregion
 
-#region II - Ramp Ctrs Single area : visualisation and lagrange multipliers
+#region II - Ramp Single area : visualisation and lagrange multipliers
 fig=MyStackedPlotly(x_df=production_df.index,
                     y_df=production_df[list(Selected_TECHNOLOGIES)],
                     Names=list(Selected_TECHNOLOGIES))
@@ -143,7 +143,7 @@ round(CapacityCtrDual.OldNuke,2).unique() ## if you increase by Delta the instal
 round(CapacityCtrDual.Thermal,2).unique() ## increasing the capacity of Thermal as no effect on prices
 #endregion
 
-#region III - Ramp Ctrs multiple area : loading parameters
+#region III - Ramp multiple area : loading parameters
 Zones="FR_DE_GB_ES"
 year=2016
 Selected_AREAS={"FR","DE"}
@@ -180,11 +180,6 @@ production_df=Variables['energy'].pivot(index=["TIMESTAMP","AREAS"], columns='TE
 production_df.sum(axis=0)/10**6 ### energies produites TWh
 production_df.groupby(by="AREAS").sum()/10**6 ### energies produites TWh
 
-
-#pour avoir la production en KWh de chaque moyen de prod chaque heure
-production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')
-production_df.sum(axis=0)/10**6 ### energies produites TWh
-
 energyCosts_df=Variables['energyCosts'].set_index(["AREAS","TECHNOLOGIES"])
 capacityCosts_df=Variables['capacityCosts'].set_index(["AREAS","TECHNOLOGIES"])
 costs_df=pd.concat([energyCosts_df,capacityCosts_df],axis=1)
@@ -208,7 +203,8 @@ areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zo
                                 sep=',',decimal='.',skiprows=0)
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
-TechParameters = pd.read_csv(InputFolder+'Gestion-Simple_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0)
+TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0,comment="#")
+
 
 #### Selection of subset
 availabilityFactor=availabilityFactor[ availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
@@ -266,7 +262,7 @@ Selected_AREAS={"FR","DE"}
 Selected_TECHNOLOGIES={'Thermal', 'OldNuke' } #'NewNuke', 'HydroRiver', 'HydroReservoir','WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
 
 #### reading CSV files
-TechParameters = pd.read_csv(InputFolder+'Gestion_MultiNode_DE-FR_AREAS_TECHNOLOGIES.csv',sep=';',decimal=',',comment="#",skiprows=0)
+TechParameters = pd.read_csv(InputFolder+'Planing_MultiNode_DE-FR_AREAS_TECHNOLOGIES.csv',sep=';',decimal=',',comment="#",skiprows=0)
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',

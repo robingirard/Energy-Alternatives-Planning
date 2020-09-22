@@ -11,18 +11,9 @@ import plotly.graph_objects as go
 Zones="FR"
 year=2013
 
-Selected_TECHNOLOGIES={'Thermal', 'OldNuke'} #you'll add 'HydroReservoir' after
-
-#### reading CSV files
-areaConsumption = pd.read_csv('CSV/input/areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
+availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
-availabilityFactor = pd.read_csv('CSV/input/availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0)
-TechParameters = pd.read_csv('CSV/input/Gestion-Simple_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0)
 
-#### Selection of subset
-availabilityFactor=availabilityFactor[ availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
-TechParameters=TechParameters[TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 
 
 #graphe montrant le facteur de disponibilité du nucléaire en fonction de l'heure de l'année

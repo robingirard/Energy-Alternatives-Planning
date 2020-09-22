@@ -49,13 +49,13 @@ def GetElectricSystemModel_PlaningSingleNode(areaConsumption,availabilityFactor,
     ###############
     # Sets       ##
     ###############
-    model.TECHNOLOGIES = Set(initialize=TECHNOLOGIES)
-    model.TIMESTAMP = Set(initialize=TIMESTAMP)
+    model.TECHNOLOGIES = Set(initialize=TECHNOLOGIES,ordered=False)
+    model.TIMESTAMP = Set(initialize=TIMESTAMP,ordered=False)
     model.TIMESTAMP_TECHNOLOGIES =  model.TIMESTAMP *model.TECHNOLOGIES
 
     #Subset of Simple only required if ramp constraint
-    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP.remove(max(TIMESTAMP)))
-    model.TIMESTAMP_MinusThree = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 3])
+    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP.remove(max(TIMESTAMP)),ordered=False)
+    model.TIMESTAMP_MinusThree = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 3],ordered=False)
     
     
     ###############
@@ -458,13 +458,13 @@ def GetElectricSystemModel_PlaningMultiNode(areaConsumption,availabilityFactor,T
     ###############
     
     #Simple
-    model.AREAS= Set(initialize=AREAS,doc = "Area")
-    model.TECHNOLOGIES = Set(initialize=TECHNOLOGIES)
-    model.TIMESTAMP = Set(initialize=TIMESTAMP)
+    model.AREAS= Set(initialize=AREAS,doc = "Area",ordered=False)
+    model.TECHNOLOGIES = Set(initialize=TECHNOLOGIES,ordered=False)
+    model.TIMESTAMP = Set(initialize=TIMESTAMP,ordered=False)
     
     #Subset of Simple only required if ramp constraint
-    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP.remove(max(TIMESTAMP)))
-    model.TIMESTAMP_MinusThree = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 3])
+    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP.remove(max(TIMESTAMP)),ordered=False)
+    model.TIMESTAMP_MinusThree = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 3],ordered=False)
     
     #Products
     model.TIMESTAMP_TECHNOLOGIES =  model.TIMESTAMP *model.TECHNOLOGIES
@@ -517,7 +517,7 @@ def GetElectricSystemModel_PlaningMultiNode(areaConsumption,availabilityFactor,T
     
     model.dual = Suffix(direction=Suffix.IMPORT)
     model.rc = Suffix(direction=Suffix.IMPORT)
-    model.slack = Suffix(direction=Suffix.IMPORT)
+    #model.slack = Suffix(direction=Suffix.IMPORT)
     
     ########################
     # Objective Function   #

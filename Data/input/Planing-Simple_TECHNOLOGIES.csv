@@ -13,4 +13,4 @@ HydroReservoir;0,1;1;3638,1;0;8406
 WindOnShore;0;146694;0;11700;2000000
 WindOffShore;0;470729,54;0;4000;1000000
 Solar;0;91226;0;6700;1000000
-Curtailement;3000;0;0;0;Inf
+Curtailement;3000;0;0;0;1000000

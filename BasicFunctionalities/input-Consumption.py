@@ -19,7 +19,7 @@ from functions.f_graphicalTools import * #Il faut préciser le chemin où vous a
 #region  Load and visualize consumption
 ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv')
 
-year = 2010
+year = 2012
 hour = 19
 TemperatureThreshold = 15
 

@@ -216,22 +216,6 @@ fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heu
 plotly.offline.plot(fig, filename='file.html') ## offline
 stats=res["stats"]
 
-
-PrixTotal
-plt.figure(figsize=(12,5))
-plt.xlabel('Number of requests every 10 minutes')
-
-ax1 = areaConsumption.NewConsumption.plot(color='blue', grid=True, label='Count')
-ax2 = areaConsumption.areaConsumption.plot(color='red', grid=True, secondary_y=True, label='Sum')
-
-areaConsumption["NewConsumption"].max()
-areaConsumption["Storage"].max()
-plt.legend(h1+h2, l1+l2, loc=2)
-plt.show()
-
-plt.scatter(areaConsumption["NewConsumption"], areaConsumption["areaConsumption"])
-plt.show() # Depending on whether you use IPython or interactive mode, etc.
-areaConsumption.plot()
 #endregion
 
 #region V Ramp+Storage Multi area : loading parameters
@@ -269,27 +253,11 @@ res= GetElectricSystemModel_GestionMultiNode_with1Storage(areaConsumption,availa
 
 Variables = getVariables_panda(res['model'])
 Constraints = getConstraintsDual_panda(res['model'])
-areaConsumption = res["areaConsumption"]
-Variables['energy'].loc['Storage'] = areaConsumption["Storage"]
+production_df=Variables['energy'].pivot(index=["AREAS","TIMESTAMP"], columns='TECHNOLOGIES', values='energy')
+production_df=pd.concat([production_df,areaConsumption["Storage"]],axis=1)
 
-areaConsumption['Storage'].range()
-model= res["model"]
-stats=res["stats"]
-
-
-PrixTotal
-plt.figure(figsize=(12,5))
-plt.xlabel('Number of requests every 10 minutes')
-
-ax1 = areaConsumption.NewConsumption.plot(color='blue', grid=True, label='Count')
-ax2 = areaConsumption.areaConsumption.plot(color='red', grid=True, secondary_y=True, label='Sum')
-
-areaConsumption["NewConsumption"].max()
-areaConsumption["Storage"].max()
-plt.legend(h1+h2, l1+l2, loc=2)
-plt.show()
-
-plt.scatter(areaConsumption["NewConsumption"], areaConsumption["areaConsumption"])
-plt.show() # Depending on whether you use IPython or interactive mode, etc.
-areaConsumption.plot()
+production_df.sum(axis=0)/10**6 ### energies produites TWh
+production_df.groupby(by="AREAS").sum()/10**6 ### energies produites TWh
+production_df[production_df>0].groupby(by="AREAS").sum()/10**6 ### energies produites TWh
+production_df.max(axis=0)/1000 ### Pmax en GW
 #endregion
