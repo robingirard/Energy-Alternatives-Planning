@@ -255,14 +255,146 @@ plt.show() # Depending on whether you use IPython or interactive mode, etc.
 areaConsumption.plot()
 #endregion
 
-#region V Ramp+Storage Multi area : loading parameters
+#region V Case Storage + Thermal + PV + Wind (Ramp+Storage single area) : loading parameters
+Zones="FR"
+year=2013
+
+Selected_TECHNOLOGIES={'Thermal', 'WindOnShore','Solar',"Curtailement"}
+
+#### reading CSV files
+areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
+                                sep=',',decimal='.',skiprows=0)
+availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
+                                sep=',',decimal='.',skiprows=0)
+TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0,comment="#")
+
+
+#### Selection of subset
+availabilityFactor=availabilityFactor[ availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
+TechParameters=TechParameters[TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
+TechParameters.keys()
+TechParameters.minCapacity[TechParameters.TECHNOLOGIES=='Solar']=90000
+TechParameters.minCapacity[TechParameters.TECHNOLOGIES=='WindOnShore']=12000
+TechParameters[['TECHNOLOGIES','minCapacity','maxCapacity']]
+p_max=10000
+StorageParameters={"p_max" : p_max , "c_max": p_max*10,"efficiency_in": 0.9,"efficiency_out" : 0.9}
+#endregion
+
+#region V Case Storage + Thermal + PV + Wind (Ramp+Storage single area) : solving and loading results
+res= GetElectricSystemModel_PlaningSingleNode_with1Storage(areaConsumption,availabilityFactor,
+                                                      TechParameters,StorageParameters)
+Variables = getVariables_panda(res['model'])
+Constraints = getConstraintsDual_panda(res['model'])
+areaConsumption = res["areaConsumption"]
+
+production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')
+production_df.loc[:,'Storage'] = areaConsumption["Storage"]### put storage in the production time series
+production_df[production_df>0].sum(axis=0)/10**6 ### energies produites TWh
+production_df.max(axis=0)/1000 ### Pmax en GW
+Variables['capacity'] ### capacity en MW
+
+
+Selected_TECHNOLOGIES_Sto=list(Selected_TECHNOLOGIES)
+Selected_TECHNOLOGIES_Sto.append("Storage")
+fig=MyStackedPlotly(x_df=production_df.index,
+                    y_df=production_df[Selected_TECHNOLOGIES_Sto],
+                    Names=Selected_TECHNOLOGIES_Sto)
+fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
+plotly.offline.plot(fig, filename='file.html') ## offline
+stats=res["stats"]
+
+
+PrixTotal
+plt.figure(figsize=(12,5))
+plt.xlabel('Number of requests every 10 minutes')
+
+ax1 = areaConsumption.NewConsumption.plot(color='blue', grid=True, label='Count')
+ax2 = areaConsumption.areaConsumption.plot(color='red', grid=True, secondary_y=True, label='Sum')
+
+areaConsumption["NewConsumption"].max()
+areaConsumption["Storage"].max()
+plt.legend(h1+h2, l1+l2, loc=2)
+plt.show()
+
+plt.scatter(areaConsumption["NewConsumption"], areaConsumption["areaConsumption"])
+plt.show() # Depending on whether you use IPython or interactive mode, etc.
+areaConsumption.plot()
+#endregion
+
+#region VI Case Storage + Thermal + Nuke (Ramp+Storage single area) : loading parameters
+Zones="FR"
+year=2013
+
+Selected_TECHNOLOGIES={'Thermal', 'NewNuke',"Curtailement"}
+
+#### reading CSV files
+areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
+                                sep=',',decimal='.',skiprows=0)
+availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
+                                sep=',',decimal='.',skiprows=0)
+TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0,comment="#")
+
+
+#### Selection of subset
+availabilityFactor=availabilityFactor[ availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
+TechParameters=TechParameters[TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
+TechParameters.keys()
+TechParameters.minCapacity[TechParameters.TECHNOLOGIES=='NewNuke']=63000
+TechParameters.maxCapacity[TechParameters.TECHNOLOGIES=='NewNuke']=120000
+TechParameters[['TECHNOLOGIES','minCapacity','maxCapacity']]
+p_max=10000
+StorageParameters={"p_max" : p_max , "c_max": p_max*10,"efficiency_in": 0.9,"efficiency_out" : 0.9}
+#endregion
+
+#region VI Case Storage + Thermal + Nuke (Ramp+Storage single area) : solving and loading results
+res= GetElectricSystemModel_PlaningSingleNode_with1Storage(areaConsumption,availabilityFactor,
+                                                      TechParameters,StorageParameters)
+Variables = getVariables_panda(res['model'])
+Constraints = getConstraintsDual_panda(res['model'])
+areaConsumption = res["areaConsumption"]
+
+production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')
+production_df.loc[:,'Storage'] = areaConsumption["Storage"]### put storage in the production time series
+production_df[production_df>0].sum(axis=0)/10**6 ### energies produites TWh
+production_df.max(axis=0)/1000 ### Pmax en GW
+Variables['capacity'] ### capacity en MW
+
+
+Selected_TECHNOLOGIES_Sto=list(Selected_TECHNOLOGIES)
+Selected_TECHNOLOGIES_Sto.append("Storage")
+fig=MyStackedPlotly(x_df=production_df.index,
+                    y_df=production_df[Selected_TECHNOLOGIES_Sto],
+                    Names=Selected_TECHNOLOGIES_Sto)
+fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
+plotly.offline.plot(fig, filename='file.html') ## offline
+stats=res["stats"]
+
+
+PrixTotal
+plt.figure(figsize=(12,5))
+plt.xlabel('Number of requests every 10 minutes')
+
+ax1 = areaConsumption.NewConsumption.plot(color='blue', grid=True, label='Count')
+ax2 = areaConsumption.areaConsumption.plot(color='red', grid=True, secondary_y=True, label='Sum')
+
+areaConsumption["NewConsumption"].max()
+areaConsumption["Storage"].max()
+plt.legend(h1+h2, l1+l2, loc=2)
+plt.show()
+
+plt.scatter(areaConsumption["NewConsumption"], areaConsumption["areaConsumption"])
+plt.show() # Depending on whether you use IPython or interactive mode, etc.
+areaConsumption.plot()
+#endregion
+
+#region VI Ramp+Storage Multi area : loading parameters
 Zones="FR_DE_GB_ES"
 year=2016
 Selected_AREAS={"FR","DE"}
 Selected_TECHNOLOGIES={'Thermal', 'OldNuke' } #'NewNuke', 'HydroRiver', 'HydroReservoir','WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
 
 #### reading CSV files
-TechParameters = pd.read_csv(InputFolder+'Planing_MultiNode_DE-FR_AREAS_TECHNOLOGIES.csv',sep=';',decimal=',',comment="#",skiprows=0)
+TechParameters = pd.read_csv(InputFolder+'Planing_MultiNode_DE-FR_TECHNOLOGIES_AREAS.csv',sep=';',decimal=',',comment="#")
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
@@ -284,8 +416,8 @@ for AREA in Selected_AREAS :
 
 #endregion
 
-#region V Ramp+Storage multi area : solving and loading results
-res= GetElectricSystemModel_GestionMultiNode_with1Storage(areaConsumption,availabilityFactor,
+#region VI Ramp+Storage multi area : solving and loading results
+res= GetElectricSystemModel_PlaningMultiNode_with1Storage(areaConsumption,availabilityFactor,
                                                       TechParameters,ExchangeParameters,StorageParameters)
 
 Variables = getVariables_panda(res['model'])
@@ -314,3 +446,4 @@ plt.scatter(areaConsumption["NewConsumption"], areaConsumption["areaConsumption"
 plt.show() # Depending on whether you use IPython or interactive mode, etc.
 areaConsumption.plot()
 #endregion
+
