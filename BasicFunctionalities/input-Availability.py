@@ -16,7 +16,7 @@ availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+
 
 
 #graphe montrant le facteur de disponibilité du nucléaire en fonction de l'heure de l'année
-tabl=availabilityFactor[availabilityFactor['TECHNOLOGIES']=='OldNuke']
+tabl=availabilityFactor[availabilityFactor['TECHNOLOGIES']=='Solar']
 fig=MyPlotly(x_df=tabl.TIMESTAMP,y_df=tabl[['availabilityFactor']],fill=False)
 #fig.show()
 plotly.offline.plot(fig, filename='file.html')

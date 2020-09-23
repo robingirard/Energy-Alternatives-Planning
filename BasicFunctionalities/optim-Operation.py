@@ -39,9 +39,11 @@ availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+
 TechParameters = pd.read_csv(InputFolder+'Gestion-Simple_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0)
 
 #### Selection of subset
-Selected_TECHNOLOGIES={'OldNuke','Thermal'} #you can add technologies here
+Selected_TECHNOLOGIES={'OldNuke','Thermal','Solar','WindOnShore'} #you can add technologies here
 availabilityFactor=availabilityFactor[ availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 TechParameters=TechParameters[TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
+TechParameters.capacity[TechParameters.TECHNOLOGIES=="WindOnShore"]=117000
+TechParameters.capacity[TechParameters.TECHNOLOGIES=="Solar"]=67000
 #endregion
 
 #region I - Simple single area  : Solving and loading results
@@ -51,6 +53,7 @@ else : opt = SolverFactory(solver)
 results=opt.solve(model)
 ## result analysis
 Variables=getVariables_panda(model)
+
 #pour avoir la production en KWh de chaque moyen de prod chaque heure
 production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')
 production_df.sum(axis=0)/10**6 ### energies produites TWh
