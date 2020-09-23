@@ -1,6 +1,37 @@
 import plotly.graph_objects as go
 import plotly
 
+def MyPlotly(x_df,y_df,Names="",fill=True):
+    '''
+    :param x:
+    :param y:
+    :param Names:
+    :return:
+    '''
+    if Names=="" : Names=y_df.columns.values.tolist()
+    fig = go.Figure()
+    i=0
+    for col in y_df.columns:
+        if i==0:
+            if fill :
+                fig.add_trace(go.Scatter(x=x_df, y=y_df[col] , fill='tozeroy',
+                             mode='none' ,name=Names[i])) # fill down to xaxis
+            else :
+                fig.add_trace(go.Scatter(x=x_df, y=y_df[col],mode='lines', name=Names[i]))  # fill down to xaxis
+            colNames=[col]
+        else:
+            colNames.append(col)
+            if fill :
+                fig.add_trace(go.Scatter(x=x_df, y=y_df[col], fill='tozeroy',
+                                     mode='none', name=Names[i]))  # fill to trace0 y
+            else :
+                fig.add_trace(go.Scatter(x=x_df, y=y_df[col],
+                                     mode='lines', name=Names[i]))  # fill to trace0 y
+        i=i+1
+
+    fig.update_xaxes(rangeslider_visible=True)
+    return(fig)
+
 def MyStackedPlotly(x_df,y_df,Names):
     '''
     :param x: 
