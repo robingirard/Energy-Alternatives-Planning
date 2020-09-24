@@ -4,7 +4,6 @@ from pyomo.core import *
 from pyomo.opt import SolverFactory
 
 
-
 def MySolverFactory(solver,solverpath=1):
     if (solverpath==1):
         opt = SolverFactory(solver)

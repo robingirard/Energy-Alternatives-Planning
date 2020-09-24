@@ -6,6 +6,8 @@ from dynprogstorage.wrappers import GenCostFunctionFromMarketPrices
 from numpy import random
 import time
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 #endregion
 
 #region storage optimisation - perfect efficiency
@@ -49,16 +51,16 @@ plt.show()
 
 #region With real market data
 Prices_df=pd.read_csv(InputFolder+'EuropeanMarket_Prices_UTC_2007_2017.csv',sep=',',decimal='.',skiprows=0)
-year = 2010
+year = 2012
 
 PricesYear_df=Prices_df[pd.to_datetime(Prices_df['Dates']).dt.year==year]
 PricesYear_df=PricesYear_df.reset_index()
 nbTime=PricesYear_df.__len__()
-if sum(PricesYear_df['Prices']<0)>0 : PricesYear_df[PricesYear_df['Prices']<0]=0
+if sum(PricesYear_df['Prices']<=0)>0 : PricesYear_df[PricesYear_df['Prices']<=0]=0.000001
 p_max=1.;  c_max=10.*p_max;
 r_in = 0.95; ## rendement d'entrée
 r_out=0.95 ## rendement de sortie
-CostFunction=GenCostFunctionFromMarketPrices(PricesYear_df.Prices.tolist(),r_in=r_in,r_out=r_out)
+CostFunction=GenCostFunctionFromMarketPrices(PricesYear_df.Prices.to_list(),r_in=r_in,r_out=r_out)
 res=CostFunction.OptimMargInt([-p_max/r_out]*nbTime,[p_max*r_in]*nbTime,[0]*nbTime,[c_max]*nbTime)
 Operation=pd.DataFrame(res, columns=["Operation"])
 PricesYear_df=pd.concat([PricesYear_df,Operation],axis=1)
