@@ -10,7 +10,7 @@ dependencies :
     - glpk
     - pip :
       - pyomo
-      - dynprogstorage
+      - dynprogstorage>=0.1.5
       - Mosek
       - xarray
       - plotly
