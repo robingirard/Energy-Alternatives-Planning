@@ -2,7 +2,7 @@
 #region imports
 import os
 InputFolder='Data/input/'
-from dynprogstorage.wrappers import GenCostFunctionFromMarketPrices
+from dynprogstorage.wrappers import GenCostFunctionFromMarketPrices, pmax, pmin
 from numpy import random
 import time
 import pandas as pd
@@ -105,12 +105,12 @@ CostFunction1=GenCostFunctionFromMarketPrices(Prices,r_in=1.,r_out=1.)
 CostFunction2=GenCostFunctionFromMarketPrices(Prices,r_in=0.95,r_out=0.95 )
 res1=CostFunction1.OptimMargInt([-p_max]*nbTime,[p_max]*nbTime,[E_0Bis]*nbTime,[c_maxBis-E_0Bis]*nbTime)
 res2=CostFunction2.OptimMargInt([-p_max/r_out]*nbTime,[p_max*r_in]*nbTime,[E_0]*nbTime,[c_max-E_0]*nbTime)
-numpy.array(res1)
-numpy.array(res2)
+np.array(res1)
+np.array(res2)
 for i in range(len(res1)):
     if (res1[i]>0) : res1[i]=res1[i]*r_in
     else : res1[i]=res1[i]/r_out
-max(abs(numpy.array(res1)-numpy.array(res2)))
+max(abs(np.array(res1)-np.array(res2)))
 ### pas pareil, il faudra supprimer les échanges "non rentables"
 
 ##### two storages with perfect efficiency
@@ -139,19 +139,19 @@ res=CostFunction.OptimMargInt([-p_max/r_out]*nbTime,[p_max*r_in]*nbTime,[E_0]*nb
 ### on peut trouver çà en prenant une fonction coût constante égale à zéro et en choisissant bien les contraintes
 CostFunction0=GenCostFunctionFromMarketPrices([0]*nbTime,r_in=1.,r_out=1.)
 
-P1plus=numpy.array([p_max1*r_in1]*nbTime); P1moins=numpy.array([-p_max1/r_out1]*nbTime);
-P2plus=numpy.array([p_max2*r_in2]*nbTime); P2moins=numpy.array([-p_max2/r_out2]*nbTime);
-C1plus=numpy.array([c_max1-E_01]*nbTime); C1moins=numpy.array([-E_01]*nbTime);
-C2plus=numpy.array([c_max2-E_02]*nbTime); C2moins=numpy.array([-E_02]*nbTime);
-zz=numpy.array(res)
+P1plus=np.array([p_max1*r_in1]*nbTime); P1moins=np.array([-p_max1/r_out1]*nbTime);
+P2plus=np.array([p_max2*r_in2]*nbTime); P2moins=np.array([-p_max2/r_out2]*nbTime);
+C1plus=np.array([c_max1-E_01]*nbTime); C1moins=np.array([-E_01]*nbTime);
+C2plus=np.array([c_max2-E_02]*nbTime); C2moins=np.array([-E_02]*nbTime);
+zz=np.array(res)
 intzz=zz.cumsum()
 lbP = pmax(P1moins,zz-P2plus); ubP = pmin(P1plus,zz-P2moins)
 lbC = pmax(C1moins,intzz-C2plus); ubC = pmin(C1plus,intzz-C2moins)
-min(numpy.array(ubP)-numpy.array(lbP))
-min(numpy.array(ubC)-numpy.array(lbC))
+min(np.array(ubP)-np.array(lbP))
+min(np.array(ubC)-np.array(lbC))
 
 res1=CostFunction0.OptimMargInt(lbP,ubP,lbC,ubC)
-res2=zz-numpy.array(res1)
+res2=zz-np.array(res1)
 
 #endregion
 
