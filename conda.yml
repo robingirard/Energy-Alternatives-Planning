@@ -1,6 +1,6 @@
 name : Etude_TP
 dependencies :
-    - python>=3.8
+    - python=3.8
     - pandas
     - jupyter
     - numpy

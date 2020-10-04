@@ -21,6 +21,8 @@ Ou juste pour mettre à jour l'environnement
     conda env update --file conda.yml 
     
 Si vous utilisez PyCharm vous devez fixer l'environnement dans les préférences "python interpreter" il faut 
+Execute selection
+
 ## 2 - Repertoire Data <a class="anchor" id="CSV"></a>
 contient des données .csv pour le projet (production éolienne, consommarion, disponibilité nucléaire, données technico-économiques), ces fichiers sont chargés dans les différents codes "run"
 
