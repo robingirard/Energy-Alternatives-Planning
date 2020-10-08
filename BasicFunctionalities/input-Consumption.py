@@ -9,11 +9,8 @@ import copy
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 from sklearn import linear_model
-
-#os.chdir('D:\GIT\Etude_TP_CapaExpPlaning-Python')
 from functions.f_consumptionModels import * #Il faut préciser le chemin où vous avez sauvegardé les données csv
 from functions.f_graphicalTools import * #Il faut préciser le chemin où vous avez sauvegardé les données csv
-#data=pd.read_csv('CSV/input/ConsumptionTemperature_1996TO2019_FR.csv')
 #endregion
 
 #region  Load and visualize consumption
@@ -43,7 +40,7 @@ fig=MyStackedPlotly(x_df=ConsoTempeYear_decomposed_df['Date'],
                     y_df=ConsoTempeYear_decomposed_df[["NTS_C","TS_C"]],
                     Names=['Conso non thermosensible','conso thermosensible'])
 fig.update_layout(title_text="Consommation (MWh)", xaxis_title="Date")
- plotly.offline.plot(fig, filename='file.html') ## offline
+plotly.offline.plot(fig, filename='file.html') ## offline
 #fig.show()
 #endregion
 

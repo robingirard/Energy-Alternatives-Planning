@@ -14,7 +14,6 @@ def MySolverFactory(solver,solverpath=1):
             opt = SolverFactory(solver)
     return(opt)
 
-
 def get_SimpleSets(model):
     """
     This function finds all SimpleSets and returns a set with pyomo Sets and associated values

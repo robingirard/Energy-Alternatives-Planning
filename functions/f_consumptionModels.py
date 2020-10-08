@@ -58,17 +58,17 @@ def Recompose(ConsoSeparee_df,Thermosensibilite,Newdata_df=-1, TemperatureThresh
     indexes_Old = np.nonzero(np.in1d(np.arange(0,ConsoSeparee_df.__len__()), np.arange(0,Newdata_df[TemperatureName].__len__())))[0]
     indexes_New = np.nonzero(np.in1d(np.arange(0,Newdata_df[TemperatureName].__len__()), np.arange(0,ConsoSeparee_df.__len__())))[0]
 
-    ConsoSepareeNew_df=ConsoSeparee_df.iloc[indexes_Old,:]
-    ConsoSepareeNew_df.iloc[:, :][TemperatureName]=Newdata_df.iloc[indexes_New, :][TemperatureName].tolist()
-    ConsoSepareeNew_df.TS_C=0
-    ConsoSepareeNew_df.NTS_C=ConsoSeparee_df.NTS_C
+    ConsoSepareeNew_df=ConsoSeparee_df.iloc[indexes_Old,:].copy(deep=True) ## to suppress warning see https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
+    ConsoSepareeNew_df.loc[:, TemperatureName]=Newdata_df.iloc[indexes_New, Newdata_df.columns.get_loc(TemperatureName)].tolist()
+    ConsoSepareeNew_df.loc[:,"TS_C"]=0
+    ConsoSepareeNew_df.loc[:,"NTS_C"]=ConsoSeparee_df.loc[:,"NTS_C"]
 
     for hour in range(24):
         indexesWinterHour = (ConsoSepareeNew_df[TemperatureName] <= TemperatureThreshold) & (pd.to_datetime(ConsoSepareeNew_df[TimeName]).dt.hour == hour)
         ## remove thermal sensitive part according to old temperature
         ConsoSepareeNew_df.loc[indexesWinterHour, 'TS_C'] = Thermosensibilite[hour] * ConsoSepareeNew_df.loc[:,TemperatureName] - Thermosensibilite[hour] * TemperatureThreshold
 
-    ConsoSepareeNew_df[ConsumptionName]=ConsoSepareeNew_df.TS_C+ConsoSepareeNew_df.NTS_C
+    ConsoSepareeNew_df.loc[:,ConsumptionName]= (ConsoSepareeNew_df.loc[:,'TS_C']+ConsoSepareeNew_df.loc[:,'NTS_C'])
     return(ConsoSepareeNew_df)
 
 

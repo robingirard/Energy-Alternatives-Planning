@@ -14,21 +14,20 @@ import sys
 from functions.f_operationModels import *
 from functions.f_optimization import *
 from functions.f_graphicalTools import *
-# Change this if you have other solvers obtained here
-## https://ampl.com/products/solvers/open-source/
-## for eduction this site provides also several professional solvers, that are more efficient than e.g. cbc
 #endregion
 
 InputFolder='Data/input/'
 
 #region Solver location definition
-solver= 'mosek' ## no need for solverpath with mosek.
-BaseSolverPath='/Users/robin.girard/Documents/Code/Packages/solvers/ampl_macosx64'
+
+BaseSolverPath='/Users/robin.girard/Documents/Code/Packages/solvers/ampl_macosx64' ### change this to the folder with knitro ampl ...
+## in order to obtain more solver see see https://ampl.com/products/solvers/open-source/
+## for eduction this site provides also several professional solvers, that are more efficient than e.g. cbc
 sys.path.append(BaseSolverPath)
-solvers= ['gurobi','knitro','cbc'] # 'glpk' is too slow 'cplex' and 'xpress' do not work
+solvers= ['gurobi','knitro','cbc'] # try 'glpk', 'cplex'
 solverpath= {}
 for solver in solvers : solverpath[solver]=BaseSolverPath+'/'+solver
-solver = 'mosek'
+solver= 'mosek' ## no need for solverpath with mosek.
 #endregion
 
 #region I - Simple single area : loading parameters
@@ -42,8 +41,8 @@ TechParameters = pd.read_csv(InputFolder+'Gestion-Simple_TECHNOLOGIES.csv',sep='
 Selected_TECHNOLOGIES={'OldNuke','Thermal','Solar','WindOnShore'} #you can add technologies here
 availabilityFactor=availabilityFactor[ availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 TechParameters=TechParameters[TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
-TechParameters.capacity[TechParameters.TECHNOLOGIES=="WindOnShore"]=117000
-TechParameters.capacity[TechParameters.TECHNOLOGIES=="Solar"]=67000
+TechParameters.loc[TechParameters.TECHNOLOGIES=="WindOnShore",'capacity']=117000
+TechParameters.loc[TechParameters.TECHNOLOGIES=="Solar",'capacity']=67000
 #endregion
 
 #region I - Simple single area  : Solving and loading results
@@ -256,6 +255,7 @@ res= GetElectricSystemModel_GestionMultiNode_with1Storage(areaConsumption,availa
 
 Variables = getVariables_panda(res['model'])
 Constraints = getConstraintsDual_panda(res['model'])
+areaConsumption = res["areaConsumption"]
 production_df=Variables['energy'].pivot(index=["AREAS","TIMESTAMP"], columns='TECHNOLOGIES', values='energy')
 production_df=pd.concat([production_df,areaConsumption["Storage"]],axis=1)
 

@@ -236,23 +236,6 @@ fig=MyStackedPlotly(x_df=production_df.index,
 fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
 stats=res["stats"]
-
-
-PrixTotal
-plt.figure(figsize=(12,5))
-plt.xlabel('Number of requests every 10 minutes')
-
-ax1 = areaConsumption.NewConsumption.plot(color='blue', grid=True, label='Count')
-ax2 = areaConsumption.areaConsumption.plot(color='red', grid=True, secondary_y=True, label='Sum')
-
-areaConsumption["NewConsumption"].max()
-areaConsumption["Storage"].max()
-plt.legend(h1+h2, l1+l2, loc=2)
-plt.show()
-
-plt.scatter(areaConsumption["NewConsumption"], areaConsumption["areaConsumption"])
-plt.show() # Depending on whether you use IPython or interactive mode, etc.
-areaConsumption.plot()
 #endregion
 
 #region V Case Storage + Thermal + PV + Wind (Ramp+Storage single area) : loading parameters
@@ -273,10 +256,10 @@ TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',sep=';
 availabilityFactor=availabilityFactor[ availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 TechParameters=TechParameters[TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 TechParameters.keys()
-TechParameters.minCapacity[TechParameters.TECHNOLOGIES=='Solar']=90000
-TechParameters.minCapacity[TechParameters.TECHNOLOGIES=='WindOnShore']=12000
+TechParameters.loc[TechParameters.TECHNOLOGIES=='Solar','minCapacity']=90000
+TechParameters.loc[TechParameters.TECHNOLOGIES=='WindOnShore','minCapacity']=12000
 TechParameters[['TECHNOLOGIES','minCapacity','maxCapacity']]
-p_max=10000
+p_max=10000 ## storage capacity is not optimized
 StorageParameters={"p_max" : p_max , "c_max": p_max*10,"efficiency_in": 0.9,"efficiency_out" : 0.9}
 #endregion
 
@@ -302,23 +285,6 @@ fig=MyStackedPlotly(x_df=production_df.index,
 fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
 stats=res["stats"]
-
-
-PrixTotal
-plt.figure(figsize=(12,5))
-plt.xlabel('Number of requests every 10 minutes')
-
-ax1 = areaConsumption.NewConsumption.plot(color='blue', grid=True, label='Count')
-ax2 = areaConsumption.areaConsumption.plot(color='red', grid=True, secondary_y=True, label='Sum')
-
-areaConsumption["NewConsumption"].max()
-areaConsumption["Storage"].max()
-plt.legend(h1+h2, l1+l2, loc=2)
-plt.show()
-
-plt.scatter(areaConsumption["NewConsumption"], areaConsumption["areaConsumption"])
-plt.show() # Depending on whether you use IPython or interactive mode, etc.
-areaConsumption.plot()
 #endregion
 
 #region VI Case Storage + Thermal + Nuke (Ramp+Storage single area) : loading parameters
@@ -368,23 +334,6 @@ fig=MyStackedPlotly(x_df=production_df.index,
 fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
 stats=res["stats"]
-
-
-PrixTotal
-plt.figure(figsize=(12,5))
-plt.xlabel('Number of requests every 10 minutes')
-
-ax1 = areaConsumption.NewConsumption.plot(color='blue', grid=True, label='Count')
-ax2 = areaConsumption.areaConsumption.plot(color='red', grid=True, secondary_y=True, label='Sum')
-
-areaConsumption["NewConsumption"].max()
-areaConsumption["Storage"].max()
-plt.legend(h1+h2, l1+l2, loc=2)
-plt.show()
-
-plt.scatter(areaConsumption["NewConsumption"], areaConsumption["areaConsumption"])
-plt.show() # Depending on whether you use IPython or interactive mode, etc.
-areaConsumption.plot()
 #endregion
 
 #region VI Ramp+Storage Multi area : loading parameters
@@ -428,22 +377,5 @@ Variables['energy'].loc['Storage'] = areaConsumption["Storage"]
 areaConsumption['Storage'].range()
 model= res["model"]
 stats=res["stats"]
-
-
-PrixTotal
-plt.figure(figsize=(12,5))
-plt.xlabel('Number of requests every 10 minutes')
-
-ax1 = areaConsumption.NewConsumption.plot(color='blue', grid=True, label='Count')
-ax2 = areaConsumption.areaConsumption.plot(color='red', grid=True, secondary_y=True, label='Sum')
-
-areaConsumption["NewConsumption"].max()
-areaConsumption["Storage"].max()
-plt.legend(h1+h2, l1+l2, loc=2)
-plt.show()
-
-plt.scatter(areaConsumption["NewConsumption"], areaConsumption["areaConsumption"])
-plt.show() # Depending on whether you use IPython or interactive mode, etc.
-areaConsumption.plot()
 #endregion
 
