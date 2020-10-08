@@ -1,1 +1,0 @@
-InputFolder='Data/input/'
