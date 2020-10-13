@@ -1,4 +1,4 @@
-name : Etude_TP
+name : energyalternatives
 dependencies :
     - python=3.8
     - pandas
@@ -16,4 +16,5 @@ dependencies :
       - plotly
       - matplotlib
       - sklearn
+      - docplex
 
