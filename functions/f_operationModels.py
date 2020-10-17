@@ -390,12 +390,20 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
     	return  model.energy[area,t,tech] <= model.capacity[area,tech] * model.availabilityFactor[area,t,tech]
     model.CapacityCtr = Constraint(model.AREAS,model.TIMESTAMP,model.TECHNOLOGIES, rule=CapacityCtr_rule)
 
+    def exchangeEqCtr_rule(model, area, t):  # INEQ forall t
+        return model.exchange[area, area, t] ==0
+    model.exchangeEqCtr = Constraint(model.AREAS, model.TIMESTAMP, rule=exchangeEqCtr_rule)
+
+    def exchangeNegCtr_rule(model, a,b, t):  # INEQ forall t
+        return model.exchange[a, b, t] >=  0
+    model.exchangeNegCtr = Constraint(model.AREAS,model.AREAS, model.TIMESTAMP, rule=exchangeNegCtr_rule)
 
     #contrainte d'equilibre offre demande
     #AREAS x TIMESTAMP x TECHNOLOGIES
     def energyCtr_rule(model,area,t): #INEQ forall t
-    	return sum(model.energy[area,t,tech] for tech in model.TECHNOLOGIES ) >= model.areaConsumption[area,t]
+    	return sum(model.energy[area,t,tech] for tech in model.TECHNOLOGIES ) + sum(model.exchange[b,area,t] for b in model.AREAS ) >= model.areaConsumption[area,t]+sum(model.exchange[area,b,t] for b in model.AREAS )
     model.energyCtr = Constraint(model.AREAS,model.TIMESTAMP,rule=energyCtr_rule)
+
 
     #### 2 - Optional
     ########

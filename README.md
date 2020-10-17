@@ -18,7 +18,7 @@ The installation relies on the use of a conda environment. Instruction is below
 
 ## 1 - Installations  <a class="anchor" id="1.introduction"></a>
 
-    conda create -c conda-forge -n energyalternatives energyalternatives
+    conda env create robin.girard/energyalternatives
     conda activate Etude_TP
     
 Or just to update the environment 

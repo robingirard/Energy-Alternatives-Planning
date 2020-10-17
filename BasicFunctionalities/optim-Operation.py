@@ -169,6 +169,7 @@ production_df.sum(axis=0)/10**6 ### energies produites TWh
 production_df.groupby(by="AREAS").sum()/10**6 ### energies produites TWh
 
 Variables["exchange"].head()
+
 Variables["exchange"].exchange.sum()
 Constraints= getConstraintsDual_panda(model)
 Constraints.keys()
