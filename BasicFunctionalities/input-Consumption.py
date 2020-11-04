@@ -2,6 +2,7 @@ InputFolder='Data/input/'
 
 #region importation of modules
 import numpy as np
+import seaborn as sns
 import pandas as pd
 import csv
 import datetime
@@ -98,4 +99,23 @@ fig=MyStackedPlotly(x_df=EV_Consumption_df['Date'],
 fig.update_layout(title_text="Consommation (MWh)", xaxis_title="Date")
 plotly.offline.plot(fig, filename='file.html') ## offline
 #fig.show()
+#endregion
+
+#region multi zone
+Zones="FR_DE_GB_ES"
+year=2016 #only possible year
+
+#### reading CSV files
+areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
+                                sep=',',decimal='.',skiprows=0)
+fig = go.Figure()
+pal = sns.color_palette("bright", 4); i=0; #https://chrisalbon.com/python/data_visualization/seaborn_color_palettes/
+for region in ["FR","DE","GB"]: ### problem with spain data
+    tabl=areaConsumption[areaConsumption['AREAS']==region]
+    fig.add_trace(go.Scatter(x=tabl['TIMESTAMP'],y=tabl['areaConsumption'],
+                             line=dict(color=pal.as_hex()[i],width=1),
+                             name=region))
+    i=i+1;
+#fig.show()
+plotly.offline.plot(fig, filename='file.html')
 #endregion

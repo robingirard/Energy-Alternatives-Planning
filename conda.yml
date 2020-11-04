@@ -8,6 +8,7 @@ dependencies :
     - pytest
     - pip
     - glpk
+    - seaborn
     - pip :
       - pyomo
       - dynprogstorage>=0.1.5
