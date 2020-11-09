@@ -1,5 +1,14 @@
 
 #region importation of modules
+import os
+myhost = os.uname()[1]
+if (myhost=="jupyter-sop"):
+    ## for https://jupyter-sop.mines-paristech.fr/ users, you need to
+    #  (1) run the following in a terminal
+    os.system("/opt/mosek/9.2/tools/platform/linux64x86/bin/lmgrd -c /opt/mosek/9.2/tools/platform/linux64x86/bin/mosek.lic -l lmgrd.log")
+    #  (2) definition of license
+    os.environ["MOSEKLM_LICENSE_FILE"] = '@jupyter-sop'
+    
 import numpy as np
 import pandas as pd
 import csv
