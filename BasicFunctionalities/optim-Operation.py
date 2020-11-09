@@ -164,7 +164,7 @@ areaConsumption=areaConsumption[areaConsumption.AREAS.isin(Selected_AREAS)]
 availabilityFactor=availabilityFactor[availabilityFactor.AREAS.isin(Selected_AREAS)& availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 #endregion
 
-#region III - Ramp multiple area : solving and loading results
+#region III - Ramp Ctrs multiple area : solving and loading results
 ### small data cleaning
 availabilityFactor.availabilityFactor[availabilityFactor.availabilityFactor>1]=1
 model = GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,TechParameters,ExchangeParameters)
@@ -179,10 +179,14 @@ production_df.sum(axis=0)/10**6 ### energies produites TWh
 production_df.groupby(by="AREAS").sum()/10**6 ### energies produites TWh
 
 Variables["exchange"].head()
-
+A=Variables["exchange"]
+Variables["exchange"].columns =['AREAS1', 'AREAS2', 'TIMESTAMP', 'exchange']
+FR=Variables["exchange"][Variables["exchange"].AREAS1=="FR"]
+DE=Variables["exchange"][Variables["exchange"].AREAS1=="DE"]
 Variables["exchange"].exchange.sum()
 Constraints= getConstraintsDual_panda(model)
 Constraints.keys()
+Constraints['energyCtr']
 #endregion
 
 #region IV Ramp+Storage single area : loading parameters

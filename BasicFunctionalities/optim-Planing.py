@@ -380,9 +380,9 @@ res= GetElectricSystemModel_PlaningMultiNode_with1Storage(areaConsumption,availa
 Variables = getVariables_panda(res['model'])
 Constraints = getConstraintsDual_panda(res['model'])
 areaConsumption = res["areaConsumption"]
-Variables['energy'].loc['Storage'] = areaConsumption["Storage"]
+#Variables['energy'].loc['Storage'] = areaConsumption["Storage"]
 
-areaConsumption['Storage'].range()
+#areaConsumption['Storage'].range()
 model= res["model"]
 stats=res["stats"]
 #endregion

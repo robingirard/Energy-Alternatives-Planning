@@ -232,7 +232,8 @@ def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availa
 
         TotalCols[cpt] = getVariables_panda(model)['energyCosts'].sum()[1]
         Prix = Constraints["energyCtr"].assign(Prix=lambda x: x.energyCtr * 10 ** 6).Prix.to_numpy()
-        valueAtZero = Prix * (TotalCols[cpt] / sum(Prix * Prix) - zz[cpt])
+        Prix[Prix <= 0] = 0.0000000001
+        valueAtZero =  TotalCols[cpt] - Prix * zz[cpt]
         tmpCost = GenCostFunctionFromMarketPrices_dict(Prix, r_in=StorageParameters['efficiency_in'],
                                                        r_out=StorageParameters['efficiency_out'],
                                                        valueAtZero=valueAtZero)
@@ -380,9 +381,24 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
 
     #Exchange capacity constraint (duplicate of variable definition)
     # AREAS x AREAS x TIMESTAMP
-    def exchangeCtr_rule(model,a, b, t): #INEQ forall area.axarea.b in AREASxAREAS  t in TIMESTAMP
-        return model.exchange[a,b,t]  <= model.maxExchangeCapacity[a,b] ;
-    model.exchangeCtr = Constraint(model.AREAS,model.AREAS,model.TIMESTAMP, rule=exchangeCtr_rule)
+    def exchangeCtrPlus_rule(model,a, b, t): #INEQ forall area.axarea.b in AREASxAREAS  t in TIMESTAMP
+        if a!=b:
+            return model.exchange[a,b,t]  <= model.maxExchangeCapacity[a,b] ;
+        else:
+            return model.exchange[a, a, t] == 0
+    model.exchangeCtrPlus = Constraint(model.AREAS,model.AREAS,model.TIMESTAMP, rule=exchangeCtrPlus_rule)
+
+    def exchangeCtrMoins_rule(model,a, b, t): #INEQ forall area.axarea.b in AREASxAREAS  t in TIMESTAMP
+        if a!=b:
+            return model.exchange[a,b,t]  >= -model.maxExchangeCapacity[a,b] ;
+        else:
+            return model.exchange[a, a, t] == 0
+    model.exchangeCtrMoins = Constraint(model.AREAS,model.AREAS,model.TIMESTAMP, rule=exchangeCtrMoins_rule)
+
+    def exchangeCtr2_rule(model,a, b, t): #INEQ forall area.axarea.b in AREASxAREAS  t in TIMESTAMP
+        return model.exchange[a,b,t]  == -model.exchange[b,a,t] ;
+    model.exchangeCtr2 = Constraint(model.AREAS,model.AREAS,model.TIMESTAMP, rule=exchangeCtr2_rule)
+
 
     #Capacity constraint
     #AREAS x TIMESTAMP x TECHNOLOGIES
@@ -390,20 +406,16 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
     	return  model.energy[area,t,tech] <= model.capacity[area,tech] * model.availabilityFactor[area,t,tech]
     model.CapacityCtr = Constraint(model.AREAS,model.TIMESTAMP,model.TECHNOLOGIES, rule=CapacityCtr_rule)
 
-    def exchangeEqCtr_rule(model, area, t):  # INEQ forall t
-        return model.exchange[area, area, t] ==0
-    model.exchangeEqCtr = Constraint(model.AREAS, model.TIMESTAMP, rule=exchangeEqCtr_rule)
-
-    def exchangeNegCtr_rule(model, a,b, t):  # INEQ forall t
-        return model.exchange[a, b, t] >=  0
-    model.exchangeNegCtr = Constraint(model.AREAS,model.AREAS, model.TIMESTAMP, rule=exchangeNegCtr_rule)
 
     #contrainte d'equilibre offre demande
     #AREAS x TIMESTAMP x TECHNOLOGIES
     def energyCtr_rule(model,area,t): #INEQ forall t
-    	return sum(model.energy[area,t,tech] for tech in model.TECHNOLOGIES ) + sum(model.exchange[b,area,t] for b in model.AREAS ) >= model.areaConsumption[area,t]+sum(model.exchange[area,b,t] for b in model.AREAS )
+    	return sum(model.energy[area,t,tech] for tech in model.TECHNOLOGIES ) + sum(model.exchange[b,area,t] for b in model.AREAS ) >= model.areaConsumption[area,t]
     model.energyCtr = Constraint(model.AREAS,model.TIMESTAMP,rule=energyCtr_rule)
 
+   # def energyCtr_rule(model,t): #INEQ forall t
+   # 	return sum(model.energy[t,tech] for tech in model.TECHNOLOGIES ) >= model.areaConsumption[t]
+   # model.energyCtr = Constraint(model.TIMESTAMP,rule=energyCtr_rule)
 
     #### 2 - Optional
     ########
@@ -536,7 +548,8 @@ def GetElectricSystemModel_GestionMultiNode_with1Storage(areaConsumption,availab
             #Constraints["energyCtr"]=Constraints["energyCtr"].set_index(["AREAS","TIMESTAMP"])
 
             Prix = Constraints["energyCtr"][Constraints["energyCtr"].AREAS==AREA].assign(Prix=lambda x: x.energyCtr * 10 ** 6).Prix.to_numpy()
-            valueAtZero = Prix * (TotalCols / sum(Prix * Prix) - zz[AREA][cpt])
+            Prix[Prix <= 0] = 0.0000000001
+            valueAtZero =  TotalCols - Prix * zz[AREA][cpt]
             tmpCost = GenCostFunctionFromMarketPrices_dict(Prix, r_in=StorageParameters[indexStorage].efficiency_in.tolist()[0],
                                                        r_out=StorageParameters[indexStorage].efficiency_out.tolist()[0],
                                                        valueAtZero=valueAtZero)
