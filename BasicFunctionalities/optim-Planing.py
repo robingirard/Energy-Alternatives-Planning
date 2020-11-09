@@ -8,7 +8,7 @@ if (myhost=="jupyter-sop"):
     os.system("/opt/mosek/9.2/tools/platform/linux64x86/bin/lmgrd -c /opt/mosek/9.2/tools/platform/linux64x86/bin/mosek.lic -l lmgrd.log")
     #  (2) definition of license
     os.environ["MOSEKLM_LICENSE_FILE"] = '@jupyter-sop'
-    
+
 import numpy as np
 import pandas as pd
 import csv
@@ -28,9 +28,8 @@ from functions.f_graphicalTools import *
 ## for eduction this site provides also several professional solvers, that are more efficient than e.g. cbc
 #endregion
 
+#region Solver and data location definition
 InputFolder='Data/input/'
-
-#region Solver location definition
 solver= 'mosek' ## no need for solverpath with mosek.
 BaseSolverPath='/Users/robin.girard/Documents/Code/Packages/solvers/ampl_macosx64'
 sys.path.append(BaseSolverPath)
