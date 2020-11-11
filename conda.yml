@@ -9,6 +9,7 @@ dependencies :
     - pip
     - glpk
     - seaborn
+    - qgrid
     - pip :
       - pyomo
       - dynprogstorage>=0.1.5

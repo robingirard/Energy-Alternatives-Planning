@@ -48,11 +48,11 @@ availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+
 TechParameters = pd.read_csv(InputFolder+'Gestion-Simple_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0)
 
 #### Selection of subset
-Selected_TECHNOLOGIES={'OldNuke','Thermal','Solar','WindOnShore'} #you can add technologies here
+Selected_TECHNOLOGIES={'OldNuke','CCG'} #you can add technologies here
 availabilityFactor=availabilityFactor[ availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 TechParameters=TechParameters[TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
-TechParameters.loc[TechParameters.TECHNOLOGIES=="WindOnShore",'capacity']=117000
-TechParameters.loc[TechParameters.TECHNOLOGIES=="Solar",'capacity']=67000
+#TechParameters.loc[TechParameters.TECHNOLOGIES=="WindOnShore",'capacity']=117000
+#TechParameters.loc[TechParameters.TECHNOLOGIES=="Solar",'capacity']=67000
 #endregion
 
 #region I - Simple single area  : Solving and loading results
