@@ -1,4 +1,4 @@
-#maxExchangeCapacity;;MW
-AREAS;AREAS;maxExchangeCapacity
-FR;DE;20000
-DE;FR;20000
+#maxExchangeCapacity,,MW
+AREAS,AREAS,maxExchangeCapacity
+FR,DE,9000
+DE,FR,9000

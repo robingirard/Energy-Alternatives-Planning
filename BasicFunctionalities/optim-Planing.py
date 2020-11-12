@@ -48,10 +48,10 @@ Zones="FR" ; year=2013
 #### reading areaConsumption availabilityFactor and TechParameters CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0)
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0)
-TechParameters = pd.read_csv(InputFolder+'Planing-Simple_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0,comment="#")
+TechParameters = pd.read_csv(InputFolder+'Planing-Simple_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#")
 
 #### Selection of subset
-Selected_TECHNOLOGIES={'OldNuke','Thermal'} #you can add technologies here
+Selected_TECHNOLOGIES={'OldNuke','CCG'} #you can add technologies here
 availabilityFactor=availabilityFactor[ availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 TechParameters=TechParameters[TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 #endregion
@@ -97,19 +97,19 @@ round(energyCtrDual.energyCtr,2).unique()
 CapacityCtrDual=Constraints['CapacityCtr'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='CapacityCtr')*1000000;
 round(CapacityCtrDual,2)
 round(CapacityCtrDual.OldNuke,2).unique() ## if you increase by Delta the installed capacity of nuke you decrease by xxx the cost when nuke is not sufficient
-round(CapacityCtrDual.Thermal,2).unique() ## increasing the capacity of Thermal as no effect on prices
+round(CapacityCtrDual.CCG,2).unique() ## increasing the capacity of CCG as no effect on prices
 #endregion
 
 #region II - Ramp Single area : loading parameters loading parameterscase with ramp constraints
 Zones="FR"
 year=2013
-Selected_TECHNOLOGIES={'OldNuke','Thermal'} #you'll add 'Solar' ,'WindOnShore' after
+Selected_TECHNOLOGIES={'OldNuke','CCG'} #you'll add 'Solar' ,'WindOnShore' after
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
-TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0,comment="#")
+TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#")
 
 #### Selection of subset
 availabilityFactor=availabilityFactor[availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
@@ -148,24 +148,24 @@ round(energyCtrDual.energyCtr,2).unique()
 CapacityCtrDual=Constraints['CapacityCtr'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='CapacityCtr')*1000000;
 round(CapacityCtrDual,2)
 round(CapacityCtrDual.OldNuke,2).unique() ## if you increase by Delta the installed capacity of nuke you decrease by xxx the cost when nuke is not sufficient
-round(CapacityCtrDual.Thermal,2).unique() ## increasing the capacity of Thermal as no effect on prices
+round(CapacityCtrDual.CCG,2).unique() ## increasing the capacity of CCG as no effect on prices
 #endregion
 
 #region III - Ramp multiple area : loading parameters
 Zones="FR_DE_GB_ES"
 year=2016
 Selected_AREAS={"FR","DE"}
-Selected_TECHNOLOGIES={'Thermal', 'OldNuke' } #'NewNuke', 'HydroRiver', 'HydroReservoir','WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
-Selected_TECHNOLOGIES={'Thermal', 'OldNuke', 'NewNuke', 'HydroRiver', 'HydroReservoir',
+Selected_TECHNOLOGIES={'CCG', 'OldNuke' } #'NewNuke', 'HydroRiver', 'HydroReservoir','WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
+Selected_TECHNOLOGIES={'CCG', 'OldNuke', 'NewNuke', 'HydroRiver', 'HydroReservoir',
        'WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
-TechParameters = pd.read_csv(InputFolder+'Planing_MultiNode_DE-FR_TECHNOLOGIES_AREAS.csv',sep=';',decimal=',',skiprows=0,comment="#")
+TechParameters = pd.read_csv(InputFolder+'Planing_MultiNode_DE-FR_TECHNOLOGIES_AREAS.csv',sep=',',decimal='.',skiprows=0,comment="#")
 
-ExchangeParameters = pd.read_csv(InputFolder+'Hypothese_DE-FR_AREAS_AREAS.csv',sep=';',decimal=',',skiprows=0,comment="#")
+ExchangeParameters = pd.read_csv(InputFolder+'Hypothese_DE-FR_AREAS_AREAS.csv',sep=',',decimal='.',skiprows=0,comment="#")
 #### Selection of subset
 TechParameters=TechParameters[TechParameters.AREAS.isin(Selected_AREAS)&TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 areaConsumption=areaConsumption[areaConsumption.AREAS.isin(Selected_AREAS)]
@@ -204,14 +204,14 @@ Constraints.keys()
 Zones="FR"
 year=2013
 
-Selected_TECHNOLOGIES={'Thermal', 'OldNuke', 'WindOnShore',"Curtailement"}
+Selected_TECHNOLOGIES={'CCG', 'OldNuke', 'WindOnShore',"Curtailement"}
 
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
-TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0,comment="#")
+TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#")
 
 
 #### Selection of subset
@@ -246,18 +246,18 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 stats=res["stats"]
 #endregion
 
-#region V Case Storage + Thermal + PV + Wind (Ramp+Storage single area) : loading parameters
+#region V Case Storage + CCG + PV + Wind (Ramp+Storage single area) : loading parameters
 Zones="FR"
 year=2013
 
-Selected_TECHNOLOGIES={'Thermal', 'WindOnShore','Solar',"Curtailement"}
+Selected_TECHNOLOGIES={'CCG', 'WindOnShore','Solar',"Curtailement"}
 
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
-TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0,comment="#")
+TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#")
 
 
 #### Selection of subset
@@ -271,7 +271,7 @@ p_max=10000 ## storage capacity is not optimized
 StorageParameters={"p_max" : p_max , "c_max": p_max*10,"efficiency_in": 0.9,"efficiency_out" : 0.9}
 #endregion
 
-#region V Case Storage + Thermal + PV + Wind (Ramp+Storage single area) : solving and loading results
+#region V Case Storage + CCG + PV + Wind (Ramp+Storage single area) : solving and loading results
 res= GetElectricSystemModel_PlaningSingleNode_with1Storage(areaConsumption,availabilityFactor,
                                                       TechParameters,StorageParameters)
 Variables = getVariables_panda(res['model'])
@@ -295,18 +295,18 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 stats=res["stats"]
 #endregion
 
-#region VI Case Storage + Thermal + Nuke (Ramp+Storage single area) : loading parameters
+#region VI Case Storage + CCG + Nuke (Ramp+Storage single area) : loading parameters
 Zones="FR"
 year=2013
 
-Selected_TECHNOLOGIES={'Thermal', 'NewNuke',"Curtailement"}
+Selected_TECHNOLOGIES={'CCG', 'NewNuke',"Curtailement"}
 
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
-TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',sep=';',decimal=',',skiprows=0,comment="#")
+TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#")
 
 
 #### Selection of subset
@@ -320,7 +320,7 @@ p_max=10000
 StorageParameters={"p_max" : p_max , "c_max": p_max*10,"efficiency_in": 0.9,"efficiency_out" : 0.9}
 #endregion
 
-#region VI Case Storage + Thermal + Nuke (Ramp+Storage single area) : solving and loading results
+#region VI Case Storage + CCG + Nuke (Ramp+Storage single area) : solving and loading results
 res= GetElectricSystemModel_PlaningSingleNode_with1Storage(areaConsumption,availabilityFactor,
                                                       TechParameters,StorageParameters)
 Variables = getVariables_panda(res['model'])
@@ -348,16 +348,16 @@ stats=res["stats"]
 Zones="FR_DE_GB_ES"
 year=2016
 Selected_AREAS={"FR","DE"}
-Selected_TECHNOLOGIES={'Thermal', 'OldNuke' } #'NewNuke', 'HydroRiver', 'HydroReservoir','WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
+Selected_TECHNOLOGIES={'CCG', 'OldNuke' } #'NewNuke', 'HydroRiver', 'HydroReservoir','WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
 
 #### reading CSV files
-TechParameters = pd.read_csv(InputFolder+'Planing_MultiNode_DE-FR_TECHNOLOGIES_AREAS.csv',sep=';',decimal=',',comment="#")
+TechParameters = pd.read_csv(InputFolder+'Planing_MultiNode_DE-FR_TECHNOLOGIES_AREAS.csv',sep=',',decimal='.',comment="#")
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
 
-ExchangeParameters = pd.read_csv(InputFolder+'Hypothese_DE-FR_AREAS_AREAS.csv',sep=';',decimal=',',skiprows=0,comment="#")
+ExchangeParameters = pd.read_csv(InputFolder+'Hypothese_DE-FR_AREAS_AREAS.csv',sep=',',decimal='.',skiprows=0,comment="#")
 #### Selection of subset
 TechParameters=TechParameters[TechParameters.AREAS.isin(Selected_AREAS)&TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 areaConsumption=areaConsumption[areaConsumption.AREAS.isin(Selected_AREAS)]
@@ -386,4 +386,3 @@ areaConsumption = res["areaConsumption"]
 model= res["model"]
 stats=res["stats"]
 #endregion
-

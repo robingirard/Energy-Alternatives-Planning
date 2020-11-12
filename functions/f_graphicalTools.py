@@ -1,5 +1,6 @@
 import plotly.graph_objects as go
 import plotly
+import pandas as pd
 
 def MyPlotly(x_df,y_df,Names="",fill=True):
     '''
@@ -78,7 +79,25 @@ def AppendMyStackedPlotly(fig,x_df,y_df,Names):
     fig.update_xaxes(rangeslider_visible=True)
     return(fig)
 
-def MyAreaStackedPlot(df,Selected_TECHNOLOGIES=-1,AREA_name="AREAS",TechName='TECHNOLOGIES'):
+
+def EnergyAndExchange2Prod(Variables,EnergyName='energy',exchangeName='Exchange'):
+    Variables["exchange"].columns = ['AREAS1', 'AREAS2', 'TIMESTAMP', 'exchange']
+    AREAS = Variables['energy'].AREAS.unique()
+    production_df = Variables['energy'].pivot(index=["TIMESTAMP", "AREAS"], columns='TECHNOLOGIES', values='energy')
+    ToAREA=[]
+    for AREA in AREAS:
+        ToAREA.append(Variables["exchange"].\
+            loc[(Variables["exchange"].AREAS2 == AREA), ["TIMESTAMP", "exchange",
+                                                                                              "AREAS1",
+                                                                                              "AREAS2"]].\
+            rename(columns={"AREAS2": "AREAS"}).\
+            pivot(index=["TIMESTAMP", "AREAS"], columns='AREAS1', values='exchange'))
+    ToAREA_pd=pd.concat(ToAREA)
+    production_df = production_df.merge(ToAREA_pd, how='inner', left_on=["TIMESTAMP","AREAS"], right_on=["TIMESTAMP","AREAS"])
+    #exchange analysis
+    return(production_df);
+
+def MyAreaStackedPlot_tidy(df,Selected_TECHNOLOGIES=-1,AREA_name="AREAS",TechName='TECHNOLOGIES'):
     if (Selected_TECHNOLOGIES==-1):
         Selected_TECHNOLOGIES=df[TechName].unique().tolist()
     AREAS=df[AREA_name].unique().tolist()
@@ -115,6 +134,48 @@ def MyAreaStackedPlot(df,Selected_TECHNOLOGIES=-1,AREA_name="AREAS",TechName='TE
         ])
 
     return(fig)
+
+
+def MyAreaStackedPlot(df_,Selected_TECHNOLOGIES=-1,AREA_name="AREAS"):
+    df=df_.copy()
+    df.reset_index(inplace=True)
+    if (Selected_TECHNOLOGIES==-1):
+        Selected_TECHNOLOGIES=df.columns.unique().drop(['TIMESTAMP','AREAS']).tolist()
+    AREAS=df[AREA_name].unique().tolist()
+
+    visible={}
+    for AREA in AREAS: visible[AREA] = []
+    for AREA in AREAS:
+        for AREA2 in AREAS:
+            if AREA2==AREA:
+                for TECH in Selected_TECHNOLOGIES:
+                    visible[AREA2].append(True)
+            else :
+                for TECH in Selected_TECHNOLOGIES:
+                    visible[AREA2].append(False)
+
+    fig = go.Figure()
+    dicts=[]
+    for AREA in AREAS:
+        production_df_ = df[df["AREAS"]==AREA]
+        fig = AppendMyStackedPlotly(fig,x_df=production_df_.index,
+                            y_df=production_df_[Selected_TECHNOLOGIES],
+                            Names=list(Selected_TECHNOLOGIES))
+        dicts.append(dict(label=AREA,
+             method="update",
+             args=[{"visible": visible[AREA]},
+                   {"title": AREA }]))
+
+    fig.update_layout(
+        updatemenus=[
+            dict(
+                active=0,
+                buttons=list(dicts),
+            )
+        ])
+
+    return(fig)
+
 
 
 def plotDecomposedConso(x_df,y_df, Tofile=False, TimeName='Date'):

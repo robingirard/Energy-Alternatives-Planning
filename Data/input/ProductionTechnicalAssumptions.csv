@@ -1,33 +1,33 @@
-﻿#InstalledPower GW;;;;;;;;;
-#ProducedEnergy TWh/yea;;;;;;;;;
-#Germany numbers https://fr.wikipedia.org/wiki/%C3%89lectricit%C3%A9_en_Allemagne;;;;;;;;;
-#Germany numbers https://allemagne-energies.com/bilans-energetiques/#:~:text=%3B%20BDEW%202020b).-,Puissance%20install%C3%A9e,(Allemagne%2DEnergies%202020a).;;;;;;;;;
-YEAR;AREAS;TECHNOLOGIES;capacity;ProducedEnergy;EnergyNbhourCap;_RampConstraintPlus;_RampConstraintMoins;RampConstraintPlus2;RampConstraintMoins2
-2019;FR;TAC;4000;3,2;0;0;0;0;0
-2019;FR;Coal;2000;1;0;0,1;0,1;0;0
-2019;FR;CCG;12000;38,6;0;0,1;0,1;0;0
-2019;FR;OldNuke;63000;413;0;0,1;0,1;0;0
-2019;FR;NukeCarrene;0;0;0;0;0;0;0
-2019;FR;NewNuke;0;0;0;0;0;0;0
-2019;FR;WindOnShore;14900;29;0;0;0;0;0
-2019;FR;WindOffShore;0;0;0;0;0;0;0
-2019;FR;HydroLake;12500;33;3638,1;0;0;0;0
-2019;FR;HydroRiver;7500;30;0;0;0;0;0
-2019;FR;Solar;9600;11;0;0;0;0;0
-2019;FR;ResidentialRoofTopSolar;0;0;0;0;0;0;0
-2019;FR;IndusRoofTopSolar;0;0;0;0;0;0;0
-2019;FR;curtailment ;10000;0;0;0;0;0;0
-2019;DE;TAC;3;0;0;0;0;0;0
-2019;DE;Coal;30;57;0;0,1;0,1;0;0
-2019;DE;Lignite;23;113;0;0,1;0,1;0;0
-2019;DE;OldNuke;8,1;75;0;0,1;0,1;0;0
-2019;DE;CCG;28;91;0;0,1;0,1;0;0
-2019;DE;Biomass;9,6;44,6;0;0;0;0;0
-2019;DE;WindOnShore;53100;101;0;0;0;0;0
-2019;DE;WindOffShore;7500;24,7;0;0;0;0;0
-2019;DE;HydroLake;0;0;3638,1;0;0;0;0
-2019;DE;HydroRiver;14,6;20,2;0;0;0;0;0
-2019;DE;Solar;49;47,5;0;0;0;0;0
-2019;DE;ResidentialRoofTopSolar;0;0;0;0;0;0;0
-2019;DE;IndusRoofTopSolar;0;0;0;0;0;0;0
-2019;DE;curtailment ;10000;0;0;0;0;0;0
+﻿#InstalledPower GW,,,,,,,,,
+#ProducedEnergy TWh/yea,,,,,,,,,
+#Germany numbers https://fr.wikipedia.org/wiki/%C3%89lectricit%C3%A9_en_Allemagne,,,,,,,,,
+#Germany numbers https://allemagne-energies.com/bilans-energetiques/#:~:text=%3B%20BDEW%202020b).-.Puissance%20install%C3%A9e.(Allemagne%2DEnergies%202020a).,,,,,,,,,
+YEAR,AREAS,TECHNOLOGIES,capacity,ProducedEnergy,EnergyNbhourCap,RampConstraintPlus,RampConstraintMoins,RampConstraintPlus2,RampConstraintMoins2
+2019,FR,TAC,4000,3.2,0,0,0,0,0
+2019,FR,Coal,2000,1,0,0.06,0.06,0,0
+2019,FR,CCG,12000,38.6,0,0.06,0.06,0,0
+2019,FR,OldNuke,63000,413,0,0.04,0.04,0,0
+2019,FR,NukeCarrene,0,0,0,0,0,0,0
+2019,FR,NewNuke,0,0,0,0,0,0,0
+2019,FR,WindOnShore,14900,29,0,0,0,0,0
+2019,FR,WindOffShore,0,0,0,0,0,0,0
+2019,FR,HydroLake,12500,33,3638.1,0,0,0,0
+2019,FR,HydroRiver,7500,30,0,0,0,0,0
+2019,FR,Solar,9600,11,0,0,0,0,0
+2019,FR,ResidentialRoofTopSolar,0,0,0,0,0,0,0
+2019,FR,IndusRoofTopSolar,0,0,0,0,0,0,0
+2019,FR,curtailment ,10000,0,0,0,0,0,0
+2019,DE,TAC,3000,0,0,0,0,0,0
+2019,DE,Coal,30000,57,0,0.05,0.05,0,0
+2019,DE,Lignite,23000,113,0,0.05,0.05,0,0
+2019,DE,OldNuke,8100,75,0,0.04,0.04,0,0
+2019,DE,CCG,28000,91,0,0.06,0.06,0,0
+2019,DE,Biomass,9600,44.6,0,0,0,0,0
+2019,DE,WindOnShore,53100,101,0,0,0,0,0
+2019,DE,WindOffShore,7500,24.7,0,0,0,0,0
+2019,DE,HydroLake,0,0,3638.1,0,0,0,0
+2019,DE,HydroRiver,14600,20.2,0,0,0,0,0
+2019,DE,Solar,49000,47.5,0,0,0,0,0
+2019,DE,ResidentialRoofTopSolar,0,0,0,0,0,0,0
+2019,DE,IndusRoofTopSolar,0,0,0,0,0,0,0
+2019,DE,curtailment ,10000,0,0,0,0,0,0

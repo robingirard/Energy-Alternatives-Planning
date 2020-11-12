@@ -106,14 +106,16 @@ def GetElectricSystemModel_PlaningSingleNode(areaConsumption,availabilityFactor,
     
     # energyCosts definition Constraints       
     def energyCostsDef_rule(model,tech): #EQ forall tech in TECHNOLOGIES   energyCosts  = sum{t in TIMESTAMP} energyCost[tech]*energy[t,tech] / 1E6;
-        temp=model.energyCost[tech]/10**6 ; 
+        temp=model.energyCost[tech]#/10**6 ;
         return sum(temp*model.energy[t,tech] for t in model.TIMESTAMP) == model.energyCosts[tech]
     model.energyCostsCtr = Constraint(model.TECHNOLOGIES, rule=energyCostsDef_rule)    
     
     # capacityCosts definition Constraints
     def capacityCostsDef_rule(model,tech): #EQ forall tech in TECHNOLOGIES   energyCosts  = sum{t in TIMESTAMP} energyCost[tech]*energy[t,tech] / 1E6;
-        temp=model.capacityCosts[tech]/10**6 ; 
-        return model.capacityCost[tech]*len(model.TIMESTAMP)/8760*model.capacity[tech] / 10**6 == model.capacityCosts[tech]
+        temp=model.capacityCosts[tech]#/10**6 ;
+        return model.capacityCost[tech]*len(model.TIMESTAMP)/8760*model.capacity[tech] == model.capacityCosts[tech]
+        #return model.capacityCost[tech] * len(model.TIMESTAMP) / 8760 * model.capacity[tech] / 10 ** 6 == model.capacityCosts[tech]
+
     model.capacityCostsCtr = Constraint(model.TECHNOLOGIES, rule=capacityCostsDef_rule)    
 
 
@@ -259,7 +261,7 @@ def GetElectricSystemModel_PlaningSingleNode_with1Storage(areaConsumption,availa
 
 
         TotalCols[cpt] = getVariables_panda(model)['energyCosts'].sum()[1]
-        Prix = Constraints["energyCtr"].assign(Prix=lambda x: x.energyCtr * 10 ** 6).Prix.to_numpy()
+        Prix = Constraints["energyCtr"].assign(Prix=lambda x: x.energyCtr ).Prix.to_numpy()
         Prix[Prix<=0]=0.0000000001
         valueAtZero =  TotalCols[cpt] - Prix * zz[cpt]
         tmpCost = GenCostFunctionFromMarketPrices_dict(Prix, r_in=StorageParameters['efficiency_in'],
@@ -323,7 +325,7 @@ def OptimStockage(n,i=4):
             results=opt.solve(model)
             Constraints= getConstraintsDual_panda(model)
             TotalCols[cpt]=getVariables_panda(model)['energyCosts'].sum()[1]
-            Prix=Constraints["energyCtr"].assign(Prix=lambda x: x.energyCtr *10**6).Prix.to_numpy()
+            Prix=Constraints["energyCtr"].assign(Prix=lambda x: x.energyCtr ).Prix.to_numpy()
             valueAtZero=Prix*(TotalCols[cpt]/sum(Prix*Prix)-zz[cpt])
             tmpCost=GenCostFunctionFromMarketPrices_dict(Prix,r_in=0.95,r_out=0.95,valueAtZero=valueAtZero)
             if (cpt==0): CostFunction[cpt]=GenCostFunctionFromMarketPrices(Prix,r_in=0.95,r_out=0.95,valueAtZero=valueAtZero)
@@ -392,7 +394,7 @@ def OptimStockage(n,i=4):
         results = opt.solve(model)
         Constraints = getConstraintsDual_panda(model)
         TotalCols[cpt] = getVariables_panda(model)['energyCosts'].sum()[1]
-        Prix = Constraints["energyCtr"].assign(Prix=lambda x: x.energyCtr * 10 ** 6).Prix.to_numpy()
+        Prix = Constraints["energyCtr"].assign(Prix=lambda x: x.energyCtr ).Prix.to_numpy()
         valueAtZero = Prix * (TotalCols[cpt] / sum(Prix * Prix) - zz[cpt])
         tmpCost = GenCostFunctionFromMarketPrices_dict(Prix, r_in=efficiency_in, r_out=efficiency_out, valueAtZero=valueAtZero)
         if (cpt == 0):
@@ -541,15 +543,15 @@ def GetElectricSystemModel_PlaningMultiNode(areaConsumption,availabilityFactor,T
     # energyCosts definition Constraints
     # AREAS x TECHNOLOGIES       
     def energyCostsDef_rule(model,area,tech): #EQ forall tech in TECHNOLOGIES   energyCosts  = sum{t in TIMESTAMP} energyCost[tech]*energy[t,tech] / 1E6;
-        temp=model.energyCost[area,tech]/10**6 ; 
+        temp=model.energyCost[area,tech]#/10**6 ;
         return sum(temp*model.energy[area,t,tech] for t in model.TIMESTAMP) == model.energyCosts[area,tech];
     model.energyCostsDef = Constraint(model.AREAS,model.TECHNOLOGIES, rule=energyCostsDef_rule)    
     
     # capacityCosts definition Constraints
     # AREAS x TECHNOLOGIES    
     def capacityCostsDef_rule(model,area,tech): #EQ forall tech in TECHNOLOGIES   energyCosts  = sum{t in TIMESTAMP} energyCost[tech]*energy[t,tech] / 1E6;
-        temp=model.capacityCosts[area,tech]/10**6 ; 
-        return model.capacityCost[area,tech]*len(model.TIMESTAMP)/8760*model.capacity[area,tech] / 10**6 == model.capacityCosts[area,tech]
+        temp=model.capacityCosts[area,tech]#/10**6 ;
+        return model.capacityCost[area,tech]*len(model.TIMESTAMP)/8760*model.capacity[area,tech]  == model.capacityCosts[area,tech] #  .. ....... / 10**6
     model.capacityCostsCtr = Constraint(model.AREAS,model.TECHNOLOGIES, rule=capacityCostsDef_rule)    
 
     
@@ -737,7 +739,7 @@ def GetElectricSystemModel_PlaningMultiNode_with1Storage(areaConsumption,availab
             TotalCols = Variables[Variables.AREAS==AREA].energyCosts.sum()
             #Constraints["energyCtr"]=Constraints["energyCtr"].set_index(["AREAS","TIMESTAMP"])
 
-            Prix = Constraints["energyCtr"][Constraints["energyCtr"].AREAS==AREA].assign(Prix=lambda x: x.energyCtr * 10 ** 6).Prix.to_numpy()
+            Prix = Constraints["energyCtr"][Constraints["energyCtr"].AREAS==AREA].assign(Prix=lambda x: x.energyCtr ).Prix.to_numpy()
             Prix[Prix<=0]=0.0000000001
             valueAtZero =  TotalCols - Prix * zz[AREA][cpt]
             tmpCost = GenCostFunctionFromMarketPrices_dict(Prix, r_in=StorageParameters[indexStorage].efficiency_in.tolist()[0],

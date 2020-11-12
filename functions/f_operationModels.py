@@ -106,13 +106,13 @@ def GetElectricSystemModel_GestionSingleNode(areaConsumption,availabilityFactor,
 
     # energyCosts definition Constraints
     def energyCostsDef_rule(model,tech): #EQ forall tech in TECHNOLOGIES   energyCosts  = sum{t in TIMESTAMP} energyCost[tech]*energy[t,tech] / 1E6;
-        temp=model.energyCost[tech]/10**6 ;
+        temp=model.energyCost[tech]# /10**6 ;
         return sum(temp*model.energy[t,tech] for t in model.TIMESTAMP) == model.energyCosts[tech]
     model.energyCostsCtr = Constraint(model.TECHNOLOGIES, rule=energyCostsDef_rule)
 
     #Capacity constraint
     def Capacity_rule(model,t,tech): #INEQ forall t, tech
-    	return model.energy[t,tech] <=  model.capacity[tech] * model.availabilityFactor[t,tech]
+    	return    model.capacity[tech] * model.availabilityFactor[t,tech] >= model.energy[t,tech]
     model.CapacityCtr = Constraint(model.TIMESTAMP,model.TECHNOLOGIES, rule=Capacity_rule)
 
     #contrainte de stock annuel
@@ -231,7 +231,7 @@ def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availa
 
 
         TotalCols[cpt] = getVariables_panda(model)['energyCosts'].sum()[1]
-        Prix = Constraints["energyCtr"].assign(Prix=lambda x: x.energyCtr * 10 ** 6).Prix.to_numpy()
+        Prix = Constraints["energyCtr"].assign(Prix=lambda x: x.energyCtr ).Prix.to_numpy()
         Prix[Prix <= 0] = 0.0000000001
         valueAtZero =  TotalCols[cpt] - Prix * zz[cpt]
         tmpCost = GenCostFunctionFromMarketPrices_dict(Prix, r_in=StorageParameters['efficiency_in'],
@@ -267,7 +267,7 @@ def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availa
     stats = {"DeltaPrix" : DeltaPrix,"Deltazz" : Deltazz}
     return {"areaConsumption" : areaConsumption, "model" : model, "stats" : stats};
 
-def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,TechParameters,ExchangeParameters,isAbstract=False):
+def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,TechParameters,ExchangeParameters,isAbstract=False,LineEfficiency=0.99):
     """
     This function creates the pyomo model and initlize the Parameters and (pyomo) Set values
     :param areaConsumption: panda table with consumption
@@ -375,7 +375,7 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
     # energyCost/totalCosts definition Constraints
     # AREAS x TECHNOLOGIES
     def energyCostsDef_rule(model,area,tech): #EQ forall tech in TECHNOLOGIES   energyCosts  = sum{t in TIMESTAMP} energyCost[tech]*energy[t,tech] / 1E6;
-        temp=model.energyCost[area,tech]/10**6 ;
+        temp=model.energyCost[area,tech]#/10**6 ;
         return sum(temp*model.energy[area,t,tech] for t in model.TIMESTAMP) == model.energyCosts[area,tech];
     model.energyCostsDef = Constraint(model.AREAS,model.TECHNOLOGIES, rule=energyCostsDef_rule)
 
@@ -403,14 +403,14 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
     #Capacity constraint
     #AREAS x TIMESTAMP x TECHNOLOGIES
     def CapacityCtr_rule(model,area,t,tech): #INEQ forall t, tech
-    	return  model.energy[area,t,tech] <= model.capacity[area,tech] * model.availabilityFactor[area,t,tech]
+    	return  model.capacity[area,tech] * model.availabilityFactor[area,t,tech] >=  model.energy[area,t,tech]
     model.CapacityCtr = Constraint(model.AREAS,model.TIMESTAMP,model.TECHNOLOGIES, rule=CapacityCtr_rule)
 
 
     #contrainte d'equilibre offre demande
     #AREAS x TIMESTAMP x TECHNOLOGIES
     def energyCtr_rule(model,area,t): #INEQ forall t
-    	return sum(model.energy[area,t,tech] for tech in model.TECHNOLOGIES ) + sum(model.exchange[b,area,t] for b in model.AREAS ) >= model.areaConsumption[area,t]
+    	return sum(model.energy[area,t,tech] for tech in model.TECHNOLOGIES ) + sum(model.exchange[b,area,t]*LineEfficiency for b in model.AREAS ) >= model.areaConsumption[area,t]
     model.energyCtr = Constraint(model.AREAS,model.TIMESTAMP,rule=energyCtr_rule)
 
    # def energyCtr_rule(model,t): #INEQ forall t
@@ -547,7 +547,7 @@ def GetElectricSystemModel_GestionMultiNode_with1Storage(areaConsumption,availab
             TotalCols = Variables[Variables.AREAS==AREA].energyCosts.sum()
             #Constraints["energyCtr"]=Constraints["energyCtr"].set_index(["AREAS","TIMESTAMP"])
 
-            Prix = Constraints["energyCtr"][Constraints["energyCtr"].AREAS==AREA].assign(Prix=lambda x: x.energyCtr * 10 ** 6).Prix.to_numpy()
+            Prix = Constraints["energyCtr"][Constraints["energyCtr"].AREAS==AREA].assign(Prix=lambda x: x.energyCtr ).Prix.to_numpy()
             Prix[Prix <= 0] = 0.0000000001
             valueAtZero =  TotalCols - Prix * zz[AREA][cpt]
             tmpCost = GenCostFunctionFromMarketPrices_dict(Prix, r_in=StorageParameters[indexStorage].efficiency_in.tolist()[0],
