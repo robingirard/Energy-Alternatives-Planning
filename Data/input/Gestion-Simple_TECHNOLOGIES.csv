@@ -7,7 +7,7 @@ NukeCarrene,7.0,0,0
 NewNuke,7.0,0,0
 WindOnShore,0.0,14900,0
 WindOffShore,0.0,0,0
-HydroLake,0.0,7000,2100
+HydroReservoir,0.0,7000,2100
 HydroRiver,0.0,10000,0
 Solar,0.0,9600,0
 ResidentialRoofTopSolar,0.0,0,0

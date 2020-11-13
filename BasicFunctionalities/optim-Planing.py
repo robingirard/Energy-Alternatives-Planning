@@ -156,9 +156,8 @@ round(CapacityCtrDual.CCG,2).unique() ## increasing the capacity of CCG as no ef
 Zones="FR_DE_GB_ES"
 year=2016
 Selected_AREAS=["FR","DE"]
-Selected_TECHNOLOGIES=['OldNuke','CCG']#'NewNuke', 'HydroRiver', 'HydroReservoir','WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
-#Selected_TECHNOLOGIES={'CCG', 'OldNuke', 'NewNuke', 'HydroRiver', 'HydroReservoir',
-#       'WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
+Selected_TECHNOLOGIES=['OldNuke','CCG']#'NewNuke', 'HydroRiver', 'HydroReservoir','WindOnShore', 'WindOffShore', 'Solar',}
+Selected_TECHNOLOGIES=['CCG', 'OldNuke', 'NewNuke', 'HydroRiver', 'HydroReservoir', 'curtailment']
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
@@ -176,6 +175,8 @@ availabilityFactor=availabilityFactor[availabilityFactor.AREAS.isin(Selected_ARE
 #region III - Ramp multiple area : solving and loading results
 ### small data cleaning
 availabilityFactor.availabilityFactor[availabilityFactor.availabilityFactor>1]=1
+availabilityFactor.TECHNOLOGIES.unique()
+TechParameters.TECHNOLOGIES.unique()
 model = GetElectricSystemModel_PlaningMultiNode(areaConsumption,availabilityFactor,TechParameters,ExchangeParameters)
 opt = SolverFactory(solver)
 results=opt.solve(model)
