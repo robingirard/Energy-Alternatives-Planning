@@ -11,7 +11,7 @@ YEAR,AREAS,TECHNOLOGIES,capacity,ProducedEnergy,EnergyNbhourCap,RampConstraintPl
 2019,FR,NewNuke,0,0,0,0,0,0,0
 2019,FR,WindOnShore,14900,29,0,0,0,0,0
 2019,FR,WindOffShore,0,0,0,0,0,0,0
-2019,FR,HydroLake,7000,33,2100,0,0,0,0
+2019,FR,HydroReservoir,7000,33,2100,0,0,0,0
 2019,FR,HydroRiver,10000,30,0,0,0,0,0
 2019,FR,Solar,9600,11,0,0,0,0,0
 2019,FR,ResidentialRoofTopSolar,0,0,0,0,0,0,0
@@ -25,7 +25,7 @@ YEAR,AREAS,TECHNOLOGIES,capacity,ProducedEnergy,EnergyNbhourCap,RampConstraintPl
 2019,DE,Biomass,9600,44.6,0,0,0,0,0
 2019,DE,WindOnShore,53100,101,0,0,0,0,0
 2019,DE,WindOffShore,7500,24.7,0,0,0,0,0
-2019,DE,HydroLake,0,0,2100,0,0,0,0
+2019,DE,HydroReservoir,0,0,2100,0,0,0,0
 2019,DE,HydroRiver,14600,20.2,0,0,0,0,0
 2019,DE,Solar,49000,47.5,0,0,0,0,0
 2019,DE,ResidentialRoofTopSolar,0,0,0,0,0,0,0

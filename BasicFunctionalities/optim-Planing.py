@@ -206,7 +206,7 @@ Constraints.keys()
 Zones="FR"
 year=2013
 
-Selected_TECHNOLOGIES={'CCG', 'OldNuke', 'WindOnShore',"Curtailement"}
+Selected_TECHNOLOGIES={'CCG', 'OldNuke', 'WindOnShore','curtailment'}
 
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
@@ -252,7 +252,7 @@ stats=res["stats"]
 Zones="FR"
 year=2013
 
-Selected_TECHNOLOGIES={'CCG', 'WindOnShore','Solar',"Curtailement"}
+Selected_TECHNOLOGIES={'CCG', 'WindOnShore','Solar',"curtailment"}
 
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
@@ -301,7 +301,7 @@ stats=res["stats"]
 Zones="FR"
 year=2013
 
-Selected_TECHNOLOGIES={'CCG', 'NewNuke',"Curtailement"}
+Selected_TECHNOLOGIES={'CCG', 'NewNuke',"curtailment"}
 
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
