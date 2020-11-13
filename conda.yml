@@ -10,6 +10,7 @@ dependencies :
     - glpk
     - seaborn
     - qgrid
+    - datetime
     - pip :
       - pyomo
       - dynprogstorage>=0.1.5

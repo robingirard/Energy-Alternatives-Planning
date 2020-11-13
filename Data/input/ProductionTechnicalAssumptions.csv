@@ -11,12 +11,12 @@ YEAR,AREAS,TECHNOLOGIES,capacity,ProducedEnergy,EnergyNbhourCap,RampConstraintPl
 2019,FR,NewNuke,0,0,0,0,0,0,0
 2019,FR,WindOnShore,14900,29,0,0,0,0,0
 2019,FR,WindOffShore,0,0,0,0,0,0,0
-2019,FR,HydroLake,12500,33,3638.1,0,0,0,0
-2019,FR,HydroRiver,7500,30,0,0,0,0,0
+2019,FR,HydroLake,7000,33,2100,0,0,0,0
+2019,FR,HydroRiver,10000,30,0,0,0,0,0
 2019,FR,Solar,9600,11,0,0,0,0,0
 2019,FR,ResidentialRoofTopSolar,0,0,0,0,0,0,0
 2019,FR,IndusRoofTopSolar,0,0,0,0,0,0,0
-2019,FR,curtailment ,10000,0,0,0,0,0,0
+2019,FR,curtailment,10000,0,0,0,0,0,0
 2019,DE,TAC,3000,0,0,0,0,0,0
 2019,DE,Coal,30000,57,0,0.05,0.05,0,0
 2019,DE,Lignite,23000,113,0,0.05,0.05,0,0
@@ -25,9 +25,9 @@ YEAR,AREAS,TECHNOLOGIES,capacity,ProducedEnergy,EnergyNbhourCap,RampConstraintPl
 2019,DE,Biomass,9600,44.6,0,0,0,0,0
 2019,DE,WindOnShore,53100,101,0,0,0,0,0
 2019,DE,WindOffShore,7500,24.7,0,0,0,0,0
-2019,DE,HydroLake,0,0,3638.1,0,0,0,0
+2019,DE,HydroLake,0,0,2100,0,0,0,0
 2019,DE,HydroRiver,14600,20.2,0,0,0,0,0
 2019,DE,Solar,49000,47.5,0,0,0,0,0
 2019,DE,ResidentialRoofTopSolar,0,0,0,0,0,0,0
 2019,DE,IndusRoofTopSolar,0,0,0,0,0,0,0
-2019,DE,curtailment ,10000,0,0,0,0,0,0
+2019,DE,curtailment,10000,0,0,0,0,0,0

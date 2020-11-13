@@ -19,7 +19,7 @@ YEAR,AREAS,TECHNOLOGIES,CAPEX,dismantling,Variable,FOM,LL,CL,CO2Emission
 2019,FR,Solar,800,30,0,20,25,1,0
 2019,FR,ResidentialRoofTopSolar,1400,30,0,5,25,0,0
 2019,FR,IndusRoofTopSolar,1000,30,0,20,25,1,0
-2019,FR,curtailment ,0,0,3000,0,1,0,0
+2019,FR,curtailment,0,0,3000,0,1,0,0
 2019,DE,TAC,600,100,60,36,30,2,600
 2019,DE,Coal,1100,100,40,36,30,2,1000
 2019,DE,Lignite,900,100,50,36,30,2,470
@@ -33,4 +33,4 @@ YEAR,AREAS,TECHNOLOGIES,CAPEX,dismantling,Variable,FOM,LL,CL,CO2Emission
 2019,DE,Solar,800,30,0,20,25,1,0
 2019,DE,ResidentialRoofTopSolar,1400,30,0,5,25,0,0
 2019,DE,IndusRoofTopSolar,1000,30,0,20,25,1,0
-2019,DE,curtailment ,0,0,3000,0,1,0,0
+2019,DE,curtailment,0,0,3000,0,1,0,0

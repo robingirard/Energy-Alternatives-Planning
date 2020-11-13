@@ -113,7 +113,6 @@ TechParameters.loc[TechParameters.TECHNOLOGIES=="OldNuke",'RampConstraintMoins']
 TechParameters.loc[TechParameters.TECHNOLOGIES=="OldNuke",'RampConstraintPlus']=0.02 ## a bit strong to put in light the effect
 #endregion
 
-
 #region II - Ramp Ctrs Single area : solving and loading results
 model = GetElectricSystemModel_GestionSingleNode(areaConsumption,availabilityFactor,TechParameters)
 opt = SolverFactory(solver)
@@ -288,7 +287,7 @@ production_df.max(axis=0)/1000 ### Pmax en GW
 Zones="FR"
 year=2013
 
-Selected_TECHNOLOGIES=['OldNuke','Coal','CCG','TAC', 'WindOnShore','HydroLake','HydroRiver','Solar']
+Selected_TECHNOLOGIES=['OldNuke','Coal','CCG','TAC', 'WindOnShore','HydroLake','HydroRiver','Solar','curtailment']
 
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
@@ -296,11 +295,11 @@ areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zo
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
 TechParameters = pd.read_csv(InputFolder+'Gestion-Simple_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0)
-
+TechParameters.TECHNOLOGIES
 #### Selection of subset
 availabilityFactor=availabilityFactor[ availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 TechParameters=TechParameters[TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
-#TechParameters.loc[TechParameters.TECHNOLOGIES=="CCG",'capacity']=100000 ## margin to make everything work
+#TechParameters.loc[TechParameters.TECHNOLOGIES=="CCG",'capacity']=15000 ## margin to make everything work
 p_max=5000
 StorageParameters={"p_max" : p_max , "c_max": p_max*30,"efficiency_in": 0.9,"efficiency_out" : 0.9}
 

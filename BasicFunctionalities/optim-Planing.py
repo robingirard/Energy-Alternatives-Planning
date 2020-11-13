@@ -51,9 +51,10 @@ availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+
 TechParameters = pd.read_csv(InputFolder+'Planing-Simple_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#")
 
 #### Selection of subset
-Selected_TECHNOLOGIES={'OldNuke','CCG'} #you can add technologies here
+Selected_TECHNOLOGIES=['OldNuke','CCG'] #you can add technologies here
 availabilityFactor=availabilityFactor[ availabilityFactor.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
 TechParameters=TechParameters[TechParameters.TECHNOLOGIES.isin(Selected_TECHNOLOGIES)]
+#TechParameters.loc[TechParameters.TECHNOLOGIES=="OldNuke",'maxCapacity']=63000 ## Limit to actual installed capacity
 #endregion
 
 #region I - Simple single area  : Solving and loading results
@@ -64,7 +65,7 @@ else : opt = SolverFactory(solver)
 results=opt.solve(model)
 ## result analysis
 Variables=getVariables_panda(model)
-Variables['capacity']
+Variables['capacity'] ## en ordre de grandeur, on installe juste un peu plus de nucléaire
 #pour avoir la production en KWh de chaque moyen de prod chaque heure
 production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')
 production_df.sum(axis=0)/10**6 ### energies produites TWh
@@ -89,7 +90,7 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 Constraints= getConstraintsDual_panda(model)
 
 # Analyse energyCtr
-energyCtrDual=Constraints['energyCtr']; energyCtrDual['energyCtr']=energyCtrDual['energyCtr']*1000000
+energyCtrDual=Constraints['energyCtr']; energyCtrDual['energyCtr']=energyCtrDual['energyCtr']
 energyCtrDual
 round(energyCtrDual.energyCtr,2).unique()
 
@@ -103,7 +104,7 @@ round(CapacityCtrDual.CCG,2).unique() ## increasing the capacity of CCG as no ef
 #region II - Ramp Single area : loading parameters loading parameterscase with ramp constraints
 Zones="FR"
 year=2013
-Selected_TECHNOLOGIES={'OldNuke','CCG'} #you'll add 'Solar' ,'WindOnShore' after
+Selected_TECHNOLOGIES=['OldNuke','CCG'] #you'll add 'Solar' ,'WindOnShore' after
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
@@ -154,10 +155,10 @@ round(CapacityCtrDual.CCG,2).unique() ## increasing the capacity of CCG as no ef
 #region III - Ramp multiple area : loading parameters
 Zones="FR_DE_GB_ES"
 year=2016
-Selected_AREAS={"FR","DE"}
-Selected_TECHNOLOGIES={'CCG', 'OldNuke' } #'NewNuke', 'HydroRiver', 'HydroReservoir','WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
-Selected_TECHNOLOGIES={'CCG', 'OldNuke', 'NewNuke', 'HydroRiver', 'HydroReservoir',
-       'WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
+Selected_AREAS=["FR","DE"]
+Selected_TECHNOLOGIES=['OldNuke','CCG']#'NewNuke', 'HydroRiver', 'HydroReservoir','WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
+#Selected_TECHNOLOGIES={'CCG', 'OldNuke', 'NewNuke', 'HydroRiver', 'HydroReservoir',
+#       'WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0)
@@ -180,7 +181,8 @@ opt = SolverFactory(solver)
 results=opt.solve(model)
 Variables=getVariables_panda(model)
 Variables['capacity']
-fig=MyAreaStackedPlot(Variables['energy'])
+production_df=EnergyAndExchange2Prod(Variables)
+fig=MyAreaStackedPlot(production_df,Selected_TECHNOLOGIES=Selected_TECHNOLOGIES+Selected_AREAS)
 fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
 

@@ -39,7 +39,6 @@ plotly.offline.plot(fig, filename='file.html')
 #endregion
 
 
-
 #region multi zone
 Zones="FR_DE_GB_ES"
 year=2016
@@ -61,4 +60,27 @@ for region in ["FR","DE","GB"]: ### problem with spain data
     i=i+1;
 #fig.show()
 plotly.offline.plot(fig, filename='file.html')
+#endregion
+
+#region more data from eco2Mix 2012-2019
+Eco2mix = pd.read_csv(InputFolder+'Eco2Mix_Hourly_National_xts.csv',
+                                sep=';',decimal=',',skiprows=0,
+                      dtype={'Index':str, 'Consommation':np.float64, 'Prevision.J1':np.float64, 'Prevision.J':np.float64, 'Fioul':np.float64,
+       'Charbon':np.float64, 'Gaz':np.float64, 'Nucleaire':np.float64, 'Eolien':np.float64, 'Solaire':np.float64, 'Hydraulique':np.float64,
+       'Pompage':np.float64, 'Bioenergies':np.float64, 'Ech.physiques':np.float64, 'Taux.de.Co2':np.float64,
+       'Ech.comm.Angleterre':np.float64, 'Ech.comm.Espagne':np.float64, 'Ech.comm.Italie':np.float64,
+       'Ech.comm.Suisse':np.float64, 'Ech.comm.AllemagneBelgique':np.float64, 'Fioul..TAC':np.float64,
+       'Fioul..Cogen':np.float64, 'Fioul..Autres':np.float64, 'Gaz..TAC':np.float64, 'Gaz..Cogen':np.float64, 'Gaz..CCG':np.float64,
+       'Gaz..Autres':np.float64, 'Hydraulique..Fil.de.leau..eclusee':np.float64, 'Hydraulique..Lacs':np.float64,
+       'Hydraulique..STEP.turbinage':np.float64, 'Bioenergies..Dechets':np.float64,
+       'Bioenergies..Biomasse':np.float64, 'Bioenergies..Biogaz':np.float64})
+Eco2mix['Date'] = pd.to_datetime(Eco2mix['Index'], errors='coerce')
+Eco2mix.columns
+Eco2mix['year'] = pd.DatetimeIndex(Eco2mix['Date']).year
+Eco2mixYear=Eco2mix[Eco2mix['year']==2019]
+Hydraulique=Eco2mixYear[['Date','Hydraulique..Lacs','Hydraulique..Fil.de.leau..eclusee']].set_index('Date').rename(
+    columns={'Hydraulique..Fil.de.leau..eclusee':'HydroRiver','Hydraulique..Lacs':'HydroLake'})
+Hydraulique.max()
+
+Hydraulique.HydroLake.sum()/7000
 #endregion
