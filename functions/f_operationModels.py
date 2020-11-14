@@ -206,6 +206,7 @@ def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availa
     # p_max_out=100.; p_max_in=100.; c_max=10.;
 
     areaConsumption["NewConsumption"] = areaConsumption["areaConsumption"]
+
     nbTime = len(areaConsumption["areaConsumption"])
     cpt = 0
     for i in model.areaConsumption:  model.areaConsumption[i] = areaConsumption.NewConsumption[i - 1]
@@ -215,7 +216,7 @@ def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availa
         if (cpt == 0):
             zz[cpt] = [0] * nbTime
         else:
-            zz[cpt] = areaConsumption["Storage"]
+            zz[cpt] = areaConsumption["Storage"].tolist()
 
         #if solver=="mosek" :
         #    results = opt.solve(model, options= {"dparam.optimizer_max_time":  100.0, "iparam.outlev" : 2,                                                 "iparam.optimizer":     mosek.optimizertype.primal_simplex},tee=True)
@@ -254,20 +255,28 @@ def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availa
         LMultipliers[cpt] = Prix
         if cpt > 0:
             DeltaPrix[cpt] = sum(abs(LMultipliers[cpt] - LMultipliers[cpt - 1]))/sum(abs(LMultipliers[cpt]))
-            Deltazz[cpt] = sum(abs(zz[cpt] - zz[cpt - 1]))/sum(abs(zz[cpt]))
+#           Deltazz[cpt] = sum(abs(zz[cpt] - zz[cpt - 1]))/sum(abs(zz[cpt]))
             DeltaPrix_= DeltaPrix[cpt]
 
-        areaConsumption["Storage"] = CostFunction[cpt].OptimMargInt([-StorageParameters['p_max']] * nbTime,
-                                                                    [StorageParameters['p_max']] * nbTime, [0] * nbTime,
+        areaConsumption.loc[:, "Storage"] = CostFunction[cpt].OptimMargInt([-StorageParameters['p_max']/StorageParameters['efficiency_out']] * nbTime,
+                                                                    [StorageParameters['p_max']*StorageParameters['efficiency_in']] * nbTime,
+                                                                           [0] * nbTime,
                                                                     [StorageParameters['c_max']] * nbTime)
-        areaConsumption["NewConsumption"] = areaConsumption["areaConsumption"] + areaConsumption["Storage"]
-        for i in model.areaConsumption:  model.areaConsumption[i] = areaConsumption.NewConsumption[i-1]
+
+        areaConsumption.loc[areaConsumption.loc[:, "Storage"]>0, "Storage"]=areaConsumption.loc[areaConsumption.loc[:, "Storage"]>0, "Storage"]/StorageParameters['efficiency_in']
+        areaConsumption.loc[areaConsumption.loc[:, "Storage"]<0, "Storage"]=areaConsumption.loc[areaConsumption.loc[:, "Storage"]<0, "Storage"]*StorageParameters['efficiency_out']
+        areaConsumption.loc[:,"NewConsumption"] = areaConsumption.loc[:,"areaConsumption"] + areaConsumption.loc[:,"Storage"]
+        for i in model.areaConsumption: model.areaConsumption[i] = areaConsumption.NewConsumption[i-1]
         cpt=cpt+1
 
+    results = opt.solve(model)
+    areaConsumption.index += 1
     stats = {"DeltaPrix" : DeltaPrix,"Deltazz" : Deltazz}
     return {"areaConsumption" : areaConsumption, "model" : model, "stats" : stats};
 
-def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,TechParameters,ExchangeParameters,isAbstract=False,LineEfficiency=0.99):
+
+
+def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,TechParameters,ExchangeParameters,isAbstract=False,LineEfficiency=1):
     """
     This function creates the pyomo model and initlize the Parameters and (pyomo) Set values
     :param areaConsumption: panda table with consumption
@@ -582,14 +591,24 @@ def GetElectricSystemModel_GestionMultiNode_with1Storage(areaConsumption,availab
                 OptimControl=pd.concat([OptimControl,OptimControl_tmp],axis=0)
 
 
-            areaConsumption.loc[areaConsumption.index.get_level_values('AREAS') == AREA,"Storage"] = CostFunction[AREA][cpt].OptimMargInt([-StorageParameters[indexStorage].p_max.tolist()[0]] * nbTime,
-                                                                    [StorageParameters[indexStorage].p_max.tolist()[0]] * nbTime, [0] * nbTime,
-                                                                    [StorageParameters[indexStorage].c_max.tolist()[0]] * nbTime)
-
-            areaConsumption.loc[areaConsumption.index.get_level_values('AREAS') == AREA,"NewConsumption"] = areaConsumption.loc[areaConsumption.index.get_level_values('AREAS') == AREA,"areaConsumption"] + areaConsumption.loc[areaConsumption.index.get_level_values('AREAS') == AREA,"Storage"]
+            efficiency_out=StorageParameters[indexStorage].efficiency_out.tolist()[0]
+            efficiency_in=StorageParameters[indexStorage].efficiency_in.tolist()[0]
+            p_max=StorageParameters[indexStorage].p_max.tolist()[0]
+            c_max=StorageParameters[indexStorage].c_max.tolist()[0]
+            local_indexes = areaConsumption.index.get_level_values('AREAS') == AREA
+            TMP = CostFunction[AREA][cpt].OptimMargInt([-p_max/efficiency_out] * nbTime,
+                                                                    [p_max*efficiency_in] * nbTime, [0] * nbTime,
+                                                                    [c_max] * nbTime)
+            TMP_df=pd.DataFrame(TMP)
+            TMP_df[TMP_df>0]=TMP_df[TMP_df>0]/efficiency_in; TMP_df[TMP_df<0]=TMP_df[TMP_df<0]*efficiency_out
+            areaConsumption.loc[local_indexes, "Storage"]=TMP
+            areaConsumption.loc[local_indexes, "NewConsumption"] = areaConsumption.loc[local_indexes, "areaConsumption"] + areaConsumption.loc[local_indexes, "Storage"]
+        #areaConsumption.set_index(["AREAS","TIMESTAMP"])
         for i in model.areaConsumption:  model.areaConsumption[i] = areaConsumption.NewConsumption[i]
         cpt=cpt+1
 
+    results = opt.solve(model)
+    #areaConsumption.index += 1
     stats = {"DeltaPrix" : DeltaPrix,"Deltazz" : Deltazz}
     return {"areaConsumption" : areaConsumption, "model" : model, "stats" : stats};
 

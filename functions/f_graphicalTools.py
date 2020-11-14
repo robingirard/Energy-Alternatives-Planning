@@ -33,7 +33,7 @@ def MyPlotly(x_df,y_df,Names="",fill=True):
     fig.update_xaxes(rangeslider_visible=True)
     return(fig)
 
-def MyStackedPlotly(x_df,y_df,Names):
+def MyStackedPlotly(x_df,y_df, Conso,Names):
     '''
     :param x: 
     :param y: 
@@ -53,10 +53,17 @@ def MyStackedPlotly(x_df,y_df,Names):
                                      mode='none', name=Names[i]))  # fill to trace0 y
         i=i+1
 
+    fig.add_trace(go.Scatter(x=Conso['TIMESTAMP'],
+                             y=Conso["areaConsumption"], name="Conso",
+                             line=dict(color='red', width=0.4)))  # fill down to xaxis
+    if "NewConsumption" in Conso.keys():
+        fig.add_trace(go.Scatter(x=Conso['TIMESTAMP'],
+                                 y=Conso["NewConsumption"], name="Conso+stockage",
+                                 line=dict(color='black', width=0.4)))  # fill down to xaxis
     fig.update_xaxes(rangeslider_visible=True)
     return(fig)
 
-def AppendMyStackedPlotly(fig,x_df,y_df,Names):
+def AppendMyStackedPlotly(fig,x_df,y_df,Conso,Names):
     '''
     :param x:
     :param y:
@@ -75,7 +82,17 @@ def AppendMyStackedPlotly(fig,x_df,y_df,Names):
             fig.add_trace(go.Scatter(x=x_df, y=y_df.loc[:,y_df.columns.isin(colNames)].sum(axis=1), fill='tonexty',
                                      mode='none', name=Names[i]))  # fill to trace0 y
         i=i+1
-
+    fig.add_trace(go.Scatter(x=Conso['TIMESTAMP'],
+                             y=Conso["areaConsumption"], name="Conso",
+                             line=dict(color='red', width=0.4)))  # fill down to xaxis
+    if "NewConsumption" in Conso.keys():
+        fig.add_trace(go.Scatter(x=Conso['TIMESTAMP'],
+                                 y=Conso["NewConsumption"], name="Conso+stockage",
+                                 line=dict(color='black', width=0.4)))  # fill down to xaxis
+    if "ConsoImportExport" in Conso.keys():
+        fig.add_trace(go.Scatter(x=Conso['TIMESTAMP'],
+                                 y=Conso["ConsoImportExport"], name="Conso+export-import",
+                                 line=dict(color='blue', width=0.4)))  # fill down to xaxis
     fig.update_xaxes(rangeslider_visible=True)
     return(fig)
 
@@ -136,12 +153,17 @@ def MyAreaStackedPlot_tidy(df,Selected_TECHNOLOGIES=-1,AREA_name="AREAS",TechNam
     return(fig)
 
 
-def MyAreaStackedPlot(df_,Selected_TECHNOLOGIES=-1,AREA_name="AREAS"):
+def MyAreaStackedPlot(df_,Conso=-1,Selected_TECHNOLOGIES=-1,AREA_name="AREAS"):
     df=df_.copy()
-    df.reset_index(inplace=True)
+    #df.reset_index(inplace=True)
     if (Selected_TECHNOLOGIES==-1):
-        Selected_TECHNOLOGIES=df.columns.unique().drop(['TIMESTAMP','AREAS']).tolist()
-    AREAS=df[AREA_name].unique().tolist()
+        Selected_TECHNOLOGIES=df.columns.unique().tolist()
+    AREAS=df.index.get_level_values('AREAS').unique().tolist()
+    if "OldNuke" in Selected_TECHNOLOGIES:
+        Selected_TECHNOLOGIES.remove("OldNuke")
+        Selected_TECHNOLOGIES.insert(0, "OldNuke")
+        Nuke=df.pop("OldNuke")
+        df.insert(0, "OldNuke", Nuke)
 
     visible={}
     for AREA in AREAS: visible[AREA] = []
@@ -150,16 +172,28 @@ def MyAreaStackedPlot(df_,Selected_TECHNOLOGIES=-1,AREA_name="AREAS"):
             if AREA2==AREA:
                 for TECH in Selected_TECHNOLOGIES:
                     visible[AREA2].append(True)
+                visible[AREA2].append(True)
+                visible[AREA2].append(True)
+                if 'Storage' in Conso.columns : visible[AREA2].append(True)
             else :
                 for TECH in Selected_TECHNOLOGIES:
                     visible[AREA2].append(False)
-
+                visible[AREA2].append(False)
+                visible[AREA2].append(False)
+                if 'Storage' in Conso.columns: visible[AREA2].append(False)
     fig = go.Figure()
     dicts=[]
     for AREA in AREAS:
-        production_df_ = df[df["AREAS"]==AREA]
-        fig = AppendMyStackedPlotly(fig,x_df=production_df_.index,
-                            y_df=production_df_[Selected_TECHNOLOGIES],
+        production_df_ = df.loc[(slice(None),AREA),:]#.reset_index()
+        Conso_=Conso.loc[(slice(None),AREA),:];
+        Conso_ = Conso_.reset_index().set_index("TIMESTAMP").drop(["AREAS"], axis=1).reset_index();
+        production_df_ = production_df_.reset_index().set_index("TIMESTAMP").drop(["AREAS"], axis=1).reset_index();
+        #Conso_.reset_index(inplace=True)
+        Conso_.loc[:,"ConsoImportExport"] = Conso_.loc[:,"areaConsumption"] - production_df_.loc[:,AREAS].sum(axis=1)
+
+        fig = AppendMyStackedPlotly(fig,x_df=production_df_.TIMESTAMP,
+                            y_df=production_df_.reset_index()[Selected_TECHNOLOGIES],
+                            Conso=Conso_,
                             Names=list(Selected_TECHNOLOGIES))
         dicts.append(dict(label=AREA,
              method="update",
@@ -173,7 +207,7 @@ def MyAreaStackedPlot(df_,Selected_TECHNOLOGIES=-1,AREA_name="AREAS"):
                 buttons=list(dicts),
             )
         ])
-
+    #plotly.offline.plot(fig, filename='file.html')  ## offline
     return(fig)
 
 

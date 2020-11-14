@@ -294,6 +294,8 @@ def GetElectricSystemModel_PlaningSingleNode_with1Storage(areaConsumption,availa
         for i in model.areaConsumption:  model.areaConsumption[i] = areaConsumption.NewConsumption[i-1]
         cpt=cpt+1
 
+    results = opt.solve(model)
+    areaConsumption.index += 1
     stats = {"DeltaPrix" : DeltaPrix,"Deltazz" : Deltazz}
     return {"areaConsumption" : areaConsumption, "model" : model, "stats" : stats};
 
@@ -782,6 +784,8 @@ def GetElectricSystemModel_PlaningMultiNode_with1Storage(areaConsumption,availab
         for i in model.areaConsumption:  model.areaConsumption[i] = areaConsumption.NewConsumption[i]
         cpt=cpt+1
 
+    results = opt.solve(model)
+    areaConsumption.index += 1
     stats = {"DeltaPrix" : DeltaPrix,"Deltazz" : Deltazz}
     return {"areaConsumption" : areaConsumption, "model" : model, "stats" : stats};
 
