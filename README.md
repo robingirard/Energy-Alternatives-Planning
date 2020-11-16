@@ -33,7 +33,10 @@ I strongly recommend to use the keyboard shortcut "crtl+enter" for action "Execu
 Contains CSV files for the project projet (Wind/PV power instantaneous load factor, 
 availability time series of french nuke, consumption, 
 economic data for operation and planing), 
-These files are loaded in the different exemples given in the next section. 
+These files are loaded in the different examples given in the next section (see in particular [Economic Assumptions](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/input-Economic.ipynb) in file input-Economic.ipynb
+, [Availability/load factor Assumptions](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/input-Availability.ipynb) in file input-Availability.ipynb
+[Model consumption](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/input-Consumption.ipynb)  in file input-Consumption.ipynb 
+). 
 
 New data and associated documentation are welcome here to allow modeling of more different asses. 
 
@@ -42,10 +45,14 @@ Contains python files exposing basic functionalities.
 For each .py file there is an associated Jupyter Notebook that explains the content with text and math formulae
 Hence, if you want to learn how to use the exposed tools, you can star having a look at how to 
 
- - [Model consumption](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/input-Consumption.ipynb) 
- - [optimisation of operation ](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/optim-Operation.ipynb)
- - [optimisation of storage operation](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/optim-Storage.ipynb)
- - [optimisation of planing](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/optim-Planing.ipynb)
+ - [Economic Assumptions](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/input-Economic.ipynb) in file input-Economic.ipynb
+ - [Availability/load factor Assumptions](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/input-Availability.ipynb) in file input-Availability.ipynb
+ - [Model consumption](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/input-Consumption.ipynb)  in file input-Consumption.ipynb 
+ - [optimisation of operation ](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/optim-Operation.ipynb) in file optim-Operation.ipynb
+ - [optimisation of storage operation](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/optim-Storage.ipynb) in file optim-Storage.ipynb 
+ - [optimisation of planing](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/optim-Planing.ipynb) in file optim-Planing.ipynb
+ - [Advanced optimisation of operation ](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/optim-Operation-Advanced.ipynb) in file optim-Operation-Advanced.ipynb
+ - [Advanced optimisation of planing](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/optim-Planing-Advanced.ipynb) in file optim-Planing-Advanced.ipynb
 
 
 ## 4- Repertoire TP <a class="anchor" id="TP"></a>

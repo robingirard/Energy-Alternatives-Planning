@@ -1,6 +1,23 @@
 import plotly.graph_objects as go
 import plotly
 import pandas as pd
+import numpy as np
+
+def expand_grid(x, y,names):
+    res=pd.DataFrame()
+    xG, yG = np.meshgrid(x, y) # create the actual grid
+    res.loc[:,names[0]] = xG.flatten() # make the grid 1d
+    res.loc[:,names[1]] = yG.flatten() # same
+    return res # return a dataframe
+
+def ChangeTIMESTAMP2Dates(df,year):
+    n=len(df.index.get_level_values('TIMESTAMP').unique().tolist())
+    TIMESTAMP_d = pd.DataFrame({"TIMESTAMP_d": pd.date_range(start=str(year) + "-01-01 00:00:00",
+                                                             end=str(year) + "-12-31 23:00:00", freq="1H"),
+                                "TIMESTAMP": range(1, n + 1)}).set_index(["TIMESTAMP"])
+    df = df.reset_index().merge(TIMESTAMP_d,how="outer", left_on="TIMESTAMP", right_on="TIMESTAMP")
+    df=df.drop(columns="TIMESTAMP").rename(columns={'TIMESTAMP_d': 'TIMESTAMP'}).set_index(["AREAS","TIMESTAMP"])
+    return(df)
 
 def MyPlotly(x_df,y_df,Names="",fill=True):
     '''
@@ -33,13 +50,16 @@ def MyPlotly(x_df,y_df,Names="",fill=True):
     fig.update_xaxes(rangeslider_visible=True)
     return(fig)
 
-def MyStackedPlotly(x_df,y_df, Conso,Names):
+def MyStackedPlotly(y_df, Conso,isModifyOrder=True):
     '''
     :param x: 
     :param y: 
     :param Names:
     :return: 
     '''
+    if isModifyOrder: y_df=ModifyOrder_df(y_df) ### set Nuke first column
+    Names=y_df.columns.unique().tolist()
+    x_df=y_df.index
     fig = go.Figure()
     i=0
     for col in y_df.columns:
@@ -53,24 +73,26 @@ def MyStackedPlotly(x_df,y_df, Conso,Names):
                                      mode='none', name=Names[i]))  # fill to trace0 y
         i=i+1
 
-    fig.add_trace(go.Scatter(x=Conso['TIMESTAMP'],
+    fig.add_trace(go.Scatter(x=Conso.index,
                              y=Conso["areaConsumption"], name="Conso",
                              line=dict(color='red', width=0.4)))  # fill down to xaxis
     if "NewConsumption" in Conso.keys():
-        fig.add_trace(go.Scatter(x=Conso['TIMESTAMP'],
+        fig.add_trace(go.Scatter(x=Conso.index,
                                  y=Conso["NewConsumption"], name="Conso+stockage",
                                  line=dict(color='black', width=0.4)))  # fill down to xaxis
     fig.update_xaxes(rangeslider_visible=True)
     return(fig)
 
-def AppendMyStackedPlotly(fig,x_df,y_df,Conso,Names):
+def AppendMyStackedPlotly(fig,y_df,Conso,isModifyOrder=True):
     '''
     :param x:
     :param y:
     :param Names:
     :return:
     '''
-
+    if isModifyOrder: y_df=ModifyOrder_df(y_df) ### set Nuke first column
+    Names=y_df.columns.unique().tolist()
+    x_df=y_df.index
     i=0
     for col in y_df.columns:
         if i==0:
@@ -82,15 +104,15 @@ def AppendMyStackedPlotly(fig,x_df,y_df,Conso,Names):
             fig.add_trace(go.Scatter(x=x_df, y=y_df.loc[:,y_df.columns.isin(colNames)].sum(axis=1), fill='tonexty',
                                      mode='none', name=Names[i]))  # fill to trace0 y
         i=i+1
-    fig.add_trace(go.Scatter(x=Conso['TIMESTAMP'],
+    fig.add_trace(go.Scatter(x=Conso.index,
                              y=Conso["areaConsumption"], name="Conso",
                              line=dict(color='red', width=0.4)))  # fill down to xaxis
     if "NewConsumption" in Conso.keys():
-        fig.add_trace(go.Scatter(x=Conso['TIMESTAMP'],
+        fig.add_trace(go.Scatter(x=Conso.index,
                                  y=Conso["NewConsumption"], name="Conso+stockage",
                                  line=dict(color='black', width=0.4)))  # fill down to xaxis
     if "ConsoImportExport" in Conso.keys():
-        fig.add_trace(go.Scatter(x=Conso['TIMESTAMP'],
+        fig.add_trace(go.Scatter(x=Conso.index,
                                  y=Conso["ConsoImportExport"], name="Conso+export-import",
                                  line=dict(color='blue', width=0.4)))  # fill down to xaxis
     fig.update_xaxes(rangeslider_visible=True)
@@ -100,7 +122,7 @@ def AppendMyStackedPlotly(fig,x_df,y_df,Conso,Names):
 def EnergyAndExchange2Prod(Variables,EnergyName='energy',exchangeName='Exchange'):
     Variables["exchange"].columns = ['AREAS1', 'AREAS2', 'TIMESTAMP', 'exchange']
     AREAS = Variables['energy'].AREAS.unique()
-    production_df = Variables['energy'].pivot(index=["TIMESTAMP", "AREAS"], columns='TECHNOLOGIES', values='energy')
+    production_df = Variables['energy'].pivot(index=["AREAS","TIMESTAMP"], columns='TECHNOLOGIES', values='energy')
     ToAREA=[]
     for AREA in AREAS:
         ToAREA.append(Variables["exchange"].\
@@ -108,9 +130,9 @@ def EnergyAndExchange2Prod(Variables,EnergyName='energy',exchangeName='Exchange'
                                                                                               "AREAS1",
                                                                                               "AREAS2"]].\
             rename(columns={"AREAS2": "AREAS"}).\
-            pivot(index=["TIMESTAMP", "AREAS"], columns='AREAS1', values='exchange'))
+            pivot(index=["AREAS","TIMESTAMP"], columns='AREAS1', values='exchange'))
     ToAREA_pd=pd.concat(ToAREA)
-    production_df = production_df.merge(ToAREA_pd, how='inner', left_on=["TIMESTAMP","AREAS"], right_on=["TIMESTAMP","AREAS"])
+    production_df = production_df.merge(ToAREA_pd, how='inner', left_on=["AREAS","TIMESTAMP"], right_on=["AREAS","TIMESTAMP"])
     #exchange analysis
     return(production_df);
 
@@ -152,6 +174,30 @@ def MyAreaStackedPlot_tidy(df,Selected_TECHNOLOGIES=-1,AREA_name="AREAS",TechNam
 
     return(fig)
 
+def ModifyOrder(Names):
+    if "OldNuke" in Names:
+        Names.remove("OldNuke")
+        Names.insert(0, "OldNuke")
+    if "NewNuke" in Names:
+        Names.remove("NewNuke")
+        Names.insert(0, "NewNuke")
+    if "NukeCarrene" in Names:
+        Names.remove("NukeCarrene")
+        Names.insert(0, "NukeCarrene")
+
+    return(Names)
+
+def ModifyOrder_df(df):
+    if "OldNuke" in df.columns:
+        Nuke=df.pop("OldNuke")
+        df.insert(0, "OldNuke", Nuke)
+    if "NewNuke" in df.columns:
+        Nuke=df.pop("NewNuke")
+        df.insert(0, "NewNuke", Nuke)
+    if "NukeCarrene" in df.columns:
+        Nuke=df.pop("NukeCarrene")
+        df.insert(0, "NukeCarrene", Nuke)
+    return(df);
 
 def MyAreaStackedPlot(df_,Conso=-1,Selected_TECHNOLOGIES=-1,AREA_name="AREAS"):
     df=df_.copy()
@@ -159,11 +205,9 @@ def MyAreaStackedPlot(df_,Conso=-1,Selected_TECHNOLOGIES=-1,AREA_name="AREAS"):
     if (Selected_TECHNOLOGIES==-1):
         Selected_TECHNOLOGIES=df.columns.unique().tolist()
     AREAS=df.index.get_level_values('AREAS').unique().tolist()
-    if "OldNuke" in Selected_TECHNOLOGIES:
-        Selected_TECHNOLOGIES.remove("OldNuke")
-        Selected_TECHNOLOGIES.insert(0, "OldNuke")
-        Nuke=df.pop("OldNuke")
-        df.insert(0, "OldNuke", Nuke)
+    Selected_TECHNOLOGIES=ModifyOrder(Selected_TECHNOLOGIES)
+    df=ModifyOrder_df(df)
+
 
     visible={}
     for AREA in AREAS: visible[AREA] = []
@@ -184,17 +228,16 @@ def MyAreaStackedPlot(df_,Conso=-1,Selected_TECHNOLOGIES=-1,AREA_name="AREAS"):
     fig = go.Figure()
     dicts=[]
     for AREA in AREAS:
-        production_df_ = df.loc[(slice(None),AREA),:]#.reset_index()
-        Conso_=Conso.loc[(slice(None),AREA),:];
-        Conso_ = Conso_.reset_index().set_index("TIMESTAMP").drop(["AREAS"], axis=1).reset_index();
-        production_df_ = production_df_.reset_index().set_index("TIMESTAMP").drop(["AREAS"], axis=1).reset_index();
+        production_df_ = df.loc[(AREA,slice(None)),:]#.reset_index()
+        Conso_=Conso.loc[(AREA,slice(None)),:];
+        Conso_ = Conso.loc[(AREA,slice(None)),:].reset_index().set_index("TIMESTAMP").drop(["AREAS"], axis=1);
+        production_df_ = df.loc[(AREA,slice(None)),:].reset_index().set_index("TIMESTAMP").drop(["AREAS"], axis=1);
         #Conso_.reset_index(inplace=True)
         Conso_.loc[:,"ConsoImportExport"] = Conso_.loc[:,"areaConsumption"] - production_df_.loc[:,AREAS].sum(axis=1)
 
-        fig = AppendMyStackedPlotly(fig,x_df=production_df_.TIMESTAMP,
-                            y_df=production_df_.reset_index()[Selected_TECHNOLOGIES],
-                            Conso=Conso_,
-                            Names=list(Selected_TECHNOLOGIES))
+        fig = AppendMyStackedPlotly(fig,
+                            y_df=production_df_,
+                            Conso=Conso_)
         dicts.append(dict(label=AREA,
              method="update",
              args=[{"visible": visible[AREA]},
