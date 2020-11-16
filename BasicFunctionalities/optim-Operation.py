@@ -22,7 +22,10 @@ from functions.f_graphicalTools import *
 
 InputFolder='Data/input/'
 
-myhost = os.uname()[1]
+
+if sys.platform != 'win32':
+    myhost = os.uname()[1]
+else : myhost = ""
 if (myhost=="jupyter-sop"):
     ## for https://jupyter-sop.mines-paristech.fr/ users, you need to
     #  (1) run the following to loanch the license server
