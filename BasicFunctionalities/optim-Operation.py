@@ -28,7 +28,8 @@ else : myhost = ""
 if (myhost=="jupyter-sop"):
     ## for https://jupyter-sop.mines-paristech.fr/ users, you need to
     #  (1) run the following to loanch the license server
-    os.system("/opt/mosek/9.2/tools/platform/linux64x86/bin/lmgrd -c /opt/mosek/9.2/tools/platform/linux64x86/bin/mosek.lic -l lmgrd.log")
+    if (os.system("/opt/mosek/9.2/tools/platform/linux64x86/bin/lmgrd -c /opt/mosek/9.2/tools/platform/linux64x86/bin/mosek.lic -l lmgrd.log")==0):
+        os.system("/opt/mosek/9.2/tools/platform/linux64x86/bin/lmutil lmstat -c 27007@127.0.0.1 -a")
     #  (2) definition of license
     os.environ["MOSEKLM_LICENSE_FILE"] = '@jupyter-sop'
 
