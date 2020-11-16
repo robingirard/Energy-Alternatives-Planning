@@ -22,7 +22,6 @@ from functions.f_graphicalTools import *
 
 InputFolder='Data/input/'
 
-
 if sys.platform != 'win32':
     myhost = os.uname()[1]
 else : myhost = ""
@@ -88,7 +87,7 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 #fig2.show()
 
 #### lagrange multipliers
-Constraints= getConstraintsDual_panda_indexed(model)
+Constraints= getConstraintsDual_panda(model)
 
 # Analyse energyCtr
 energyCtrDual=Constraints['energyCtr']; energyCtrDual['energyCtr']=energyCtrDual['energyCtr']
@@ -154,7 +153,7 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 #fig2.show()
 
 #### lagrange multipliers
-Constraints= getConstraintsDual_panda_indexed(model)
+Constraints= getConstraintsDual_panda(model)
 
 # Analyse energyCtr
 energyCtrDual=Constraints['energyCtr']; energyCtrDual['energyCtr']=energyCtrDual['energyCtr']
@@ -250,7 +249,7 @@ res= GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,avail
                                                       TechParameters,StorageParameters)
 
 Variables = getVariables_panda_indexed(res['model'])
-Constraints = getConstraintsDual_panda_indexed(res['model'])
+Constraints = getConstraintsDual_panda(res['model'])
 areaConsumption = res["areaConsumption"]
 
 production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')
@@ -361,7 +360,7 @@ res= GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,avail
                                                       TechParameters,StorageParameters)
 
 Variables = getVariables_panda_indexed(res['model'])
-Constraints = getConstraintsDual_panda_indexed(res['model'])
+Constraints = getConstraintsDual_panda(res['model'])
 areaConsumption = res["areaConsumption"]
 
 production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')
