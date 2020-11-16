@@ -38,7 +38,6 @@ for newyear in range(2013,2016):
 plotly.offline.plot(fig, filename='file.html')
 #endregion
 
-
 #region multi zone
 Zones="FR_DE_GB_ES"
 year=2016
@@ -84,3 +83,23 @@ Hydraulique.max()
 
 Hydraulique.HydroLake.sum()/7000
 #endregion
+
+
+#
+DispoNukeTotal = pd.read_csv(InputFolder+'DispoNukeTotal2007_2017.csv',
+                                sep=';',decimal=',',skiprows=0,
+                      dtype={'Dates':str, 'Availability':np.float64})
+DispoNukeTotal.loc[:,"TIMESTAMP"]=pd.to_datetime(DispoNukeTotal.loc[:,"Dates"])
+DispoNukeTotal=DispoNukeTotal.assign(Year=DispoNukeTotal.loc[:,"TIMESTAMP"].dt.year).drop(columns="Dates")
+
+
+DispoNukeTotal=DispoNukeTotal.assign(Year=DispoNukeTotal.TIMESTAMP.dt.year)
+fig = go.Figure()
+for newyear in range(2007,2016):
+    DispoNukeTotalYear=DispoNukeTotal.loc[DispoNukeTotal.Year==newyear]
+    DispoNukeTotal_=DispoNukeTotalYear.reset_index().assign(TIMESTAMP_=range(1,len(DispoNukeTotalYear)+1)).drop(columns="TIMESTAMP")
+    fig.add_trace(go.Scatter(x=DispoNukeTotal_['TIMESTAMP_'],y=DispoNukeTotal_['Availability'],
+                             line=dict(color="#9CA2A8",width=1),
+                             name=newyear))
+#fig.show()
+plotly.offline.plot(fig, filename='file.html')
