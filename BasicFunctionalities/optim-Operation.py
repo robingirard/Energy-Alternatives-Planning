@@ -65,16 +65,12 @@ else : opt = SolverFactory(solver)
 results=opt.solve(model)
 ## result analysis
 Variables=getVariables_panda_indexed(model)
-
-
+extractCosts(Variables)
+extractEnergyCapacity(Variables)
 #pour avoir la production en KWh de chaque moyen de prod chaque heure
-production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')
 ### Check sum Prod = Consumption
+production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')
 Delta=(production_df.sum(axis=1) - areaConsumption.areaConsumption);
-abs(Delta).max()
-
-print(production_df.sum(axis=0)/10**6) ### energies produites TWh
-print(Variables['energyCosts']) #pour avoir le coût de chaque moyen de prod à l'année
 #endregion
 
 #region I - Simple single area  : visualisation and lagrange multipliers
@@ -87,7 +83,7 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 #fig2.show()
 
 #### lagrange multipliers
-Constraints= getConstraintsDual_panda(model)
+Constraints= getConstraintsDual_panda_indexed(model)
 
 # Analyse energyCtr
 energyCtrDual=Constraints['energyCtr']; energyCtrDual['energyCtr']=energyCtrDual['energyCtr']
@@ -153,7 +149,7 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 #fig2.show()
 
 #### lagrange multipliers
-Constraints= getConstraintsDual_panda(model)
+Constraints= getConstraintsDual_panda_indexed(model)
 
 # Analyse energyCtr
 energyCtrDual=Constraints['energyCtr']; energyCtrDual['energyCtr']=energyCtrDual['energyCtr']
@@ -276,7 +272,8 @@ Selected_AREAS=["FR","DE"]
 Selected_TECHNOLOGIES=['OldNuke', 'CCG','WindOnShore',"curtailment"] #you'll add 'Solar' after #'NewNuke', 'HydroRiver', 'HydroReservoir','WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
 
 #### reading CSV files
-TechParameters = pd.read_csv(InputFolder+'Gestion_MultiNode_DE-FR_AREAS_TECHNOLOGIES.csv',sep=',',decimal='.',comment="#",skiprows=0).set_index(["AREAS","TECHNOLOGIES"])
+TechParameters = pd.read_csv(InputFolder+'Gestion_MultiNode_DE-FR_AREAS_TECHNOLOGIES.csv',
+                             sep=',',decimal='.',comment="#",skiprows=0).set_index(["AREAS","TECHNOLOGIES"])
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0).set_index(["AREAS","TIMESTAMP"])
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
@@ -360,7 +357,7 @@ res= GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,avail
                                                       TechParameters,StorageParameters)
 
 Variables = getVariables_panda_indexed(res['model'])
-Constraints = getConstraintsDual_panda(res['model'])
+Constraints = getConstraintsDual_panda_indexed(res['model'])
 areaConsumption = res["areaConsumption"]
 
 production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')

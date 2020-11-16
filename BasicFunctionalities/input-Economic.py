@@ -59,6 +59,9 @@ ProductionTechPlus=ProductionTechPlus.assign(
     maxCapacity = ProductionTechPlus["capacity"]*100
 )
 
+ProductionTechPlus.maxCapacity.loc[ProductionTechPlus.TECHNOLOGIES=="HydroRiver"]=ProductionTechPlus.capacity.loc[ProductionTechPlus.TECHNOLOGIES=="HydroRiver"]
+ProductionTechPlus.maxCapacity.loc[ProductionTechPlus.TECHNOLOGIES=="HydroReservoir"]=ProductionTechPlus.capacity.loc[ProductionTechPlus.TECHNOLOGIES=="HydroReservoir"]
+
 SelectedCols=["TECHNOLOGIES","energyCost","capacityCost","EnergyNbhourCap",	"minCapacity","maxCapacity"]
 ProductionTechPlus[SelectedCols].to_csv(InputFolder+'Planing-Simple_TECHNOLOGIES.csv',sep=',',decimal='.', index=False)
 
@@ -105,9 +108,12 @@ ProductionTechPlus=ProductionTechPlus.assign(
     minCapacity = ProductionTechPlus["capacity"]*0.9,
     maxCapacity = ProductionTechPlus["capacity"]*100
 )
+
+
+
 index=ProductionTechPlus["TECHNOLOGIES"]=="HydroReservoir"
-ProductionTechPlus.maxCapacity[index]=ProductionTechPlus.capacity[index]
+ProductionTechPlus.maxCapacity.loc[index]=ProductionTechPlus.capacity[index]
 index=ProductionTechPlus["TECHNOLOGIES"]=="HydroRiver"
-ProductionTechPlus.maxCapacity[index]=ProductionTechPlus.capacity[index]
+ProductionTechPlus.maxCapacity.loc[index]=ProductionTechPlus.capacity[index]
 SelectedCols=["AREAS","TECHNOLOGIES","energyCost","capacityCost","EnergyNbhourCap","minCapacity","maxCapacity","RampConstraintPlus","RampConstraintMoins","RampConstraintPlus2","RampConstraintMoins2"]
 ProductionTechPlus[SelectedCols].to_csv(InputFolder+'Planing_MultiNode_DE-FR_TECHNOLOGIES_AREAS.csv',sep=',',decimal='.', index=False)

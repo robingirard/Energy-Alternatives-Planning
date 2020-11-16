@@ -2,6 +2,33 @@ import plotly.graph_objects as go
 import plotly
 import pandas as pd
 import numpy as np
+def extractCosts(Variables):
+    if "AREAS" in Variables['energy'].columns:
+        df = Variables['capacityCosts'].set_index(["AREAS","TECHNOLOGIES"]) / 10 ** 9;
+        df = df.merge(pd.DataFrame(Variables['energyCosts'].set_index(["AREAS","TECHNOLOGIES"]) / 10 ** 9),
+                      left_on=["AREAS","TECHNOLOGIES"], right_on=["AREAS","TECHNOLOGIES"])
+        df.columns = ["Capacity_Milliards_euros", "Energy_Milliards_euros"]
+    else:
+        df = Variables['capacityCosts'].set_index("TECHNOLOGIES") / 10 ** 9;
+        df = df.merge(pd.DataFrame(Variables['energyCosts'].set_index("TECHNOLOGIES") / 10 ** 9),
+                                                    left_on="TECHNOLOGIES", right_on="TECHNOLOGIES")
+        df.columns = ["Capacity_Milliards_euros", "Energy_Milliards_euros"]
+    return df;
+
+def extractEnergyCapacity(Variables) :
+    if "AREAS" in Variables['energy'].columns:
+        production_df = EnergyAndExchange2Prod(Variables)
+        EnergyCapacity_df = Variables['capacity'].set_index(["AREAS","TECHNOLOGIES"]) / 10 ** 3;
+        EnergyCapacity_df = EnergyCapacity_df.merge(pd.DataFrame(Variables['energy'].groupby(by=["AREAS","TECHNOLOGIES"]).sum().drop(columns="TIMESTAMP") / 10 ** 6),
+                                                    left_on=["AREAS","TECHNOLOGIES"], right_on=["AREAS","TECHNOLOGIES"])
+        EnergyCapacity_df.columns = ["Capacity_GW", "Production_TWh"]
+    else:
+        production_df = Variables['energy'].pivot(index="TIMESTAMP", columns='TECHNOLOGIES', values='energy')
+        EnergyCapacity_df = Variables['capacity'].set_index("TECHNOLOGIES") / 10 ** 3;
+        EnergyCapacity_df = EnergyCapacity_df.merge(pd.DataFrame(production_df.sum(axis=0) / 10 ** 6),
+                                                    left_on="TECHNOLOGIES", right_on="TECHNOLOGIES")
+        EnergyCapacity_df.columns = ["Capacity_GW", "Production_TWh"]
+    return(EnergyCapacity_df)
 
 def expand_grid(x, y,names):
     res=pd.DataFrame()
