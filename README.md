@@ -13,10 +13,12 @@ The installation relies on the use of a conda environment. Instruction is below
 * [1. Installation](#installations)
 * [2. CSV folder](#CSV)
 * [3. Repertoire CasDEtude](#CasDEtude)
-* [4. Repertoire TP](#TP)
-* [5. Repertoire functions](#functions)
+* [4. Repertoire functions](#functions)
+* [5. Sujet d'analyse](#Analyse)
 
-## 1 - Installations  <a class="anchor" id="1.introduction"></a>
+
+
+## 1 - Installations  <a class="anchor" id="installations"></a>
 
     conda env create robin.girard/energyalternatives
     conda activate energyalternatives
@@ -55,8 +57,12 @@ Hence, if you want to learn how to use the exposed tools, you can star having a 
  - [Advanced optimisation of planing](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/optim-Planing-Advanced.ipynb) in file optim-Planing-Advanced.ipynb
 
 
-## 4- Repertoire TP <a class="anchor" id="TP"></a>
-In progress 
 
-## 5- Repertoire functions <a class="anchor" id="functions"></a>
+## 4- Repertoire functions <a class="anchor" id="functions"></a>
 Contains used function for planing and operation of electric system, for demand modeling, together with graphical tools. n de la thermosensibilité
+
+## 5 -  Sujet d'analyse  <a class="anchor" id="Analyse"></a>
+This folder contains subjects for analysis and a practical work 
+
+ - [Pracical work for the course](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/SujetsDAnalyses/TP_questions.ipynb)
+ - [Sujet 1 Thermosensibilité]() 
