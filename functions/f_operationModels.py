@@ -226,7 +226,7 @@ def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availa
             results = opt.solve(model,warmstart = True)
         else : results = opt.solve(model)
 
-        Constraints = getConstraintsDual_panda_indexed(model)
+        Constraints = getConstraintsDual_panda(model)
         #if solver=='cbc':
         #    Variables = getVariables_panda(model)['energy'].set_index(['TIMESTAMP','TECHNOLOGIES'])
         #    for i in model.energy:  model.energy[i] = Variables.energy[i]
