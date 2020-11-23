@@ -77,36 +77,39 @@ def MyPlotly(x_df,y_df,Names="",fill=True):
     fig.update_xaxes(rangeslider_visible=True)
     return(fig)
 
-def MyStackedPlotly(y_df, Conso,isModifyOrder=True):
+def MyStackedPlotly(y_df, Conso=-1,isModifyOrder=True,Names=-1):
     '''
     :param x: 
     :param y: 
     :param Names:
     :return: 
     '''
+
     if isModifyOrder: y_df=ModifyOrder_df(y_df) ### set Nuke first column
-    Names=y_df.columns.unique().tolist()
+    if Names==-1: Names=y_df.columns.unique().tolist()
     x_df=y_df.index
     fig = go.Figure()
-    i=0
+    i = 0
     for col in y_df.columns:
-        if i==0:
-            fig.add_trace(go.Scatter(x=x_df, y=y_df[col] , fill='tozeroy',
-                             mode='none' ,name=Names[i])) # fill down to xaxis
-            colNames=[col]
+        if i == 0:
+            fig.add_trace(go.Scatter(x=x_df, y=y_df[col], fill='tozeroy',
+                                     mode='none', name=Names[i]))  # fill down to xaxis
+            colNames = [col]
         else:
             colNames.append(col)
-            fig.add_trace(go.Scatter(x=x_df, y=y_df.loc[:,y_df.columns.isin(colNames)].sum(axis=1), fill='tonexty',
+            fig.add_trace(go.Scatter(x=x_df, y=y_df.loc[:, y_df.columns.isin(colNames)].sum(axis=1), fill='tonexty',
                                      mode='none', name=Names[i]))  # fill to trace0 y
-        i=i+1
+        i = i + 1
 
-    fig.add_trace(go.Scatter(x=Conso.index,
-                             y=Conso["areaConsumption"], name="Conso",
-                             line=dict(color='red', width=0.4)))  # fill down to xaxis
-    if "NewConsumption" in Conso.keys():
+    if (Conso!=-1):
         fig.add_trace(go.Scatter(x=Conso.index,
-                                 y=Conso["NewConsumption"], name="Conso+stockage",
-                                 line=dict(color='black', width=0.4)))  # fill down to xaxis
+                                 y=Conso["areaConsumption"], name="Conso",
+                                 line=dict(color='red', width=0.4)))  # fill down to xaxis
+        if "NewConsumption" in Conso.keys():
+            fig.add_trace(go.Scatter(x=Conso.index,
+                                     y=Conso["NewConsumption"], name="Conso+stockage",
+                                     line=dict(color='black', width=0.4)))  # fill down to xaxis
+
     fig.update_xaxes(rangeslider_visible=True)
     return(fig)
 

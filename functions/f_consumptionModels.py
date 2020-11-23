@@ -10,7 +10,7 @@ from datetime import time
 from datetime import datetime
 
 
-def Decomposeconso(data_df, TemperatureThreshold=14, TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='Date') :
+def Decomposeconso(data_df, TemperatureThreshold=14, TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='TIMESTAMP') :
     '''
     fonction décomposant la consommation électrique d'une année en une part thermosensible et une part non thermosensible
     :param data: panda data frame with "Temperature" and "Consumption" as columns
@@ -28,7 +28,7 @@ def Decomposeconso(data_df, TemperatureThreshold=14, TemperatureName='Temperatur
     #pd.DataFrame(data=np.zeros((24,1)), columns=['Thermosensibilite'])## one value per hour of the day
     #Thermosensibilite.index.name='hour of the day'
     for hour in range(24):
-        indexesWinterHour = (dataNoNA_df[TemperatureName] <= TemperatureThreshold) & (pd.to_datetime(dataNoNA_df[TimeName]).dt.hour == hour)
+        indexesWinterHour = (dataNoNA_df[TemperatureName] <= TemperatureThreshold) & (dataNoNA_df.index.get_level_values(TimeName).to_series().dt.hour == hour)
         dataWinterHour_df = dataNoNA_df.loc[indexesWinterHour,:]
         lr = linear_model.LinearRegression().fit(dataWinterHour_df[[TemperatureName]],dataWinterHour_df[ConsumptionName])
         Thermosensibilite[hour]=lr.coef_[0]
@@ -38,8 +38,8 @@ def Decomposeconso(data_df, TemperatureThreshold=14, TemperatureName='Temperatur
     return(ConsoSeparee_df, Thermosensibilite)
 
 
-
-def Recompose(ConsoSeparee_df,Thermosensibilite,Newdata_df=-1, TemperatureThreshold=14,TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='Date'):
+#ConsoSeparee_df=ConsoTempeYear_decomposed_df
+def Recompose(ConsoSeparee_df,Thermosensibilite,Newdata_df=-1, TemperatureThreshold=14,TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='TIMESTAMP'):
     '''
     fonction permettant de redécomposer la conso électrique en part thermosensible et
     non thermosensible de l'année x à partir de la thermosensibilité
@@ -61,12 +61,12 @@ def Recompose(ConsoSeparee_df,Thermosensibilite,Newdata_df=-1, TemperatureThresh
     ConsoSepareeNew_df=ConsoSeparee_df.iloc[indexes_Old,:].copy(deep=True) ## to suppress warning see https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
     ConsoSepareeNew_df.loc[:, TemperatureName]=Newdata_df.iloc[indexes_New, Newdata_df.columns.get_loc(TemperatureName)].tolist()
     ConsoSepareeNew_df.loc[:,"TS_C"]=0
-    ConsoSepareeNew_df.loc[:,"NTS_C"]=ConsoSeparee_df.loc[:,"NTS_C"]
+    ConsoSepareeNew_df.loc[:,"NTS_C"]=ConsoSepareeNew_df.loc[:,"NTS_C"]
 
     for hour in range(24):
-        indexesWinterHour = (ConsoSepareeNew_df[TemperatureName] <= TemperatureThreshold) & (pd.to_datetime(ConsoSepareeNew_df[TimeName]).dt.hour == hour)
+        indexesWinterHour = (ConsoSepareeNew_df[TemperatureName] <= TemperatureThreshold) & (ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.hour== hour)
         ## remove thermal sensitive part according to old temperature
-        ConsoSepareeNew_df.loc[indexesWinterHour, 'TS_C'] = Thermosensibilite[hour] * ConsoSepareeNew_df.loc[:,TemperatureName] - Thermosensibilite[hour] * TemperatureThreshold
+        ConsoSepareeNew_df.loc[indexesWinterHour, 'TS_C'] = Thermosensibilite[hour] * ConsoSepareeNew_df.loc[indexesWinterHour,TemperatureName] - Thermosensibilite[hour] * TemperatureThreshold
 
     ConsoSepareeNew_df.loc[:,ConsumptionName]= (ConsoSepareeNew_df.loc[:,'TS_C']+ConsoSepareeNew_df.loc[:,'NTS_C'])
     return(ConsoSepareeNew_df)
@@ -75,21 +75,21 @@ def Recompose(ConsoSeparee_df,Thermosensibilite,Newdata_df=-1, TemperatureThresh
 # fonction permettant de décomposer la consommation annuelle d'un véhicule électrique en une part thermosensible et non thermosensible (la conso non thermosensible étant la conso type d'une semaine d'été)
 def Profile2Consumption(Profile_df,Temperature_df, TemperatureThreshold=14,
                         TemperatureMinimum=0,TemperatureName='Temperature',
-                        ConsumptionName='Consumption',TimeName='Date',
+                        ConsumptionName='Consumption',TimeName='TIMESTAMP',
                         VarName='Puissance.MW.par.million'):
 
     ## initialisation
-    ConsoSepareeNew_df=Temperature_df[[TimeName,TemperatureName]]
-    ConsoSepareeNew_df[ConsumptionName]=np.NaN
-    ConsoSepareeNew_df['NTS_C']=0
-    ConsoSepareeNew_df['TS_C']=0
+    ConsoSepareeNew_df=Temperature_df.loc[:,[TemperatureName]]
+    ConsoSepareeNew_df.loc[:,[ConsumptionName]]=np.NaN
+    ConsoSepareeNew_df.loc[:,['NTS_C']]=0
+    ConsoSepareeNew_df.loc[:,['TS_C']]=0
 
     PivotedProfile_df = Profile_df.pivot( index=['Heure','Jour'], columns='Saison', values=VarName ).reset_index()
     cte=(TemperatureThreshold-TemperatureMinimum)
 
     for index, row in PivotedProfile_df.iterrows():
-        indexesWD=pd.to_datetime(ConsoSepareeNew_df['Date']).dt.weekday   == (PivotedProfile_df.loc[index,'Jour']-1)
-        indexesHours= pd.to_datetime(ConsoSepareeNew_df['Date']).dt.hour   == (PivotedProfile_df.loc[index,'Heure']-1)
+        indexesWD=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.weekday   == (PivotedProfile_df.loc[index,'Jour']-1)
+        indexesHours= ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.hour   == (PivotedProfile_df.loc[index,'Heure']-1)
         ConsoSepareeNew_df.loc[indexesWD&indexesHours, 'NTS_C']=PivotedProfile_df.loc[index,'Ete']
 
     PivotedProfile_df['NDifference'] = (PivotedProfile_df['Ete'] - PivotedProfile_df['Hiver'])

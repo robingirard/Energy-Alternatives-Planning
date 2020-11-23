@@ -16,20 +16,28 @@ from functions.f_graphicalTools import * #Il faut préciser le chemin où vous a
 
 #region  Load and visualize consumption
 ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv')
+ConsoTempe_df["TIMESTAMP"]=pd.to_datetime(ConsoTempe_df['Date'])
+ConsoTempe_df=ConsoTempe_df.drop(columns=["Date"]).set_index(["TIMESTAMP"])
+
 
 year = 2012
+ConsoTempeYear_df=ConsoTempe_df[str(year)]
 hour = 19
 TemperatureThreshold = 15
 
-ConsoTempeYear_df=ConsoTempe_df[pd.to_datetime(ConsoTempe_df['Date']).dt.year==year]
+
+ConsoTempeYear_df=ConsoTempe_df[str(year)]
 plt.plot(ConsoTempeYear_df['Temperature'],ConsoTempeYear_df['Consumption']/1000, '.', color='black');
 plt.show()
 #endregion
 
+
+
 #region  Thermal sensitivity estimation, consumption decomposition and visualisation
 #select dates to do the linear regression
+#ConsoTempeYear_df.index.get_level_values("TIMESTAMP").to_series().dt.hour
 indexHeatingHour = (ConsoTempeYear_df['Temperature'] <= TemperatureThreshold) &\
-                    (pd.to_datetime(ConsoTempeYear_df['Date']).dt.hour == hour)
+                    (ConsoTempeYear_df.index.to_series().dt.hour == hour)
 ConsoHeatingHour= ConsoTempeYear_df[indexHeatingHour]
 lr=linear_model.LinearRegression().fit(ConsoHeatingHour[['Temperature']],
                                        ConsoHeatingHour['Consumption'])
@@ -37,10 +45,10 @@ lr.coef_[0]
 
 #Generic function Thermal sensitivity estimation
 (ConsoTempeYear_decomposed_df,Thermosensibilite)=Decomposeconso(ConsoTempeYear_df,TemperatureThreshold=TemperatureThreshold)
-fig=MyStackedPlotly(x_df=ConsoTempeYear_decomposed_df['Date'],
-                    y_df=ConsoTempeYear_decomposed_df[["NTS_C","TS_C"]],
+#ConsoTempeYear_decomposed_df=ConsoTempeYear_decomposed_df.rename(columns={'NTS_C':'Conso non thermosensible', "TS_C": 'conso thermosensible'})
+fig=MyStackedPlotly(y_df=ConsoTempeYear_decomposed_df[["NTS_C","TS_C"]],
                     Names=['Conso non thermosensible','conso thermosensible'])
-fig.update_layout(title_text="Consommation (MWh)", xaxis_title="Date")
+fig=fig.update_layout(title_text="Consommation (MWh)", xaxis_title="Date")
 plotly.offline.plot(fig, filename='file.html') ## offline
 #fig.show()
 #endregion
@@ -49,19 +57,27 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 ## change meteo year
 ## example for year 2012
 newyear=2012
-NewConsoTempeYear_df = ConsoTempe_df[pd.to_datetime(ConsoTempe_df['Date']).dt.year==newyear]
+NewConsoTempeYear_df = ConsoTempe_df[str(newyear)]
+(ConsoTempeYear_decomposed_df,Thermosensibilite)=Decomposeconso(NewConsoTempeYear_df,TemperatureThreshold=TemperatureThreshold)
+
 NewConsoTempeYear_decomposed_df=Recompose(ConsoTempeYear_decomposed_df,Thermosensibilite,
                                           Newdata_df=NewConsoTempeYear_df,
                                           TemperatureThreshold=TemperatureThreshold)
 ### loop over years
 fig = go.Figure()
-fig.add_trace(go.Scatter(x=ConsoTempeYear_decomposed_df['Date'],y=ConsoTempeYear_decomposed_df['Consumption'],line=dict(color="#000000"),name="original"))
+TMP=ConsoTempeYear_decomposed_df.copy()
+TMP = TMP.reset_index().drop(columns="TIMESTAMP").assign(TIMESTAMP=range(1, len(TMP) + 1)).set_index(["TIMESTAMP"])
+fig = fig.add_trace(
+    go.Scatter(x=TMP.index,y=ConsoTempeYear_decomposed_df['Consumption'],line=dict(color="#000000"),name="original"))
 for newyear in range(2000,2012):
-    NewConsoTempeYear_df = ConsoTempe_df[pd.to_datetime(ConsoTempe_df['Date']).dt.year==newyear]
+    NewConsoTempeYear_df = ConsoTempe_df[str(newyear)]
     ConsoSepareeNew_df=Recompose(ConsoTempeYear_decomposed_df,Thermosensibilite,
                                  Newdata_df=NewConsoTempeYear_df,
                                  TemperatureThreshold=TemperatureThreshold)
-    fig.add_trace(go.Scatter(x=ConsoSepareeNew_df['Date'],
+    ConsoSepareeNew_df = ConsoSepareeNew_df.reset_index().drop(columns="TIMESTAMP").assign(
+        TIMESTAMP=range(1, len(ConsoSepareeNew_df) + 1)).set_index(["TIMESTAMP"])
+
+    fig.add_trace(go.Scatter(x=ConsoSepareeNew_df.index,
                              y=ConsoSepareeNew_df['Consumption'],
                              line=dict(color="#9CA2A8",width=1),
                              name=newyear))
@@ -76,10 +92,10 @@ for key in Thermosensibilite:    NewThermosensibilite[key]=1/3 * Thermosensibili
 NewConsoTempeYear_decomposed_df=Recompose(ConsoTempeYear_decomposed_df,NewThermosensibilite,
                                           TemperatureThreshold=TemperatureThreshold)
 fig = go.Figure()
-fig.add_trace(go.Scatter(x=ConsoTempeYear_decomposed_df['Date'],
+fig.add_trace(go.Scatter(x=ConsoTempeYear_decomposed_df.index,
                          y=ConsoTempeYear_decomposed_df['Consumption'],
                          line=dict(color="#000000"),name="original"))
-fig.add_trace(go.Scatter(x=NewConsoTempeYear_decomposed_df['Date'],
+fig.add_trace(go.Scatter(x=NewConsoTempeYear_decomposed_df.index,
                              y=NewConsoTempeYear_decomposed_df['Consumption'],
                              line=dict(color="#9CA2A8",width=1),
                              name=newyear))
@@ -91,12 +107,11 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 
 VEProfile_df=pd.read_csv(InputFolder+'EVModel.csv', sep=';')
 year=2012
-NewConsoTempeYear_df = ConsoTempe_df[pd.to_datetime(ConsoTempe_df['Date']).dt.year==year]
-EV_Consumption_df=Profile2Consumption(Profile_df=VEProfile_df,Temperature_df = NewConsoTempeYear_df[['Date', 'Temperature']])
-fig=MyStackedPlotly(x_df=EV_Consumption_df['Date'],
-                    y_df=EV_Consumption_df[["NTS_C","TS_C"]],
+NewConsoTempeYear_df = ConsoTempe_df[str(year)]
+EV_Consumption_df=Profile2Consumption(Profile_df=VEProfile_df,Temperature_df = NewConsoTempeYear_df[['Temperature']])
+fig=MyStackedPlotly(y_df=EV_Consumption_df[["NTS_C","TS_C"]],
                     Names=['Conso VE non thermosensible','conso VE thermosensible'])
-fig.update_layout(title_text="Consommation (MWh)", xaxis_title="Date")
+fig=fig.update_layout(title_text="Consommation (MWh)", xaxis_title="Date")
 plotly.offline.plot(fig, filename='file.html') ## offline
 #fig.show()
 #endregion
@@ -107,12 +122,13 @@ year=2016 #only possible year
 
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0)
+                                sep=',',decimal='.',skiprows=0).set_index(["AREAS","TIMESTAMP"])
 fig = go.Figure()
 pal = sns.color_palette("bright", 4); i=0; #https://chrisalbon.com/python/data_visualization/seaborn_color_palettes/
-for region in ["FR","DE","GB"]: ### problem with spain data
-    tabl=areaConsumption[areaConsumption['AREAS']==region]
-    fig.add_trace(go.Scatter(x=tabl['TIMESTAMP'],y=tabl['areaConsumption'],
+for region in ["FR","DE","ES"]: ### problem with spain data
+    #tabl=areaConsumption[(region,slice(None))]
+    fig.add_trace(go.Scatter(x=areaConsumption.index.get_level_values("TIMESTAMP"),
+                             y=areaConsumption.loc[(region,slice(None)),"areaConsumption"],
                              line=dict(color=pal.as_hex()[i],width=1),
                              name=region))
     i=i+1;
