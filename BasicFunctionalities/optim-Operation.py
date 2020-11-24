@@ -67,7 +67,7 @@ results=opt.solve(model)
 ## result analysis
 Variables=getVariables_panda_indexed(model)
 extractCosts(Variables)
-extractEnergyCapacity(Variables)
+#extractEnergyCapacity(Variables)
 #pour avoir la production en KWh de chaque moyen de prod chaque heure
 ### Check sum Prod = Consumption
 production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')

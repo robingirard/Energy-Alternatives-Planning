@@ -9,7 +9,7 @@ from sklearn import linear_model
 from datetime import time
 from datetime import datetime
 
-
+#data_df=NewConsoTempeYear_df
 def Decomposeconso(data_df, TemperatureThreshold=14, TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='TIMESTAMP') :
     '''
     fonction décomposant la consommation électrique d'une année en une part thermosensible et une part non thermosensible

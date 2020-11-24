@@ -4,15 +4,24 @@ import pandas as pd
 import numpy as np
 def extractCosts(Variables):
     if "AREAS" in Variables['energy'].columns:
-        df = Variables['capacityCosts'].set_index(["AREAS","TECHNOLOGIES"]) / 10 ** 9;
-        df = df.merge(pd.DataFrame(Variables['energyCosts'].set_index(["AREAS","TECHNOLOGIES"]) / 10 ** 9),
-                      left_on=["AREAS","TECHNOLOGIES"], right_on=["AREAS","TECHNOLOGIES"])
-        df.columns = ["Capacity_Milliards_euros", "Energy_Milliards_euros"]
+        if 'capacityCosts' in Variables.keys():
+            df = Variables['capacityCosts'].set_index(["AREAS", "TECHNOLOGIES"]) / 10 ** 9;
+            df = df.merge(pd.DataFrame(Variables['energyCosts'].set_index(["AREAS", "TECHNOLOGIES"]) / 10 ** 9),
+                          left_on=["AREAS", "TECHNOLOGIES"], right_on=["AREAS", "TECHNOLOGIES"])
+            df.columns = ["Capacity_Milliards_euros", "Energy_Milliards_euros"]
+        else:
+            df = pd.DataFrame(Variables['energyCosts'].set_index(["AREAS", "TECHNOLOGIES"]) / 10 ** 9)
+            df.columns = ["Energy_Milliards_euros"]
+
     else:
-        df = Variables['capacityCosts'].set_index("TECHNOLOGIES") / 10 ** 9;
-        df = df.merge(pd.DataFrame(Variables['energyCosts'].set_index("TECHNOLOGIES") / 10 ** 9),
-                                                    left_on="TECHNOLOGIES", right_on="TECHNOLOGIES")
-        df.columns = ["Capacity_Milliards_euros", "Energy_Milliards_euros"]
+        if 'capacityCosts' in Variables.keys():
+            df = Variables['capacityCosts'].set_index("TECHNOLOGIES") / 10 ** 9;
+            df = df.merge(pd.DataFrame(Variables['energyCosts'].set_index("TECHNOLOGIES") / 10 ** 9),
+                          left_on="TECHNOLOGIES", right_on="TECHNOLOGIES")
+            df.columns = ["Capacity_Milliards_euros", "Energy_Milliards_euros"]
+        else :
+            df = pd.DataFrame(Variables['energyCosts'].set_index("TECHNOLOGIES") / 10 ** 9)
+            df.columns = ["Energy_Milliards_euros"]
     return df;
 
 def extractEnergyCapacity(Variables) :
@@ -86,7 +95,7 @@ def MyStackedPlotly(y_df, Conso=-1,isModifyOrder=True,Names=-1):
     '''
 
     if isModifyOrder: y_df=ModifyOrder_df(y_df) ### set Nuke first column
-    if Names==-1: Names=y_df.columns.unique().tolist()
+    if (Names.__class__ == int): Names=y_df.columns.unique().tolist()
     x_df=y_df.index
     fig = go.Figure()
     i = 0
@@ -101,7 +110,7 @@ def MyStackedPlotly(y_df, Conso=-1,isModifyOrder=True,Names=-1):
                                      mode='none', name=Names[i]))  # fill to trace0 y
         i = i + 1
 
-    if (Conso!=-1):
+    if (Conso.__class__ == int):
         fig.add_trace(go.Scatter(x=Conso.index,
                                  y=Conso["areaConsumption"], name="Conso",
                                  line=dict(color='red', width=0.4)))  # fill down to xaxis
@@ -232,7 +241,7 @@ def ModifyOrder_df(df):
 def MyAreaStackedPlot(df_,Conso=-1,Selected_TECHNOLOGIES=-1,AREA_name="AREAS"):
     df=df_.copy()
     #df.reset_index(inplace=True)
-    if (Selected_TECHNOLOGIES==-1):
+    if (Selected_TECHNOLOGIES.__class__ == int):
         Selected_TECHNOLOGIES=df.columns.unique().tolist()
     AREAS=df.index.get_level_values('AREAS').unique().tolist()
     Selected_TECHNOLOGIES=ModifyOrder(Selected_TECHNOLOGIES)
