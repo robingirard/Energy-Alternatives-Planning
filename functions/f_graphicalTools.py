@@ -110,7 +110,7 @@ def MyStackedPlotly(y_df, Conso=-1,isModifyOrder=True,Names=-1):
                                      mode='none', name=Names[i]))  # fill to trace0 y
         i = i + 1
 
-    if (Conso.__class__ == int):
+    if (Conso.__class__ != int):
         fig.add_trace(go.Scatter(x=Conso.index,
                                  y=Conso["areaConsumption"], name="Conso",
                                  line=dict(color='red', width=0.4)))  # fill down to xaxis

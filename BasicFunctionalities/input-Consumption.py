@@ -31,7 +31,6 @@ plt.plot(ConsoTempeYear_df['Temperature'],ConsoTempeYear_df['Consumption']/1000,
 plt.show()
 #endregion
 
-
 #region  Thermal sensitivity estimation, consumption decomposition and visualisation
 #select dates to do the linear regression
 #ConsoTempeYear_df.index.get_level_values("TIMESTAMP").to_series().dt.hour
