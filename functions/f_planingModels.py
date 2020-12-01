@@ -54,7 +54,7 @@ def GetElectricSystemModel_PlaningSingleNode(areaConsumption,availabilityFactor,
     model.TIMESTAMP_TECHNOLOGIES =  model.TIMESTAMP *model.TECHNOLOGIES
 
     #Subset of Simple only required if ramp constraint
-    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP.remove(max(TIMESTAMP)),ordered=False)
+    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 1],ordered=False)
     model.TIMESTAMP_MinusThree = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 3],ordered=False)
     
     
@@ -345,7 +345,7 @@ def GetElectricSystemModel_PlaningMultiNode(areaConsumption,availabilityFactor,T
     model.TIMESTAMP = Set(initialize=TIMESTAMP,ordered=False)
     
     #Subset of Simple only required if ramp constraint
-    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP.remove(max(TIMESTAMP)),ordered=False)
+    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 1],ordered=False)
     model.TIMESTAMP_MinusThree = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 3],ordered=False)
     
     #Products

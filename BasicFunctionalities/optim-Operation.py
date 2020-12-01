@@ -133,6 +133,10 @@ production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES'
 ### Check sum Prod = Consumption
 Delta=(production_df.sum(axis=1) - areaConsumption.areaConsumption);
 abs(Delta).max()
+print(production_df.loc[:,'OldNuke'].diff(1).max()/TechParameters.loc["OldNuke","capacity"])
+print(production_df.loc[:,'OldNuke'].diff(1).min()/TechParameters.loc["OldNuke","capacity"])
+
+
 
 print(production_df.sum(axis=0)/10**6) ### energies produites TWh
 print(Variables['energyCosts']) #pour avoir le coût de chaque moyen de prod à l'année
@@ -185,8 +189,8 @@ TechParameters=TechParameters.loc[(Selected_AREAS,Selected_TECHNOLOGIES),:]
 areaConsumption=areaConsumption.loc[(Selected_AREAS,slice(None)),:]
 availabilityFactor=availabilityFactor.loc[(Selected_AREAS,slice(None),Selected_TECHNOLOGIES),:]
 TechParameters.loc[(slice(None),'CCG'),'capacity']=100000 ## margin to make everything work
-TechParameters.loc[(slice(None),"OldNuke"),'RampConstraintMoins']=0.01 ## a bit strong to put in light the effect
-TechParameters.loc[(slice(None),"OldNuke"),'RampConstraintPlus']=0.02 ## a bit strong to put in light the effect
+TechParameters.loc[(slice(None),"OldNuke"),'RampConstraintMoins']=0.001 ## a bit strong to put in light the effect
+TechParameters.loc[(slice(None),"OldNuke"),'RampConstraintPlus']=0.001 ## a bit strong to put in light the effect
 #endregion
 
 #region III - Ramp Ctrs multiple area : solving and loading results
@@ -202,6 +206,10 @@ production_df=EnergyAndExchange2Prod(Variables)
 Delta= production_df.sum(axis=1)-areaConsumption.areaConsumption
 abs(Delta).sum()
 
+print(production_df.loc[('DE',slice(None)),'OldNuke'].diff(1).max()/TechParameters.loc[("DE","OldNuke"),"capacity"])
+print(production_df.loc[('DE',slice(None)),'OldNuke'].diff(1).min()/TechParameters.loc[("DE","OldNuke"),"capacity"])
+print(production_df.loc[('FR',slice(None)),'OldNuke'].diff(1).max()/TechParameters.loc[("FR","OldNuke"),"capacity"])
+print(production_df.loc[('FR',slice(None)),'OldNuke'].diff(1).min()/TechParameters.loc[("FR","OldNuke"),"capacity"])
 ## adding dates
 production_df_=ChangeTIMESTAMP2Dates(production_df,year)
 areaConsumption_=ChangeTIMESTAMP2Dates(areaConsumption,year)

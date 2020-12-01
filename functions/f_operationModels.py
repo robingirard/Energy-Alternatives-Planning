@@ -321,7 +321,7 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
     model.TIMESTAMP = Set(initialize=TIMESTAMP,ordered=False)
 
     #Subset of Simple only required if ramp constraint
-    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP.remove(max(TIMESTAMP)),ordered=False)
+    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 1], ordered=False)
     model.TIMESTAMP_MinusThree = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 3],ordered=False)
 
     #Products
@@ -344,7 +344,7 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
     model.maxExchangeCapacity = Param( model.AREAS_AREAS,  initialize=ExchangeParameters.squeeze().to_dict(), domain=NonNegativeReals,default=0)
     #with test of existing columns on TechParameters
     for COLNAME in TechParameters:
-            exec("model."+COLNAME+" =          Param(model.AREAS_TECHNOLOGIES, domain=NonNegativeReals,default=0,"+
+            exec("model."+COLNAME+" =          Param(model.AREAS_TECHNOLOGIES, default=0,"+
                                       "initialize=TechParameters."+COLNAME+".squeeze().to_dict())")
     ## manière générique d'écrire pour toutes les colomnes COL de TechParameters quelque chose comme
     # model.COLNAME =          Param(model.TECHNOLOGIES, domain=NonNegativeReals,default=0,
@@ -433,7 +433,7 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
     #AREAS x TECHNOLOGIES
     if "EnergyNbhourCap" in TechParameters:
         def storageCtr_rule(model,area,tech) : #INEQ forall t, tech
-            if model.EnergyNbhourCap[area,tech]>0 :
+            if model.EnergyNbhourCap[(area,tech)]>0 :
                 return model.EnergyNbhourCap[area,tech]*model.capacity[area,tech] >= sum(model.energy[area,t,tech] for t in model.TIMESTAMP)
             else:
                 return Constraint.Skip
@@ -441,7 +441,7 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
 
     if "RampConstraintPlus" in TechParameters:
         def rampCtrPlus_rule(model,area,t,tech): #INEQ forall t<
-            if model.RampConstraintPlus[area,tech]>0 :
+            if model.RampConstraintPlus[(area,tech)]>0 :
                 return model.energy[area,t+1,tech]  - model.energy[area,t,tech] <= model.capacity[area,tech]*model.RampConstraintPlus[area,tech] ;
             else:
                 return Constraint.Skip
@@ -449,7 +449,7 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
 
     if "RampConstraintMoins" in TechParameters:
         def rampCtrMoins_rule(model,area,t,tech): #INEQ forall t<
-            if model.RampConstraintMoins[area,tech]>0 :
+            if model.RampConstraintMoins[area,tech]>0. :
                 return model.energy[area,t+1,tech]  - model.energy[area,t,tech] >= - model.capacity[area,tech]*model.RampConstraintMoins[area,tech] ;
             else:
                 return Constraint.Skip
@@ -457,7 +457,7 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
 
     if "RampConstraintPlus2" in TechParameters:
         def rampCtrPlus2_rule(model,area,t,tech): #INEQ forall t<
-            if model.RampConstraintPlus2[area,tech]>0 :
+            if model.RampConstraintPlus2[(area,tech)]>0. :
                 var=(model.energy[area,t+2,tech]+model.energy[area,t+3,tech])/2 -  (model.energy[area,t+1,tech]+model.energy[area,t,tech])/2;
                 return var <= model.capacity[area,tech]*model.RampConstraintPlus[area,tech] ;
             else:
@@ -466,7 +466,7 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
 
     if "RampConstraintMoins2" in TechParameters:
         def rampCtrMoins2_rule(model,area,t,tech): #INEQ forall t<
-            if model.RampConstraintMoins2[area,tech]>0 :
+            if model.RampConstraintMoins2[(area,tech)]>0 :
                 var=(model.energy[area,t+2,tech]+model.energy[area,t+3,tech])/2 -  (model.energy[area,t+1,tech]+model.energy[area,t,tech])/2;
                 return var >= - model.capacity[area,tech]*model.RampConstraintMoins2[area,tech] ;
             else:
