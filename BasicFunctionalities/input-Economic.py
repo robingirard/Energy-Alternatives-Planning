@@ -33,7 +33,7 @@ r=(General.discountPercent[0]/100)
 Production=Production.assign(
     LLr = round((1+r)/r*(1-(1+r)**(-Production['LL'])),2),
     capacityCost = round(Production.CAPEX/Production.LL+ Production.dismantling/(1+r)**(Production.LL) +Production.FOM,2)*1000,
-    energyCost = round(Production.Variable + Production.CO2Emission*General.carbonTaxEurosPerT[0]/10**6,2)
+    energyCost = round(Production.Variable + Production.CO2Emission*General.carbonTaxEurosPerT[0]/10**3,2)
 )
 
 
@@ -85,7 +85,7 @@ r=(General.discountPercent[0]/100)
 Production=Production.assign(
     LLr = round((1+r)/r*(1-(1+r)**(-Production['LL'])),2),
     capacityCost = round(Production.CAPEX/Production.LL+ Production.dismantling/(1+r)**(Production.LL) +Production.FOM,2)*1000,
-    energyCost = round(Production.Variable + Production.CO2Emission*General.carbonTaxEurosPerT[0]/10**6,2)
+    energyCost = round(Production.Variable + Production.CO2Emission*General.carbonTaxEurosPerT[0]/10**3,2)
 )
 
 
