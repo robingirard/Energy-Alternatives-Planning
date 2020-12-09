@@ -133,3 +133,34 @@ for region in ["FR","DE","ES"]: ### problem with spain data
 #fig.show()
 plotly.offline.plot(fig, filename='file.html')
 #endregion
+
+#region consumption decomposition
+ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv')
+ConsoTempe_df["TIMESTAMP"]=pd.to_datetime(ConsoTempe_df['Date'])
+ConsoTempe_df=ConsoTempe_df.drop(columns=["Date"]).set_index(["TIMESTAMP"])
+year = 2012
+ConsoTempeYear_df=ConsoTempe_df[str(year)]
+Profile_df=pd.read_csv(InputFolder+"ConsumptionDetailedProfiles.csv").set_index(["Mois", "heures",'Nature', 'type', 'UsagesGroupe', 'UsageDetail', "WeekDay"])
+Profile_df_merged=ComplexProfile2Consumption(Profile_df,ConsoTempeYear_df)
+Profile_df_merged_spread = Profile_df_merged.groupby(["TIMESTAMP", "type"]).sum().reset_index(). \
+    drop(columns=["Temperature"]). \
+    pivot(index="TIMESTAMP", columns='type', values='Conso');
+Profile_df_merged_spread
+fig = MyStackedPlotly(y_df=Profile_df_merged_spread)
+plotly.offline.plot(fig, filename='file.html')  ## offline
+#endregion
+
+
+####
+#Day="Samedi"
+#df=pd.read_csv(InputFolder+Day+'.csv', sep=';', encoding='cp437',decimal=",")
+#Profile_df_Sat=CleanProfile(df,Nature_PROFILE,type_PROFILE,Usages_PROFILE,UsagesGroupe_PROFILE)
+#Day="Dimanche"
+#df=pd.read_csv(InputFolder+Day+'.csv', sep=';', encoding='cp437',decimal=",")
+#Profile_df_Sun=CleanProfile(df,Nature_PROFILE,type_PROFILE,Usages_PROFILE,UsagesGroupe_PROFILE)
+#Day="Semaine"
+#df=pd.read_csv(InputFolder+Day+'.csv', sep=';', encoding='cp437',decimal=",")
+#Profile_df_Week=CleanProfile(df,Nature_PROFILE,type_PROFILE,Usages_PROFILE,UsagesGroupe_PROFILE)
+#Profile_df_Week["WeekDay"] = "Week"; Profile_df_Sat["WeekDay"] = "Sat"; Profile_df_Sun["WeekDay"] = "Sun"
+#Profile_df = Profile_df_Week.append(Profile_df_Sat).append(Profile_df_Sun).set_index(['WeekDay'], append=True)
+#Profile_df.to_csv(InputFolder+"ConsumptionDetailedProfiles.csv")

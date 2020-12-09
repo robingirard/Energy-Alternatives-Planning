@@ -1,7 +1,7 @@
 TECHNOLOGIES,energyCost,capacity,EnergyNbhourCap,RampConstraintPlus,RampConstraintMoins,RampConstraintPlus2,RampConstraintMoins2
-TAC,60.02,4000,0,0.0,0.0,0,0
-Coal,40.04,2000,0,0.06,0.06,0,0
-CCG,50.02,12000,0,0.06,0.06,0,0
+TAC,84.0,4000,0,0.0,0.0,0,0
+Coal,80.0,2000,0,0.06,0.06,0,0
+CCG,68.8,12000,0,0.06,0.06,0,0
 OldNuke,7.0,63000,0,0.04,0.04,0,0
 NukeCarrene,7.0,0,0,0.0,0.0,0,0
 NewNuke,7.0,0,0,0.0,0.0,0,0

@@ -31,8 +31,9 @@ Production
 
 r=(General.discountPercent[0]/100)
 Production=Production.assign(
-    LLr = round((1+r)/r*(1-(1+r)**(-Production['LL'])),2),
-    capacityCost = round(Production.CAPEX/Production.LL+ Production.dismantling/(1+r)**(Production.LL) +Production.FOM,2)*1000,
+    LLr = round((1+r)/r*(1-(1+r)**(-Production['LL'])),2))
+Production = Production.assign(
+    capacityCost = round(Production.CAPEX/Production.LLr+ Production.dismantling/(1+r)**(Production.LL) +Production.FOM,2)*1000,
     energyCost = round(Production.Variable + Production.CO2Emission*General.carbonTaxEurosPerT[0]/10**3,2)
 )
 
@@ -68,6 +69,7 @@ ProductionTechPlus[SelectedCols].to_csv(InputFolder+'Planing-Simple_TECHNOLOGIES
 SelectedCols=["TECHNOLOGIES","energyCost","capacityCost","EnergyNbhourCap","minCapacity","maxCapacity","RampConstraintPlus","RampConstraintMoins","RampConstraintPlus2","RampConstraintMoins2"]
 ProductionTechPlus[SelectedCols].to_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',sep=',',decimal='.', index=False)
 
+ProductionTechPlus.capacityCost[ProductionTechPlus.TECHNOLOGIES=="NewNuke"]/6000
 
 
 #region - general economic assumption
@@ -83,8 +85,9 @@ Production=qgrid_widget.get_changed_df()
 
 r=(General.discountPercent[0]/100)
 Production=Production.assign(
-    LLr = round((1+r)/r*(1-(1+r)**(-Production['LL'])),2),
-    capacityCost = round(Production.CAPEX/Production.LL+ Production.dismantling/(1+r)**(Production.LL) +Production.FOM,2)*1000,
+    LLr = round((1+r)/r*(1-(1+r)**(-Production['LL'])),2))
+Production = Production.assign(
+    capacityCost = round(Production.CAPEX/Production.LLr+ Production.dismantling/(1+r)**(Production.LL) +Production.FOM,2)*1000,
     energyCost = round(Production.Variable + Production.CO2Emission*General.carbonTaxEurosPerT[0]/10**3,2)
 )
 

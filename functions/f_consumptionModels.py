@@ -96,3 +96,186 @@ def Profile2Consumption(Profile_df,Temperature_df, TemperatureThreshold=14,
     Thermosensibilite = (PivotedProfile_df['NDifference'].loc[0:23] / cte).tolist()
     ConsoSepareeNew_df=Recompose(ConsoSepareeNew_df,Thermosensibilite)
     return(ConsoSepareeNew_df)
+
+
+#Profile_df_Week,Profile_df_Sat,Profile_df_Sun,ConsoTempeYear_df
+#Temperature_df=ConsoTempeYear_df
+def ComplexProfile2Consumption(Profile_df,
+                               Temperature_df, TemperatureThreshold=14,
+                        TemperatureMinimum=0,TemperatureName='Temperature',
+                        ConsumptionName='Consumption',TimeName='TIMESTAMP',
+                        VarName='Puissance.MW.par.million'):
+
+    ## initialisation
+    ConsoSepareeNew_df=Temperature_df.loc[:,[TemperatureName]]
+    #ConsoSepareeNew_df.loc[:,[ConsumptionName]]=np.NaN
+    #ConsoSepareeNew_df.loc[:,['NTS_C']]=0
+    #ConsoSepareeNew_df.loc[:,['TS_C']]=0
+    ConsoSepareeNew_df=ConsoSepareeNew_df.assign(
+        WeekDay=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.weekday,
+        Mois=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.month,
+        heures=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.hour);
+    ConsoSepareeNew_df['WeekDay']=ConsoSepareeNew_df['WeekDay'].apply(lambda x: "Week" if x<5 else "Sat" if x==5 else "Sun")
+    ConsoSepareeNew_df=ConsoSepareeNew_df.set_index(["WeekDay","Mois","heures"], append=True)
+
+    Profile_df_merged=Profile_df.join(ConsoSepareeNew_df,how="inner")
+    return(Profile_df_merged)
+    #cte=(TemperatureThreshold-TemperatureMinimum)
+
+
+def CleanProfile(df,Nature,type,Usages,UsagesGroupe):
+    df=df.assign(Nature=df.loc[:,"Branche Nom"]).replace({"Nature": Nature})
+    df=df.assign(type=df.loc[:,"Branche Nom"]).replace({"type": type}).drop(columns=['Branche Nom'])
+    df_melted = pd.melt(frame=df,id_vars=['Mois',"heures","Nature","type"], var_name="Usage", value_name="Conso")
+    df_melted=df_melted.assign(UsageDetail=df_melted.Usage).replace({"UsageDetail": Usages})
+    df_melted=df_melted.assign(UsagesGroupe=df_melted.Usage).replace({"UsagesGroupe": UsagesGroupe}).drop(columns=["Usage"])
+    df_melted=df_melted.set_index(['Mois',"heures","Nature","type","UsagesGroupe","UsageDetail"])
+    return(df_melted)
+
+
+#region initialisation variables
+Nature_PROFILE={'AUT Autres (dont Branche Θnergie, Transport et Agriculture)':"Autre",
+        'IND Agroalimentaires' :"Agroalimentaires",
+        'IND Chimie & matΘriaux plastiques ' :"ChimieMateriaux",
+        'IND Composants Θlectriques et Θlectroniques':"ComposantsElec",
+        'IND Construction MΘcanique':"ConstructionMecanique",
+        'IND Construction navale et aΘronautique, armement':"ConstructionNavArm",
+        'IND ╔quipement de transport ':"EquipTransport",
+        'IND Fonderie, travail des mΘtaux':"FonderieMetaux",
+        'IND Minerai, mΘtal ferreux/non ferreux ':"MineraiMetal",
+        'IND Papier':"papier",
+        'IND Parachimie, industrie pharmaceutique':"ParachimiePharma",
+        'IND Textile ':"Textile",
+        'RΘsidence Principale':"Principal",
+        'RΘsidence Secondaire':"Secondaire",
+        'SPE MatΘriaux de construction':"MatConstruction",
+        'SPE Verre':"MatVerre",
+        'Tertiaire - Autres': "Autres",
+        'Tertiaire - CHR': "CHR",
+        'Tertiaire - COM': "COM",
+        'Tertiaire - ENS': "ENS",
+        'Tertiaire - EP': "EP",
+        'Tertiaire - HCO': "HCO",
+        'Tertiaire - SAN': "SAN",
+        'Tertiaire - SPL': "SPL",
+        'Tertiaire - TRA': "TRA",
+        'Tertiaire - ADM-BUR': "ADMBUR"}
+type_PROFILE={  'AUT Autres (dont Branche Θnergie, Transport et Agriculture)':"Autre",
+        'IND Agroalimentaires' :"Ind",
+        'IND Chimie & matΘriaux plastiques ' :"Ind",
+        'IND Composants Θlectriques et Θlectroniques':"Ind",
+        'IND Construction MΘcanique':"Ind",
+        'IND Construction navale et aΘronautique, armement':"Ind",
+        'IND ╔quipement de transport ':"Ind",
+        'IND Fonderie, travail des mΘtaux':"Ind",
+        'IND Minerai, mΘtal ferreux/non ferreux ':"Ind",
+        'IND Papier':"Ind",
+        'IND Parachimie, industrie pharmaceutique':"Ind",
+        'IND Textile ':"Ind",
+        'RΘsidence Principale':"Residentiel",
+        'RΘsidence Secondaire':"Residentiel",
+        'SPE MatΘriaux de construction':"Ind",
+        'SPE Verre':"Ind",
+        'Tertiaire - Autres': "Tertiaire",
+        'Tertiaire - CHR': "Tertiaire",
+        'Tertiaire - COM': "Tertiaire",
+        'Tertiaire - ENS': "Tertiaire",
+        'Tertiaire - EP': "Tertiaire",
+        'Tertiaire - HCO': "Tertiaire",
+        'Tertiaire - SAN': "Tertiaire",
+        'Tertiaire - SPL': "Tertiaire",
+        'Tertiaire - TRA': "Tertiaire",
+        'Tertiaire - ADM-BUR': "Tertiaire"}
+Usages_PROFILE={
+        'Somme de Lave-Linge':"LaveLinge",
+        'Somme de Lave-vaisselle':"Lavevaisselle",
+        'Somme de SΦche-linge':"SecheLinge",
+        'Somme de RΘfrigΘrateurs et combinΘs':"Refrigirateur",
+        'Somme de CongΘlateurs': "Congelateur",
+        'Somme de TΘlΘvisions':"TV",
+        'Somme de Lecteurs DVD':"LecteurDVD",
+        'Somme de MagnΘtoscopes':"Magnetoscope",
+        'Somme de Ordinateurs fixes, secondaires et portables':"Ordis",
+        'Somme de DΘcodeurs, TNT, Satellite et TV ADSL':"DecodeurTV",
+        'Somme de Imprimantes':"Imprimante",
+        'Somme de Boxs et modems':"Box",
+        'Somme de TΘlΘphones fixes':"TelFixe",
+        'Somme de Chaεne-Hifi':"HiFi",
+        'Somme de Consoles de jeux':"JeuxVideos",
+        'Somme de Grille Pain':"GrillePain",
+        'Somme de Bouilloires Θlectriques':"Bouilloires",
+        'Somme de CafetiΦres filtres / Machine α expresso':"Cafetiaire",
+        'Somme de Micro-ondes':"MicroOnde",
+        'Somme de Mini-four':"MiniFour",
+        'Somme de Friteuses':"Fritteuses",
+        'Somme de Hottes':"Hottes",
+        'Somme de CuisiniΦres':"Cuisiniaire",
+        'Somme de Aspirateur':"Aspirateur",
+        'Somme de Fers α repasser / Centrales vapeures':"FerRepasser",
+        'Somme de Ordinateurs':"Ordis",
+        'Somme de Imprimantes / Photocopieurs / Scanners':"Imprimante",
+        'Somme de Serveurs':"Serveurs",
+        'Somme de Faxs':"Faxs",
+        'Somme de Traceurs':"Traceurs",
+        'Somme de Cuisson':"Cuisson",
+        'Somme de ElectromΘnager':"ElectroMenager",
+        'Somme de Froid Alimentaire':"FroidAlimentaire",
+        'Somme de Process':"Process",
+        'Somme de Energie':"Energie",
+        'Somme de Agriculture':"Agriculture",
+        'Somme de Auxiliaire de Chauffage':"AuxiliaireChauffage",
+        'Somme de Chauffage':"Chauffage",
+        'Somme de Eclairage Public':"EclairagePublic",
+        'Somme de Eclairage':"Eclairage",
+        'Somme de Climatisation':"Clim",
+        'Somme de ECS':"ECS",
+        'Somme de Autres (Inconnu)':"Autres",
+        'Somme de Pertes':"Pertes"
+}
+UsagesGroupe_PROFILE={
+        'Somme de Lave-Linge':"LaveLinge",
+        'Somme de Lave-vaisselle':"Lavevaisselle",
+        'Somme de SΦche-linge':"SecheLinge",
+        'Somme de RΘfrigΘrateurs et combinΘs':"Refrigirateur",
+        'Somme de CongΘlateurs': "Congelateur",
+        'Somme de TΘlΘvisions':"TVAutreElectroMen",
+        'Somme de Lecteurs DVD':"TVAutreElectroMen",
+        'Somme de MagnΘtoscopes':"TVAutreElectroMen",
+        'Somme de Ordinateurs fixes, secondaires et portables':"Ordis",
+        'Somme de DΘcodeurs, TNT, Satellite et TV ADSL':"TVAutreElectroMen",
+        'Somme de Imprimantes':"TVAutreElectroMen",
+        'Somme de Boxs et modems':"Ordis",
+        'Somme de TΘlΘphones fixes':"Ordis",
+        'Somme de Chaεne-Hifi':"TVAutreElectroMen",
+        'Somme de Consoles de jeux':"TVAutreElectroMen",
+        'Somme de Grille Pain':"Cuisson",
+        'Somme de Bouilloires Θlectriques':"Cuisson",
+        'Somme de CafetiΦres filtres / Machine α expresso':"Cuisson",
+        'Somme de Micro-ondes':"Cuisson",
+        'Somme de Mini-four':"Cuisson",
+        'Somme de Friteuses':"Cuisson",
+        'Somme de Hottes':"Cuisson",
+        'Somme de CuisiniΦres':"Cuisson",
+        'Somme de Aspirateur':"TVAutreElectroMen",
+        'Somme de Fers α repasser / Centrales vapeures':"TVAutreElectroMen",
+        'Somme de Ordinateurs':"Ordis",
+        'Somme de Imprimantes / Photocopieurs / Scanners':"Ordis",
+        'Somme de Serveurs':"Ordis",
+        'Somme de Faxs':"Ordis",
+        'Somme de Traceurs':"Ordis",
+        'Somme de Cuisson':"Cuisson",
+        'Somme de ElectromΘnager':"TVAutreElectroMen",
+        'Somme de Froid Alimentaire':"FroidAlimentaire",
+        'Somme de Process':"Process",
+        'Somme de Energie':"Energie",
+        'Somme de Agriculture':"Agriculture",
+        'Somme de Auxiliaire de Chauffage':"Chauffage",
+        'Somme de Chauffage':"Chauffage",
+        'Somme de Eclairage Public':"Eclairage",
+        'Somme de Eclairage':"Eclairage",
+        'Somme de Climatisation':"Clim",
+        'Somme de ECS':"ECS",
+        'Somme de Autres (Inconnu)':"Autres",
+        'Somme de Pertes':"Pertes"
+}
+#endregion
