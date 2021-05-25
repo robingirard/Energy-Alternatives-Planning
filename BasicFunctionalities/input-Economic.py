@@ -30,13 +30,16 @@ Production=qgrid_widget.get_changed_df()
 Production
 
 r=(General.discountPercent[0]/100)
+#r=0.05
+#Production.CAPEX[6]=1100
+#Production.CAPEX[5]=6000
 Production=Production.assign(
     LLr = round((1+r)/r*(1-(1+r)**(-Production['LL'])),2))
 Production = Production.assign(
     capacityCost = round(Production.CAPEX/Production.LLr+ Production.dismantling/(1+r)**(Production.LL) +Production.FOM,2)*1000,
     energyCost = round(Production.Variable + Production.CO2Emission*General.carbonTaxEurosPerT[0]/10**3,2)
 )
-
+Production.capacityCost/6100
 
 #region - general economic assumption
 ProductionTech = pd.read_csv(InputFolder+'ProductionTechnicalAssumptions.csv',sep=',',decimal='.',skiprows=0,comment="#")
@@ -52,7 +55,7 @@ SelectedCols=["TECHNOLOGIES","energyCost","capacity","EnergyNbhourCap"]
 ProductionTechPlus[SelectedCols].to_csv(InputFolder+'Gestion-Simple_TECHNOLOGIES.csv',sep=',',decimal='.', index=False)
 
 SelectedCols=["TECHNOLOGIES","energyCost","capacity","EnergyNbhourCap","RampConstraintPlus","RampConstraintMoins","RampConstraintPlus2","RampConstraintMoins2"]
-ProductionTechPlus[SelectedCols].to_csv(InputFolder+'Gestion-RAMP1_TECHNOLOGIES.csv',sep=',',decimal='.', index=False)
+ProductionTechPlus[SelectedCols].to_csv(InputFolder+'Gestion-RAMP1Bis_TECHNOLOGIES.csv',sep=',',decimal='.', index=False)
 
 
 ProductionTechPlus=ProductionTechPlus.assign(
@@ -67,7 +70,7 @@ SelectedCols=["TECHNOLOGIES","energyCost","capacityCost","EnergyNbhourCap",	"min
 ProductionTechPlus[SelectedCols].to_csv(InputFolder+'Planing-Simple_TECHNOLOGIES.csv',sep=',',decimal='.', index=False)
 
 SelectedCols=["TECHNOLOGIES","energyCost","capacityCost","EnergyNbhourCap","minCapacity","maxCapacity","RampConstraintPlus","RampConstraintMoins","RampConstraintPlus2","RampConstraintMoins2"]
-ProductionTechPlus[SelectedCols].to_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',sep=',',decimal='.', index=False)
+ProductionTechPlus[SelectedCols].to_csv(InputFolder+'Planing-RAMP1BIS_TECHNOLOGIES.csv',sep=',',decimal='.', index=False)
 
 ProductionTechPlus.capacityCost[ProductionTechPlus.TECHNOLOGIES=="NewNuke"]/6000
 
