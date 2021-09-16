@@ -1,0 +1,5 @@
+AREAS,STOCK_TECHNO,storageCost,p_max,c_max
+FR,Battery1,100,5000,50000
+FR,Battery2,100,0,0
+DE,Battery1,100,5000,50000
+DE,Battery2,100,0,0
