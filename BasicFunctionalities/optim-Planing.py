@@ -14,15 +14,7 @@ if (myhost=="jupyter-sop"):
     #  (2) definition of license
     os.environ["MOSEKLM_LICENSE_FILE"] = '@jupyter-sop'
 
-import numpy as np
-import pandas as pd
-import csv
 #import docplex
-import datetime
-import copy
-import plotly.graph_objects as go
-import matplotlib.pyplot as plt
-from sklearn import linear_model
 import sys
 
 from functions.f_planingModels import *

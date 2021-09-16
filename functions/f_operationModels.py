@@ -10,13 +10,6 @@ Created on Wed Apr 22 19:07:50 2020
 from __future__ import division
 from pyomo.environ import *
 from pyomo.core import *
-from dynprogstorage.Wrapper_dynprogstorage import Pycplfunction, Pycplfunctionvec
-from dynprogstorage.wrappers import *
-import xarray as xr
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import mosek
 from functions.f_optimization import *
 
 def GetElectricSystemModel_GestionSingleNode(areaConsumption,availabilityFactor,TechParameters,isAbstract=False):
@@ -27,8 +20,6 @@ def GetElectricSystemModel_GestionSingleNode(areaConsumption,availabilityFactor,
     :param isAbstract: boolean true is the model should be abstract. ConcreteModel otherwise
     :return: pyomo model
     """
-    import pandas as pd
-    import numpy as np
     #isAbstract=False
     availabilityFactor.isna().sum()
 
@@ -181,6 +172,7 @@ def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availa
     """
     import pandas as pd
     import numpy as np
+    
     #isAbstract=False
     availabilityFactor.isna().sum()
 
@@ -358,8 +350,6 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
     :return: pyomo model
     """
 
-    import pandas as pd
-    import numpy as np
     #isAbstract=False
     availabilityFactor.isna().sum()
 
@@ -575,6 +565,7 @@ def GetElectricSystemModel_GestionMultiNode_with1Storage(areaConsumption,availab
     
     import pandas as pd
     import numpy as np
+
     #isAbstract=False
     availabilityFactor.isna().sum()
 
