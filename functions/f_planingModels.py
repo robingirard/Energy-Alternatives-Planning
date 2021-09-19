@@ -181,10 +181,6 @@ def GetElectricSystemModel_PlaningSingleNode(areaConsumption,availabilityFactor,
     
     return model ;
 
-    ##################################
-    # Loop Optimisation with Storage #
-    ##################################
-
 
 def GetElectricSystemModel_PlaningSingleNode_with1Storage(areaConsumption,availabilityFactor,
                                                           TechParameters,StorageParameters,solverpath=-1,isAbstract=False,

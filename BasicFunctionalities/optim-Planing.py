@@ -245,8 +245,8 @@ TIMESTAMP_d=pd.date_range(start=str(year)+"-01-01 00:00:00",end=str(year)+"-12-3
 production_df.index=TIMESTAMP_d; areaConsumption.index=TIMESTAMP_d;
 fig=MyStackedPlotly(y_df=production_df, Conso=areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
-#plotly.offline.plot(fig, filename='file.html') ## offline
-fig.show()
+plotly.offline.plot(fig, filename='file.html') ## offline
+#fig.show()
 #endregion
 
 #region V Case Storage + CCG + PV + Wind + hydro (Ramp+Storage single area) : loading parameters
@@ -260,9 +260,9 @@ areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zo
                                 sep=',',decimal='.',skiprows=0).set_index(["TIMESTAMP"])
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0).set_index(["TIMESTAMP","TECHNOLOGIES"])
-TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1_TECHNOLOGIES.csv',
+TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1BIS_TECHNOLOGIES.csv',
                              sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
-StorageParameters = pd.read_csv(InputFolder+'PlaningRAMP1_STOCK_TECHNO.csv',
+StorageParameters = pd.read_csv(InputFolder+'Planing-RAMP1_STOCK_TECHNO.csv',
                                 sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
 #### Selection of subset
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
@@ -293,8 +293,8 @@ TIMESTAMP_d=pd.date_range(start=str(year)+"-01-01 00:00:00",end=str(year)+"-12-3
 production_df.index=TIMESTAMP_d; areaConsumption.index=TIMESTAMP_d;
 fig=MyStackedPlotly(y_df=production_df, Conso=areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
-#plotly.offline.plot(fig, filename='file.html') ## offline
-fig.show()
+plotly.offline.plot(fig, filename='file.html') ## offline
+#fig.show()
 #endregion
 
 #region VI Case Storage + CCG + Nuke (Ramp+Storage single area) : loading parameters
@@ -351,8 +351,8 @@ TIMESTAMP_d=pd.date_range(start=str(year)+"-01-01 00:00:00",end=str(year)+"-12-3
 production_df.index=TIMESTAMP_d; areaConsumption.index=TIMESTAMP_d;
 fig=MyStackedPlotly(y_df=production_df, Conso=areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
-#plotly.offline.plot(fig, filename='file.html') ## offline
-fig.show()
+plotly.offline.plot(fig, filename='file.html') ## offline
+#fig.show()
 #endregion
 
 #region VI Ramp+Storage Multi area : loading parameters
@@ -408,8 +408,8 @@ areaConsumption_=ChangeTIMESTAMP2Dates(areaConsumption,year)
 
 fig=MyAreaStackedPlot(production_df_,Conso=areaConsumption_)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
-#plotly.offline.plot(fig, filename='file.html') ## offline
-fig.show()
+plotly.offline.plot(fig, filename='file.html') ## offline
+#fig.show()
 
 abs(areaConsumption["Storage"]).groupby(by="AREAS").sum() ## stockage
 production_df.groupby(by="AREAS").sum()/10**6 ### energies produites TWh

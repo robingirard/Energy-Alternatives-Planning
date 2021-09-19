@@ -1,0 +1,3 @@
+STOCK_TECHNO,resource,storageCost,p_max,c_max
+Battery,electricity,100,5000,50000
+tankH2_G,hydrogen,100,100000,100000

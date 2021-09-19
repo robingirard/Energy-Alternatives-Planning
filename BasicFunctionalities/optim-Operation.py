@@ -267,7 +267,7 @@ production_df.index=TIMESTAMP_d; areaConsumption.index=TIMESTAMP_d;
 fig=MyStackedPlotly(y_df=production_df, Conso=areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
-stats=res["stats"]
+
 
 #endregion
 
@@ -377,5 +377,5 @@ production_df.index=TIMESTAMP_d; areaConsumption.index=TIMESTAMP_d;
 fig=MyStackedPlotly(y_df=production_df, Conso=areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
-stats=res["stats"]
+
 #endregion
