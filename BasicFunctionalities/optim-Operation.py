@@ -249,7 +249,7 @@ TechParameters.loc["OldNuke",'RampConstraintPlus']=0.02 ## a bit strong to put i
 #endregion
 
 #region IV Ramp+Storage single area : solving and loading results
-model= GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availabilityFactor,TechParameters,StorageParameters)
+model= GetElectricSystemModel_GestionSingleNode_withStorage(areaConsumption,availabilityFactor,TechParameters,StorageParameters)
 if solver in solverpath :  opt = SolverFactory(solver,executable=solverpath[solver])
 else : opt = SolverFactory(solver)
 results=opt.solve(model)
@@ -257,7 +257,7 @@ Variables = getVariables_panda_indexed(model)
 Constraints = getConstraintsDual_panda(model)
 
 production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')
-production_df.loc[:,'Storage'] = Variables['storage'].pivot(index='TIMESTAMP',columns='STOCK_TECHNO',values='storage').sum(axis=1) ### put storage in the production time series
+production_df.loc[:,'Storage'] = Variables['storageOut'].pivot(index='TIMESTAMP',columns='STOCK_TECHNO',values='storageOut').sum(axis=1)-Variables['storageIn'].pivot(index='TIMESTAMP',columns='STOCK_TECHNO',values='storageIn').sum(axis=1) ### put storage in the production time series
 production_df.sum(axis=0)/10**6 ### energies produites TWh
 production_df[production_df>0].sum(axis=0)/10**6 ### energies produites TWh
 production_df.max(axis=0)/1000 ### Pmax en GW
@@ -299,7 +299,7 @@ TechParameters.loc[(slice(None),"OldNuke"),'RampConstraintPlus']=0.02 ## a bit s
 #endregion
 
 #region V Ramp+Storage multi area : solving and loading results
-model= GetElectricSystemModel_GestionMultiNode_with1Storage(areaConsumption,availabilityFactor,
+model= GetElectricSystemModel_GestionMultiNode_withStorage(areaConsumption,availabilityFactor,
                                                       TechParameters,ExchangeParameters,StorageParameters)
 if solver in solverpath :  opt = SolverFactory(solver,executable=solverpath[solver])
 else : opt = SolverFactory(solver)
@@ -308,7 +308,7 @@ Variables = getVariables_panda_indexed(model)
 Constraints = getConstraintsDual_panda(model)
 
 production_df=EnergyAndExchange2Prod(Variables)
-stockage=Variables['storage'].pivot(index=['AREAS','TIMESTAMP'],columns='STOCK_TECHNO',values='storage').sum(axis=1)
+stockage=Variables['storageOut'].pivot(index=['AREAS','TIMESTAMP'],columns='STOCK_TECHNO',values='storageOut').sum(axis=1)-Variables['storageIn'].pivot(index=['AREAS','TIMESTAMP'],columns='STOCK_TECHNO',values='storageIn').sum(axis=1)
 areaConsumption['Storage']=stockage
 areaConsumption['NewConsumption']=areaConsumption['areaConsumption']+stockage
 
@@ -356,7 +356,7 @@ TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
 #endregion
 
 #region VI Complete "simple" France : solving and loading results
-model= GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availabilityFactor,
+model= GetElectricSystemModel_GestionSingleNode_withStorage(areaConsumption,availabilityFactor,
                                                       TechParameters,StorageParameters)
 if solver in solverpath :  opt = SolverFactory(solver,executable=solverpath[solver])
 else : opt = SolverFactory(solver)
@@ -365,7 +365,7 @@ Variables = getVariables_panda_indexed(model)
 Constraints = getConstraintsDual_panda(model)
 
 production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')
-production_df.loc[:,'Storage'] = Variables['storage'].pivot(index='TIMESTAMP',columns='STOCK_TECHNO',values='storage').sum(axis=1) ### put storage in the production time series
+production_df.loc[:,'Storage'] = Variables['storageOut'].pivot(index='TIMESTAMP',columns='STOCK_TECHNO',values='storageOut').sum(axis=1)-Variables['storageIn'].pivot(index='TIMESTAMP',columns='STOCK_TECHNO',values='storageIn').sum(axis=1) ### put storage in the production time series
 Delta= production_df.sum(axis=1)-areaConsumption["areaConsumption"]
 sum(abs(Delta))
 production_df.sum(axis=0)/10**6 ### energies produites TWh

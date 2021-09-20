@@ -160,7 +160,7 @@ def GetElectricSystemModel_GestionSingleNode(areaConsumption,availabilityFactor,
 
     return model ;
 
-def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availabilityFactor,
+def GetElectricSystemModel_GestionSingleNode_withStorage(areaConsumption,availabilityFactor,
                                                           TechParameters,StorageParameters,solverpath=-1,isAbstract=False,
                                                           solver='mosek'):
     """
@@ -238,7 +238,8 @@ def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availa
 
     model.energy=Var(model.TIMESTAMP, model.TECHNOLOGIES, domain=NonNegativeReals) ### Energy produced by a production mean at time t
     model.energyCosts=Var(model.TECHNOLOGIES)  ### Cost of energy for a production mean, explicitely defined by definition energyCostsDef
-    model.storage=Var(model.TIMESTAMP,model.STOCK_TECHNO) ### Energy stored in a storage mean at time t (if Storage < 0, then the energy is taken from the storage, if Storage > 0, then the is stored)
+    model.storageIn=Var(model.TIMESTAMP,model.STOCK_TECHNO,domain=NonNegativeReals) ### Energy stored in a storage mean at time t 
+    model.storageOut=Var(model.TIMESTAMP,model.STOCK_TECHNO,domain=NonNegativeReals) ### Energy taken out of a storage mean at time t 
     model.stockLevel=Var(model.TIMESTAMP,model.STOCK_TECHNO,domain=NonNegativeReals) ### level of the energy stock in a storage mean at time t
     model.dual = Suffix(direction=Suffix.IMPORT)
     model.rc = Suffix(direction=Suffix.IMPORT)
@@ -272,17 +273,17 @@ def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availa
 
     #contraintes de stock puissance
     def StoragePowerUB_rule(model, t,s_tech):  # INEQ forall t
-        return model.storage[t,s_tech] - model.p_max[s_tech] <= 0
+        return model.storageIn[t,s_tech] - model.p_max[s_tech] <= 0
     model.StoragePowerUBCtr = Constraint(model.TIMESTAMP,model.STOCK_TECHNO, rule=StoragePowerUB_rule)
 
     def StoragePowerLB_rule(model,t,s_tech,):  # INEQ forall t
-        return  model.storage[t,s_tech] + model.p_max[s_tech] >= 0
+        return  model.storageOut[t,s_tech] - model.p_max[s_tech] <= 0
     model.StoragePowerLBCtr = Constraint(model.TIMESTAMP,model.STOCK_TECHNO, rule=StoragePowerLB_rule)
 
     #contraintes de stock capacité
     def StockLevel_rule(model, t,s_tech):  # EQ forall t
         if t>1 :
-            return model.stockLevel[t,s_tech] == model.stockLevel[t-1,s_tech] + model.storage[t,s_tech]
+            return model.stockLevel[t,s_tech] == model.stockLevel[t-1,s_tech]*(1-model.dissipation[s_tech]) + model.storageIn[t,s_tech]*model.efficiency_in[s_tech]-model.storageOut[t,s_tech]/model.efficiency_out[s_tech]
         else :
             return model.stockLevel[t,s_tech] == 0
     model.StockLevelCtr = Constraint(model.TIMESTAMP,model.STOCK_TECHNO, rule=StockLevel_rule)
@@ -293,7 +294,7 @@ def GetElectricSystemModel_GestionSingleNode_with1Storage(areaConsumption,availa
     
     #contrainte d'equilibre offre demande
     def energyCtr_rule(model,t): #INEQ forall t
-    	return sum(model.energy[t,tech] for tech in model.TECHNOLOGIES)+sum(model.storage[t,s_tech] for s_tech in model.STOCK_TECHNO) >= model.areaConsumption[t]
+    	return sum(model.energy[t,tech] for tech in model.TECHNOLOGIES)+sum(model.storageOut[t,s_tech]-model.storageIn[t,s_tech] for s_tech in model.STOCK_TECHNO) >= model.areaConsumption[t]
     model.energyCtr = Constraint(model.TIMESTAMP,rule=energyCtr_rule)
 
 
@@ -552,7 +553,7 @@ def GetElectricSystemModel_GestionMultiNode(areaConsumption,availabilityFactor,T
     return model ;
 
 
-def GetElectricSystemModel_GestionMultiNode_with1Storage(areaConsumption,availabilityFactor,TechParameters,ExchangeParameters,
+def GetElectricSystemModel_GestionMultiNode_withStorage(areaConsumption,availabilityFactor,TechParameters,ExchangeParameters,
                                                          StorageParameters,LineEfficiency=1,isAbstract=False,solver='mosek'):
     """
     This function takes storage caracteristics, system caracteristics and optimise operation Set values
@@ -644,7 +645,8 @@ def GetElectricSystemModel_GestionMultiNode_with1Storage(areaConsumption,availab
     model.exchange=Var(model.AREAS_AREAS,model.TIMESTAMP)
     model.energyCosts=Var(model.AREAS,model.TECHNOLOGIES)   ### Cost of energy by a production mean for area at time t (explicitely defined by constraint energyCostsCtr)
     model.storageCosts=Var(model.AREAS,model.STOCK_TECHNO) ### Cost of storage by a storage mean for area at time t (explicitely defined by constraint storageCostsCtr)
-    model.storage=Var(model.AREAS,model.TIMESTAMP,model.STOCK_TECHNO) ### Energy stored by a storage mean for areas at time t (if Storage < 0, then the energy is taken from the storage, if Storage > 0, then the is stored)
+    model.storageIn=Var(model.AREAS,model.TIMESTAMP,model.STOCK_TECHNO,domain=NonNegativeReals) ### Energy stored by a storage mean for areas at time t 
+    model.storageOut=Var(model.AREAS,model.TIMESTAMP,model.STOCK_TECHNO,domain=NonNegativeReals) ### Energy taken out of a storage mean for areas at time t 
     model.stockLevel=Var(model.AREAS,model.TIMESTAMP,model.STOCK_TECHNO,domain=NonNegativeReals) ### level of the energy stock in a storage mean for areas at time t
     model.dual = Suffix(direction=Suffix.IMPORT)
     model.rc = Suffix(direction=Suffix.IMPORT)
@@ -709,18 +711,18 @@ def GetElectricSystemModel_GestionMultiNode_with1Storage(areaConsumption,availab
     #contraintes de stock puissance
     #AREAS x TIMESTAMP x STOCK_TECHNO
     def StoragePowerUB_rule(model,area,t,s_tech):  # INEQ forall t
-        return model.storage[area,t,s_tech] - model.p_max[area,s_tech] <= 0
+        return model.storageIn[area,t,s_tech] - model.p_max[area,s_tech] <= 0
     model.StoragePowerUBCtr = Constraint(model.AREAS,model.TIMESTAMP,model.STOCK_TECHNO, rule=StoragePowerUB_rule)
 
     def StoragePowerLB_rule(model,area,t,s_tech,):  # INEQ forall t
-        return  model.storage[area,t,s_tech] + model.p_max[area,s_tech] >= 0
+        return  model.storageOut[area,t,s_tech] - model.p_max[area,s_tech] <= 0
     model.StoragePowerLBCtr = Constraint(model.AREAS,model.TIMESTAMP,model.STOCK_TECHNO, rule=StoragePowerLB_rule)
 
     #contraintes de stock capacité
     #AREAS x TIMESTAMP x STOCK_TECHNO
     def StockLevel_rule(model,area,t,s_tech):  # EQ forall t
         if t>1 :
-            return model.stockLevel[area,t,s_tech] == model.stockLevel[area,t-1,s_tech] + model.storage[area,t,s_tech]
+            return model.stockLevel[area,t,s_tech] == model.stockLevel[area,t-1,s_tech]*(1-model.dissipation[area,s_tech]) + model.storageIn[area,t,s_tech]*model.efficiency_in[area,s_tech]-model.storageOut[area,t,s_tech]/model.efficiency_out[area,s_tech]
         else :
             return model.stockLevel[area,t,s_tech] == 0
     model.StockLevelCtr = Constraint(model.AREAS,model.TIMESTAMP,model.STOCK_TECHNO, rule=StockLevel_rule)
@@ -733,7 +735,7 @@ def GetElectricSystemModel_GestionMultiNode_with1Storage(areaConsumption,availab
     #contrainte d'equilibre offre demande
     #AREAS x TIMESTAMP x TECHNOLOGIES
     def energyCtr_rule(model,area,t): #INEQ forall t
-    	return sum(model.energy[area,t,tech] for tech in model.TECHNOLOGIES ) +sum(model.storage[area,t,s_tech] for s_tech in model.STOCK_TECHNO)+ sum(model.exchange[b,area,t]*LineEfficiency for b in model.AREAS) >= model.areaConsumption[area,t]
+    	return sum(model.energy[area,t,tech] for tech in model.TECHNOLOGIES ) +sum(model.storageOut[area,t,s_tech]-model.storageIn[area,t,s_tech]  for s_tech in model.STOCK_TECHNO)+ sum(model.exchange[b,area,t]*LineEfficiency for b in model.AREAS) >= model.areaConsumption[area,t]
     model.energyCtr = Constraint(model.AREAS,model.TIMESTAMP,rule=energyCtr_rule)
 
    # def energyCtr_rule(model,t): #INEQ forall t
