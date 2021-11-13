@@ -46,7 +46,7 @@ Zones="FR" ; year=2013
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0).set_index(["TIMESTAMP"])
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0).set_index(["TIMESTAMP","TECHNOLOGIES"])
 TechParameters = pd.read_csv(InputFolder+'Planing-Simple_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
-
+TechParameters.head()
 #### Selection of subset
 Selected_TECHNOLOGIES=['OldNuke','CCG'] #you can add technologies here
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
