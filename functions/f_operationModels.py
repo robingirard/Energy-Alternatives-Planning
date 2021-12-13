@@ -6,7 +6,6 @@ Created on Wed Apr 22 19:07:50 2020
 @author: robin.girard
 """
 
-
 from __future__ import division
 from pyomo.environ import *
 from pyomo.core import *
@@ -294,7 +293,7 @@ def GetElectricSystemModel_GestionSingleNode_withStorage(areaConsumption,availab
     
     #contrainte d'equilibre offre demande
     def energyCtr_rule(model,t): #INEQ forall t
-    	return sum(model.energy[t,tech] for tech in model.TECHNOLOGIES)+sum(model.storageOut[t,s_tech]-model.storageIn[t,s_tech] for s_tech in model.STOCK_TECHNO) >= model.areaConsumption[t]
+    	return sum(model.energy[t,tech] for tech in model.TECHNOLOGIES)+sum(model.storageOut[t,s_tech]-model.storageIn[t,s_tech] for s_tech in model.STOCK_TECHNO) == model.areaConsumption[t]
     model.energyCtr = Constraint(model.TIMESTAMP,rule=energyCtr_rule)
 
 
@@ -735,7 +734,7 @@ def GetElectricSystemModel_GestionMultiNode_withStorage(areaConsumption,availabi
     #contrainte d'equilibre offre demande
     #AREAS x TIMESTAMP x TECHNOLOGIES
     def energyCtr_rule(model,area,t): #INEQ forall t
-    	return sum(model.energy[area,t,tech] for tech in model.TECHNOLOGIES ) +sum(model.storageOut[area,t,s_tech]-model.storageIn[area,t,s_tech]  for s_tech in model.STOCK_TECHNO)+ sum(model.exchange[b,area,t]*LineEfficiency for b in model.AREAS) >= model.areaConsumption[area,t]
+    	return sum(model.energy[area,t,tech] for tech in model.TECHNOLOGIES ) +sum(model.storageOut[area,t,s_tech]-model.storageIn[area,t,s_tech]  for s_tech in model.STOCK_TECHNO)+ sum(model.exchange[b,area,t]*LineEfficiency for b in model.AREAS) == model.areaConsumption[area,t]
     model.energyCtr = Constraint(model.AREAS,model.TIMESTAMP,rule=energyCtr_rule)
 
    # def energyCtr_rule(model,t): #INEQ forall t

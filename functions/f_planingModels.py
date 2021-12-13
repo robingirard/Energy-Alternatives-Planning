@@ -118,7 +118,7 @@ def GetElectricSystemModel_PlaningSingleNode(areaConsumption,availabilityFactor,
     
     #contrainte d'equilibre offre demande 
     def energyCtr_rule(model,t): #INEQ forall t
-    	return sum(model.energy[t,tech] for tech in model.TECHNOLOGIES ) >= model.areaConsumption[t]
+    	return sum(model.energy[t,tech] for tech in model.TECHNOLOGIES ) == model.areaConsumption[t]
     model.energyCtr = Constraint(model.TIMESTAMP,rule=energyCtr_rule)
     
     if "maxCapacity" in TechParameters:
@@ -346,7 +346,7 @@ def GetElectricSystemModel_PlaningSingleNode_withStorage(areaConsumption,availab
     
     #contrainte d'equilibre offre demande 
     def energyCtr_rule(model,t): #INEQ forall t
-    	return sum(model.energy[t,tech] for tech in model.TECHNOLOGIES)+sum(model.storageOut[t,s_tech]-model.storageIn[t,s_tech] for s_tech in model.STOCK_TECHNO) >= model.areaConsumption[t]
+    	return sum(model.energy[t,tech] for tech in model.TECHNOLOGIES)+sum(model.storageOut[t,s_tech]-model.storageIn[t,s_tech] for s_tech in model.STOCK_TECHNO) == model.areaConsumption[t]
     model.energyCtr = Constraint(model.TIMESTAMP,rule=energyCtr_rule)
     
     if "maxCapacity" in TechParameters:
@@ -556,7 +556,7 @@ def GetElectricSystemModel_PlaningMultiNode(areaConsumption,availabilityFactor,T
     #contrainte d'equilibre offre demande
     #AREAS x TIMESTAMP x TECHNOLOGIES
     def energyCtr_rule(model,area,t): #INEQ forall t
-    	return sum(model.energy[area,t,tech] for tech in model.TECHNOLOGIES ) + sum(model.exchange[b,area,t] for b in model.AREAS ) >= model.areaConsumption[area,t]
+    	return sum(model.energy[area,t,tech] for tech in model.TECHNOLOGIES ) + sum(model.exchange[b,area,t] for b in model.AREAS ) == model.areaConsumption[area,t]
     model.energyCtr = Constraint(model.AREAS,model.TIMESTAMP,rule=energyCtr_rule)
 
 
@@ -850,7 +850,7 @@ def GetElectricSystemModel_PlaningMultiNode_withStorage(areaConsumption,availabi
     #contrainte d'equilibre offre demande
     #AREAS x TIMESTAMP x TECHNOLOGIES
     def energyCtr_rule(model,area,t): #INEQ forall t
-    	return sum(model.energy[area,t,tech] for tech in model.TECHNOLOGIES ) + sum(model.exchange[b,area,t] for b in model.AREAS )+sum(model.storageOut[area,t,s_tech]-model.storageIn[area,t,s_tech]for s_tech in model.STOCK_TECHNO) >= model.areaConsumption[area,t]
+    	return sum(model.energy[area,t,tech] for tech in model.TECHNOLOGIES ) + sum(model.exchange[b,area,t] for b in model.AREAS )+sum(model.storageOut[area,t,s_tech]-model.storageIn[area,t,s_tech]for s_tech in model.STOCK_TECHNO) == model.areaConsumption[area,t]
     model.energyCtr = Constraint(model.AREAS,model.TIMESTAMP,rule=energyCtr_rule)
 
 
