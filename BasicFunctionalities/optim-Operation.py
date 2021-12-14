@@ -46,8 +46,8 @@ solver= 'mosek' ## no need for solverpath with mosek.
 #region I - Simple single area : loading parameters
 Zones="FR" ; year=2013
 #### reading areaConsumption availabilityFactor and TechParameters CSV files
-areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0).set_index(["TIMESTAMP"])
-availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0).set_index(["TIMESTAMP","TECHNOLOGIES"])
+areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0).set_index(["Date"])
+availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0).set_index(["Date","TECHNOLOGIES"])
 TechParameters = pd.read_csv(InputFolder+'Gestion-Simple_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0).set_index(["TECHNOLOGIES"])
 
 #### Selection of subset
@@ -66,18 +66,18 @@ else : opt = SolverFactory(solver)
 results=opt.solve(model)
 ## result analysis
 Variables=getVariables_panda_indexed(model)
+
+
 extractCosts(Variables)
 #extractEnergyCapacity(Variables)
 #pour avoir la production en KWh de chaque moyen de prod chaque heure
 ### Check sum Prod = Consumption
-production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')
+production_df=Variables['energy'].pivot(index="Date",columns='TECHNOLOGIES', values='energy')
 Delta=(production_df.sum(axis=1) - areaConsumption.areaConsumption);
 #endregion
 
 #region I - Simple single area  : visualisation and lagrange multipliers
 ### representation des résultats
-TIMESTAMP_d=pd.date_range(start=str(year)+"-01-01 00:00:00",end=str(year)+"-12-31 23:00:00",   freq="1H")
-production_df.index=TIMESTAMP_d; areaConsumption.index=TIMESTAMP_d;
 fig=MyStackedPlotly(y_df=production_df,Conso = areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
@@ -92,7 +92,7 @@ energyCtrDual
 round(energyCtrDual.energyCtr,2).unique()
 
 # Analyse CapacityCtr
-CapacityCtrDual=Constraints['CapacityCtr'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='CapacityCtr');
+CapacityCtrDual=Constraints['CapacityCtr'].pivot(index="Date",columns='TECHNOLOGIES', values='CapacityCtr');
 round(CapacityCtrDual,2)
 round(CapacityCtrDual.OldNuke,2).unique() ## if you increase by Delta the installed capacity of nuke you decrease by xxx the cost when nuke is not sufficient
 round(CapacityCtrDual.CCG,2).unique() ## increasing the capacity of CCG as no effect on prices
@@ -105,9 +105,9 @@ Selected_TECHNOLOGIES=['OldNuke', 'CCG',"curtailment"] #you'll add 'Solar' after
 #### reading CSV files
 
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["TIMESTAMP"])
+                                sep=',',decimal='.',skiprows=0).set_index(["Date"])
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["TIMESTAMP","TECHNOLOGIES"])
+                                sep=',',decimal='.',skiprows=0).set_index(["Date","TECHNOLOGIES"])
 TechParameters = pd.read_csv(InputFolder+'Gestion-RAMP1_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0).set_index(["TECHNOLOGIES"])
 
 #### Selection of subset
@@ -117,7 +117,6 @@ TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
 TechParameters.loc["CCG",'capacity']=100000 ## margin to make everything work
 TechParameters.loc["OldNuke",'RampConstraintMoins']=0.01 ## a bit strong to put in light the effect
 TechParameters.loc["OldNuke",'RampConstraintPlus']=0.02 ## a bit strong to put in light the effect
-#TechParameters.loc["WindOnShore","energyCost"]=0.001 ## a bit strong to put in light the effect
 
 #endregion
 
@@ -129,7 +128,7 @@ Variables=getVariables_panda_indexed(model)
 
 
 #pour avoir la production en KWh de chaque moyen de prod chaque heure
-production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')
+production_df=Variables['energy'].pivot(index="Date",columns='TECHNOLOGIES', values='energy')
 ### Check sum Prod = Consumption
 Delta=(production_df.sum(axis=1) - areaConsumption.areaConsumption);
 abs(Delta).max()
@@ -146,8 +145,8 @@ print(Variables['energyCosts']) #pour avoir le coût de chaque moyen de prod à 
 
 
 ### representation des résultats
-TIMESTAMP_d=pd.date_range(start=str(year)+"-01-01 00:00:00",end=str(year)+"-12-31 23:00:00",   freq="1H")
-production_df.index=TIMESTAMP_d; areaConsumption.index=TIMESTAMP_d;
+Date_d=pd.date_range(start=str(year)+"-01-01 00:00:00",end=str(year)+"-12-31 23:00:00",   freq="1H")
+production_df.index=Date_d; areaConsumption.index=Date_d;
 fig=MyStackedPlotly(y_df=production_df,Conso = areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
@@ -162,7 +161,7 @@ energyCtrDual
 round(energyCtrDual.energyCtr,2).unique()
 
 # Analyse CapacityCtr
-CapacityCtrDual=Constraints['CapacityCtr'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='CapacityCtr');
+CapacityCtrDual=Constraints['CapacityCtr'].pivot(index="Date",columns='TECHNOLOGIES', values='CapacityCtr');
 round(CapacityCtrDual,2)
 round(CapacityCtrDual.OldNuke,2).unique() ## if you increase by Delta the installed capacity of nuke you decrease by xxx the cost when nuke is not sufficient
 round(CapacityCtrDual.CCG,2).unique() ## increasing the capacity of CCG as no effect on prices
@@ -177,9 +176,9 @@ Selected_TECHNOLOGIES=['OldNuke', 'CCG','WindOnShore',"curtailment"] #you'll add
 #### reading CSV files
 TechParameters = pd.read_csv(InputFolder+'Gestion_MultiNode_DE-FR_AREAS_TECHNOLOGIES.csv',sep=',',decimal='.',comment="#",skiprows=0).set_index(["AREAS","TECHNOLOGIES"])
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["AREAS","TIMESTAMP"])
+                                sep=',',decimal='.',skiprows=0).set_index(["AREAS","Date"])
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["AREAS","TIMESTAMP","TECHNOLOGIES"])
+                                sep=',',decimal='.',skiprows=0).set_index(["AREAS","Date","TECHNOLOGIES"])
 
 ExchangeParameters = pd.read_csv(InputFolder+'Hypothese_DE-FR_AREAS_AREAS.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["AREAS","AREAS.1"])
 #ExchangeParameters.loc[ExchangeParameters.AREAS=="FR",'maxExchangeCapacity']=90000 ## margin to make everything work
@@ -211,9 +210,8 @@ print(production_df.loc[('DE',slice(None)),'OldNuke'].diff(1).min()/TechParamete
 print(production_df.loc[('FR',slice(None)),'OldNuke'].diff(1).max()/TechParameters.loc[("FR","OldNuke"),"capacity"])
 print(production_df.loc[('FR',slice(None)),'OldNuke'].diff(1).min()/TechParameters.loc[("FR","OldNuke"),"capacity"])
 ## adding dates
-production_df_=ChangeTIMESTAMP2Dates(production_df,year)
-areaConsumption_=ChangeTIMESTAMP2Dates(areaConsumption,year)
-fig=MyAreaStackedPlot(production_df_,Conso=areaConsumption_)
+
+fig=MyAreaStackedPlot(production_df,Conso=areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
 
@@ -234,9 +232,9 @@ Selected_TECHNOLOGIES=['OldNuke','WindOnShore', 'CCG',"curtailment"]
 
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["TIMESTAMP"])
+                                sep=',',decimal='.',skiprows=0).set_index(["Date"])
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["TIMESTAMP","TECHNOLOGIES"])
+                                sep=',',decimal='.',skiprows=0).set_index(["Date","TECHNOLOGIES"])
 TechParameters = pd.read_csv(InputFolder+'Gestion-RAMP1_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0).set_index(["TECHNOLOGIES"])
 StorageParameters = pd.read_csv(InputFolder+'Gestion-RAMP1_STOCK_TECHNO.csv',sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
 
@@ -256,14 +254,14 @@ results=opt.solve(model)
 Variables = getVariables_panda_indexed(model)
 Constraints = getConstraintsDual_panda(model)
 
-production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')
-production_df.loc[:,'Storage'] = Variables['storageOut'].pivot(index='TIMESTAMP',columns='STOCK_TECHNO',values='storageOut').sum(axis=1)-Variables['storageIn'].pivot(index='TIMESTAMP',columns='STOCK_TECHNO',values='storageIn').sum(axis=1) ### put storage in the production time series
+production_df=Variables['energy'].pivot(index="Date",columns='TECHNOLOGIES', values='energy')
+production_df.loc[:,'Storage'] = Variables['storageOut'].pivot(index='Date',columns='STOCK_TECHNO',values='storageOut').sum(axis=1)-Variables['storageIn'].pivot(index='Date',columns='STOCK_TECHNO',values='storageIn').sum(axis=1) ### put storage in the production time series
 production_df.sum(axis=0)/10**6 ### energies produites TWh
 production_df[production_df>0].sum(axis=0)/10**6 ### energies produites TWh
 production_df.max(axis=0)/1000 ### Pmax en GW
 
-TIMESTAMP_d=pd.date_range(start=str(year)+"-01-01 00:00:00",end=str(year)+"-12-31 23:00:00",   freq="1H")
-production_df.index=TIMESTAMP_d; areaConsumption.index=TIMESTAMP_d;
+Date_d=pd.date_range(start=str(year)+"-01-01 00:00:00",end=str(year)+"-12-31 23:00:00",   freq="1H")
+production_df.index=Date_d; areaConsumption.index=Date_d;
 fig=MyStackedPlotly(y_df=production_df, Conso=areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
@@ -282,9 +280,9 @@ TechParameters = pd.read_csv(InputFolder+'Gestion_MultiNode_DE-FR_AREAS_TECHNOLO
                              sep=',',decimal='.',comment="#",skiprows=0).set_index(["AREAS","TECHNOLOGIES"])
 StorageParameters = pd.read_csv(InputFolder+'Gestion_MultiNode_AREAS_DE-FR_STOCK_TECHNO.csv',sep=',',decimal='.',comment="#",skiprows=0).set_index(["AREAS","STOCK_TECHNO"])
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["AREAS","TIMESTAMP"])
+                                sep=',',decimal='.',skiprows=0).set_index(["AREAS","Date"])
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["AREAS","TIMESTAMP","TECHNOLOGIES"])
+                                sep=',',decimal='.',skiprows=0).set_index(["AREAS","Date","TECHNOLOGIES"])
 
 ExchangeParameters = pd.read_csv(InputFolder+'Hypothese_DE-FR_AREAS_AREAS.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["AREAS","AREAS.1"])
 #ExchangeParameters.loc[ExchangeParameters.AREAS=="FR",'maxExchangeCapacity']=90000 ## margin to make everything work
@@ -308,7 +306,7 @@ Variables = getVariables_panda_indexed(model)
 Constraints = getConstraintsDual_panda(model)
 
 production_df=EnergyAndExchange2Prod(Variables)
-stockage=Variables['storageOut'].pivot(index=['AREAS','TIMESTAMP'],columns='STOCK_TECHNO',values='storageOut').sum(axis=1)-Variables['storageIn'].pivot(index=['AREAS','TIMESTAMP'],columns='STOCK_TECHNO',values='storageIn').sum(axis=1)
+stockage=Variables['storageOut'].pivot(index=['AREAS','Date'],columns='STOCK_TECHNO',values='storageOut').sum(axis=1)-Variables['storageIn'].pivot(index=['AREAS','Date'],columns='STOCK_TECHNO',values='storageIn').sum(axis=1)
 areaConsumption['Storage']=stockage
 areaConsumption['NewConsumption']=areaConsumption['areaConsumption']+stockage
 
@@ -319,12 +317,7 @@ production_df.loc[:,'Storage'] = -areaConsumption["Storage"] #### ajout du stock
 Delta=(production_df.sum(axis=1) - areaConsumption.areaConsumption);
 abs(Delta).max()
 
-
-production_df_=ChangeTIMESTAMP2Dates(production_df,year)
-areaConsumption_=ChangeTIMESTAMP2Dates(areaConsumption,year)
-
-
-fig=MyAreaStackedPlot(production_df_,Conso=areaConsumption_)
+fig=MyAreaStackedPlot(production_df,Conso=areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
 
@@ -343,9 +336,9 @@ Selected_TECHNOLOGIES=['OldNuke','Coal','CCG','TAC', 'WindOnShore','HydroReservo
 
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["TIMESTAMP"])
+                                sep=',',decimal='.',skiprows=0).set_index(["Date"])
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["TIMESTAMP","TECHNOLOGIES"])
+                                sep=',',decimal='.',skiprows=0).set_index(["Date","TECHNOLOGIES"])
 TechParameters = pd.read_csv(InputFolder+'Gestion-Simple_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0).set_index(["TECHNOLOGIES"])
 StorageParameters = pd.read_csv(InputFolder+'Gestion-RAMP1_STOCK_TECHNO.csv',sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
 
@@ -364,16 +357,17 @@ results=opt.solve(model)
 Variables = getVariables_panda_indexed(model)
 Constraints = getConstraintsDual_panda(model)
 
-production_df=Variables['energy'].pivot(index="TIMESTAMP",columns='TECHNOLOGIES', values='energy')
-production_df.loc[:,'Storage'] = Variables['storageOut'].pivot(index='TIMESTAMP',columns='STOCK_TECHNO',values='storageOut').sum(axis=1)-Variables['storageIn'].pivot(index='TIMESTAMP',columns='STOCK_TECHNO',values='storageIn').sum(axis=1) ### put storage in the production time series
+
+production_df=Variables['energy'].pivot(index="Date",columns='TECHNOLOGIES', values='energy')
+production_df.loc[:,'Storage'] = Variables['storageOut'].pivot(index='Date',columns='STOCK_TECHNO',values='storageOut').sum(axis=1)-Variables['storageIn'].pivot(index='Date',columns='STOCK_TECHNO',values='storageIn').sum(axis=1) ### put storage in the production time series
 Delta= production_df.sum(axis=1)-areaConsumption["areaConsumption"]
 sum(abs(Delta))
 production_df.sum(axis=0)/10**6 ### energies produites TWh
 production_df[production_df>0].sum(axis=0)/10**6 ### energies produites TWh
 production_df.max(axis=0)/1000 ### Pmax en GW
 
-TIMESTAMP_d=pd.date_range(start=str(year)+"-01-01 00:00:00",end=str(year)+"-12-31 23:00:00",   freq="1H")
-production_df.index=TIMESTAMP_d; areaConsumption.index=TIMESTAMP_d;
+Date_d=pd.date_range(start=str(year)+"-01-01 00:00:00",end=str(year)+"-12-31 23:00:00",   freq="1H")
+production_df.index=Date_d; areaConsumption.index=Date_d;
 fig=MyStackedPlotly(y_df=production_df, Conso=areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline

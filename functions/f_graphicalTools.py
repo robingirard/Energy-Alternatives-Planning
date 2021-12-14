@@ -28,11 +28,11 @@ def extractEnergyCapacity(Variables) :
     if "AREAS" in Variables['energy'].columns:
         production_df = EnergyAndExchange2Prod(Variables)
         EnergyCapacity_df = Variables['capacity'].set_index(["AREAS","TECHNOLOGIES"]) / 10 ** 3;
-        EnergyCapacity_df = EnergyCapacity_df.merge(pd.DataFrame(Variables['energy'].groupby(by=["AREAS","TECHNOLOGIES"]).sum().drop(columns="TIMESTAMP") / 10 ** 6),
+        EnergyCapacity_df = EnergyCapacity_df.merge(pd.DataFrame(Variables['energy'].groupby(by=["AREAS","TECHNOLOGIES"]).sum().drop(columns="Date") / 10 ** 6),
                                                     left_on=["AREAS","TECHNOLOGIES"], right_on=["AREAS","TECHNOLOGIES"])
         EnergyCapacity_df.columns = ["Capacity_GW", "Production_TWh"]
     else:
-        production_df = Variables['energy'].pivot(index="TIMESTAMP", columns='TECHNOLOGIES', values='energy')
+        production_df = Variables['energy'].pivot(index="Date", columns='TECHNOLOGIES', values='energy')
         EnergyCapacity_df = Variables['capacity'].set_index("TECHNOLOGIES") / 10 ** 3;
         EnergyCapacity_df = EnergyCapacity_df.merge(pd.DataFrame(production_df.sum(axis=0) / 10 ** 6),
                                                     left_on="TECHNOLOGIES", right_on="TECHNOLOGIES")
@@ -46,14 +46,7 @@ def expand_grid(x, y,names):
     res.loc[:,names[1]] = yG.flatten() # same
     return res # return a dataframe
 
-def ChangeTIMESTAMP2Dates(df,year):
-    n=len(df.index.get_level_values('TIMESTAMP').unique().tolist())
-    TIMESTAMP_d = pd.DataFrame({"TIMESTAMP_d": pd.date_range(start=str(year) + "-01-01 00:00:00",
-                                                             end=str(year) + "-12-31 23:00:00", freq="1H"),
-                                "TIMESTAMP": range(1, n + 1)}).set_index(["TIMESTAMP"])
-    df = df.reset_index().merge(TIMESTAMP_d,how="outer", left_on="TIMESTAMP", right_on="TIMESTAMP")
-    df=df.drop(columns="TIMESTAMP").rename(columns={'TIMESTAMP_d': 'TIMESTAMP'}).set_index(["AREAS","TIMESTAMP"])
-    return(df)
+
 
 def MyPlotly(x_df,y_df,Names="",fill=True):
     '''
@@ -159,19 +152,19 @@ def AppendMyStackedPlotly(fig,y_df,Conso,isModifyOrder=True):
 
 
 def EnergyAndExchange2Prod(Variables,EnergyName='energy',exchangeName='Exchange'):
-    Variables["exchange"].columns = ['AREAS1', 'AREAS2', 'TIMESTAMP', 'exchange']
+    Variables["exchange"].columns = ['AREAS1', 'AREAS2', 'Date', 'exchange']
     AREAS = Variables['energy'].AREAS.unique()
-    production_df = Variables['energy'].pivot(index=["AREAS","TIMESTAMP"], columns='TECHNOLOGIES', values='energy')
+    production_df = Variables['energy'].pivot(index=["AREAS","Date"], columns='TECHNOLOGIES', values='energy')
     ToAREA=[]
     for AREA in AREAS:
         ToAREA.append(Variables["exchange"].\
-            loc[(Variables["exchange"].AREAS2 == AREA), ["TIMESTAMP", "exchange",
+            loc[(Variables["exchange"].AREAS2 == AREA), ["Date", "exchange",
                                                                                               "AREAS1",
                                                                                               "AREAS2"]].\
             rename(columns={"AREAS2": "AREAS"}).\
-            pivot(index=["AREAS","TIMESTAMP"], columns='AREAS1', values='exchange'))
+            pivot(index=["AREAS","Date"], columns='AREAS1', values='exchange'))
     ToAREA_pd=pd.concat(ToAREA)
-    production_df = production_df.merge(ToAREA_pd, how='inner', left_on=["AREAS","TIMESTAMP"], right_on=["AREAS","TIMESTAMP"])
+    production_df = production_df.merge(ToAREA_pd, how='inner', left_on=["AREAS","Date"], right_on=["AREAS","Date"])
     #exchange analysis
     return(production_df);
 
@@ -194,7 +187,7 @@ def MyAreaStackedPlot_tidy(df,Selected_TECHNOLOGIES=-1,AREA_name="AREAS",TechNam
     fig = go.Figure()
     dicts=[]
     for AREA in AREAS:
-        production_df = df[df[AREA_name] == AREA].pivot(index="TIMESTAMP",columns='TECHNOLOGIES',values='energy')
+        production_df = df[df[AREA_name] == AREA].pivot(index="Date",columns='TECHNOLOGIES',values='energy')
         fig = AppendMyStackedPlotly(fig,x_df=production_df.index,
                             y_df=production_df[list(Selected_TECHNOLOGIES)],
                             Names=list(Selected_TECHNOLOGIES))
@@ -269,8 +262,8 @@ def MyAreaStackedPlot(df_,Conso=-1,Selected_TECHNOLOGIES=-1,AREA_name="AREAS"):
     for AREA in AREAS:
         production_df_ = df.loc[(AREA,slice(None)),:]#.reset_index()
         Conso_=Conso.loc[(AREA,slice(None)),:];
-        Conso_ = Conso.loc[(AREA,slice(None)),:].reset_index().set_index("TIMESTAMP").drop(["AREAS"], axis=1);
-        production_df_ = df.loc[(AREA,slice(None)),:].reset_index().set_index("TIMESTAMP").drop(["AREAS"], axis=1);
+        Conso_ = Conso.loc[(AREA,slice(None)),:].reset_index().set_index("Date").drop(["AREAS"], axis=1);
+        production_df_ = df.loc[(AREA,slice(None)),:].reset_index().set_index("Date").drop(["AREAS"], axis=1);
         #Conso_.reset_index(inplace=True)
         Conso_.loc[:,"ConsoImportExport"] = Conso_.loc[:,"areaConsumption"] - production_df_.loc[:,AREAS].sum(axis=1)
 
