@@ -16,6 +16,7 @@ import sys
 from functions.f_operationModels import *
 from functions.f_optimization import *
 from functions.f_graphicalTools import *
+from functions.f_consumptionModels import *
 #endregion
 
 #region Solver and data location definition
@@ -46,9 +47,9 @@ solver= 'mosek' ## no need for solverpath with mosek.
 #region I - Simple single area : loading parameters
 Zones="FR" ; year=2013
 #### reading areaConsumption availabilityFactor and TechParameters CSV files
-areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0).set_index(["Date"])
-availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0).set_index(["Date","TECHNOLOGIES"])
-TechParameters = pd.read_csv(InputFolder+'Gestion-Simple_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0).set_index(["TECHNOLOGIES"])
+areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
+availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
+TechParameters = pd.read_csv(InputFolder+'Gestion-Simple_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["TECHNOLOGIES"])
 
 #### Selection of subset
 Selected_TECHNOLOGIES=['OldNuke','CCG'] #you can add technologies here
@@ -105,10 +106,10 @@ Selected_TECHNOLOGIES=['OldNuke', 'CCG',"curtailment"] #you'll add 'Solar' after
 #### reading CSV files
 
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["Date"])
+                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["Date","TECHNOLOGIES"])
-TechParameters = pd.read_csv(InputFolder+'Gestion-RAMP1_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0).set_index(["TECHNOLOGIES"])
+                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
+TechParameters = pd.read_csv(InputFolder+'Gestion-RAMP1_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["TECHNOLOGIES"])
 
 #### Selection of subset
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
@@ -174,11 +175,11 @@ Selected_AREAS=["FR","DE"]
 Selected_TECHNOLOGIES=['OldNuke', 'CCG','WindOnShore',"curtailment"] #you'll add 'Solar' after #'NewNuke', 'HydroRiver', 'HydroReservoir','WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
 
 #### reading CSV files
-TechParameters = pd.read_csv(InputFolder+'Gestion_MultiNode_DE-FR_AREAS_TECHNOLOGIES.csv',sep=',',decimal='.',comment="#",skiprows=0).set_index(["AREAS","TECHNOLOGIES"])
+TechParameters = pd.read_csv(InputFolder+'Gestion_MultiNode_DE-FR_AREAS_TECHNOLOGIES.csv',sep=',',decimal='.',comment="#",skiprows=0,parse_dates=['Date']).set_index(["AREAS","TECHNOLOGIES"])
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["AREAS","Date"])
+                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["AREAS","Date"])
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["AREAS","Date","TECHNOLOGIES"])
+                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["AREAS","Date","TECHNOLOGIES"])
 
 ExchangeParameters = pd.read_csv(InputFolder+'Hypothese_DE-FR_AREAS_AREAS.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["AREAS","AREAS.1"])
 #ExchangeParameters.loc[ExchangeParameters.AREAS=="FR",'maxExchangeCapacity']=90000 ## margin to make everything work
@@ -232,11 +233,11 @@ Selected_TECHNOLOGIES=['OldNuke','WindOnShore', 'CCG',"curtailment"]
 
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["Date"])
+                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["Date","TECHNOLOGIES"])
-TechParameters = pd.read_csv(InputFolder+'Gestion-RAMP1_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0).set_index(["TECHNOLOGIES"])
-StorageParameters = pd.read_csv(InputFolder+'Gestion-RAMP1_STOCK_TECHNO.csv',sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
+                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
+TechParameters = pd.read_csv(InputFolder+'Gestion-RAMP1_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["TECHNOLOGIES"])
+StorageParameters = pd.read_csv(InputFolder+'Gestion-RAMP1_STOCK_TECHNO.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["STOCK_TECHNO"])
 
 #### Selection of subset
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
@@ -277,12 +278,12 @@ Selected_TECHNOLOGIES=['OldNuke', 'CCG','WindOnShore',"curtailment"] #you'll add
 
 #### reading CSV files
 TechParameters = pd.read_csv(InputFolder+'Gestion_MultiNode_DE-FR_AREAS_TECHNOLOGIES.csv',
-                             sep=',',decimal='.',comment="#",skiprows=0).set_index(["AREAS","TECHNOLOGIES"])
-StorageParameters = pd.read_csv(InputFolder+'Gestion_MultiNode_AREAS_DE-FR_STOCK_TECHNO.csv',sep=',',decimal='.',comment="#",skiprows=0).set_index(["AREAS","STOCK_TECHNO"])
+                             sep=',',decimal='.',comment="#",skiprows=0,parse_dates=['Date']).set_index(["AREAS","TECHNOLOGIES"])
+StorageParameters = pd.read_csv(InputFolder+'Gestion_MultiNode_AREAS_DE-FR_STOCK_TECHNO.csv',sep=',',decimal='.',comment="#",skiprows=0,parse_dates=['Date']).set_index(["AREAS","STOCK_TECHNO"])
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["AREAS","Date"])
+                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["AREAS","Date"])
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["AREAS","Date","TECHNOLOGIES"])
+                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["AREAS","Date","TECHNOLOGIES"])
 
 ExchangeParameters = pd.read_csv(InputFolder+'Hypothese_DE-FR_AREAS_AREAS.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["AREAS","AREAS.1"])
 #ExchangeParameters.loc[ExchangeParameters.AREAS=="FR",'maxExchangeCapacity']=90000 ## margin to make everything work
@@ -336,11 +337,11 @@ Selected_TECHNOLOGIES=['OldNuke','Coal','CCG','TAC', 'WindOnShore','HydroReservo
 
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["Date"])
+                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["Date","TECHNOLOGIES"])
-TechParameters = pd.read_csv(InputFolder+'Gestion-Simple_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0).set_index(["TECHNOLOGIES"])
-StorageParameters = pd.read_csv(InputFolder+'Gestion-RAMP1_STOCK_TECHNO.csv',sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
+                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
+TechParameters = pd.read_csv(InputFolder+'Gestion-Simple_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["TECHNOLOGIES"])
+StorageParameters = pd.read_csv(InputFolder+'Gestion-RAMP1_STOCK_TECHNO.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["STOCK_TECHNO"])
 
 #### Selection of subset
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]

@@ -20,7 +20,7 @@ year=2013
 
 MyTech= 'OldNuke'  ### 'Thermal' 'OldNuke' 'HydroRiver' 'HydroReservoir' 'WindOnShore' 'Solar'
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0)
+                                sep=',',decimal='.',skiprows=0,parse_dates=['Date'])
 print(availabilityFactor['TECHNOLOGIES'].unique() ) ### available technologies
 tabl=availabilityFactor[availabilityFactor['TECHNOLOGIES']==MyTech]
 fig=MyPlotly(x_df=tabl.TIMESTAMP,y_df=tabl[['availabilityFactor']],fill=False)
@@ -29,7 +29,7 @@ fig = go.Figure()
 fig.add_trace(go.Scatter(x=tabl['TIMESTAMP'],y=tabl['availabilityFactor'],line=dict(color="#000000"),name="original"))
 for newyear in range(2013,2016):
     availabilityFactor = pd.read_csv(InputFolder + 'availabilityFactor' + str(newyear) + '_' + str(Zones) + '.csv',
-                                     sep=',', decimal='.', skiprows=0)
+                                     sep=',', decimal='.', skiprows=0,parse_dates=['Date'])
     tabl = availabilityFactor[availabilityFactor['TECHNOLOGIES'] == MyTech]
     fig.add_trace(go.Scatter(x=tabl['TIMESTAMP'],y=tabl['availabilityFactor'],
                              line=dict(color="#9CA2A8",width=1),
@@ -47,7 +47,7 @@ MyTech= 'WindOnShore'  ### 'Thermal' 'OldNuke' 'HydroRiver' 'HydroReservoir' 'Wi
 
 #### reading CSV files
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0)
+                                sep=',',decimal='.',skiprows=0,parse_dates=['Date'])
 availabilityFactor0 = availabilityFactor[availabilityFactor['TECHNOLOGIES'] == MyTech]
 fig = go.Figure()
 pal = sns.color_palette("bright", 4); i=0; #https://chrisalbon.com/python/data_visualization/seaborn_color_palettes/

@@ -9,8 +9,8 @@ from sklearn import linear_model
 from datetime import time
 from datetime import datetime
 
-#data_df=NewConsoTempeYear_df
-def Decomposeconso(data_df, TemperatureThreshold=14, TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='TIMESTAMP') :
+#data_df=areaConsumption.join(ConsoTempe_df)[['areaConsumption','Temperature']]
+def Decomposeconso(data_df, TemperatureThreshold=14, TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='Date') :
     '''
     fonction décomposant la consommation électrique d'une année en une part thermosensible et une part non thermosensible
     :param data: panda data frame with "Temperature" and "Consumption" as columns
@@ -39,7 +39,7 @@ def Decomposeconso(data_df, TemperatureThreshold=14, TemperatureName='Temperatur
 
 
 #ConsoSeparee_df=ConsoTempeYear_decomposed_df
-def Recompose(ConsoSeparee_df,Thermosensibilite,Newdata_df=-1, TemperatureThreshold=14,TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='TIMESTAMP'):
+def Recompose(ConsoSeparee_df,Thermosensibilite,Newdata_df=-1, TemperatureThreshold=14,TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='Date'):
     '''
     fonction permettant de redécomposer la conso électrique en part thermosensible et
     non thermosensible de l'année x à partir de la thermosensibilité
@@ -72,25 +72,11 @@ def Recompose(ConsoSeparee_df,Thermosensibilite,Newdata_df=-1, TemperatureThresh
     return(ConsoSepareeNew_df)
 
 
-ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv')
-def change_areaConsumption(areaConsumption,Temperature,year,Thermo_sens_evolution,Non_Thermosens_evolution,TemperatureName='Temperature',ConsumptionName='areaConsumption',TimeName='TIMESTAMP'):
-    ConsoTempe_df["TIMESTAMP"]=pd.to_datetime(ConsoTempe_df['Date'])
-    ConsoTempe_df=ConsoTempe_df.drop(columns=["Date"]).set_index(["TIMESTAMP"])
-    year = 2013
-    ConsoTempeYear_df=ConsoTempe_df[str(year)]
-    TemperatureThreshold = 15
-    (ConsoTempeYear_decomposed_df,Thermosensibilite)=Decomposeconso(ConsoTempeYear_df,TemperatureThreshold=TemperatureThreshold,ConsumptionName=ConsumptionName,TemperatureName=TemperatureName)
-    NewConso = ConsoTempeYear_decomposed_df.loc[:,'TS_C']+ConsoTempeYear_decomposed_df.loc[:,'NTS_C']
-    NewConso=NewConso.reset_index()
-    NewConso.TIMESTAMP = range(1,8761)
-    NewConso=NewConso.set_index(["TIMESTAMP"])
-    areaConsumption=NewConso
-    areaConsumption=areaConsumption.rename(columns={0 : 'areaConsumption'})
-    areaConsumption.head()
+
 
 def Profile2Consumption(Profile_df,Temperature_df, TemperatureThreshold=14,
                         TemperatureMinimum=0,TemperatureName='Temperature',
-                        ConsumptionName='Consumption',TimeName='TIMESTAMP',
+                        ConsumptionName='Consumption',TimeName='Date',
                         VarName='Puissance.MW.par.million'):
     '''
     fonction permettant de reconstruire la consommation annuelle à partir d'un profil HeurexJourxSaison en une part thermosensible et non thermosensible
@@ -131,7 +117,7 @@ def Profile2Consumption(Profile_df,Temperature_df, TemperatureThreshold=14,
 def ComplexProfile2Consumption(Profile_df,
                                Temperature_df, TemperatureThreshold=14,
                         TemperatureMinimum=0,TemperatureName='Temperature',
-                        ConsumptionName='Consumption',TimeName='TIMESTAMP',
+                        ConsumptionName='Consumption',TimeName='Date',
                         VarName='Puissance.MW.par.million'):
 
     ## initialisation

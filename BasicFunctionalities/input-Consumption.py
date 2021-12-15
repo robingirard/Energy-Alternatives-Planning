@@ -15,25 +15,18 @@ from functions.f_graphicalTools import * #Il faut préciser le chemin où vous a
 #endregion
 
 #region  Load and visualize consumption
-ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv')
-ConsoTempe_df["TIMESTAMP"]=pd.to_datetime(ConsoTempe_df['Date'])
-ConsoTempe_df=ConsoTempe_df.drop(columns=["Date"]).set_index(["TIMESTAMP"])
-
-
+ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv',parse_dates=['Date']).set_index(["Date"])
 year = 2012
-ConsoTempeYear_df=ConsoTempe_df[str(year)]
+ConsoTempeYear_df=ConsoTempe_df.loc[str(year)]
 hour = 19
 TemperatureThreshold = 15
-
-
-ConsoTempeYear_df=ConsoTempe_df[str(year)]
 plt.plot(ConsoTempeYear_df['Temperature'],ConsoTempeYear_df['Consumption']/1000, '.', color='black');
 plt.show()
 #endregion
 
 #region  Thermal sensitivity estimation, consumption decomposition and visualisation
 #select dates to do the linear regression
-#ConsoTempeYear_df.index.get_level_values("TIMESTAMP").to_series().dt.hour
+#ConsoTempeYear_df.index.get_level_values("Date").to_series().dt.hour
 indexHeatingHour = (ConsoTempeYear_df['Temperature'] <= TemperatureThreshold) &\
                     (ConsoTempeYear_df.index.to_series().dt.hour == hour)
 ConsoHeatingHour= ConsoTempeYear_df[indexHeatingHour]
@@ -55,7 +48,7 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 ## change meteo year
 ## example for year 2012
 newyear=2012
-NewConsoTempeYear_df = ConsoTempe_df[str(newyear)]
+NewConsoTempeYear_df = ConsoTempe_df.loc[str(newyear)]
 (ConsoTempeYear_decomposed_df,Thermosensibilite)=Decomposeconso(NewConsoTempeYear_df,TemperatureThreshold=TemperatureThreshold)
 
 NewConsoTempeYear_decomposed_df=Recompose(ConsoTempeYear_decomposed_df,Thermosensibilite,
@@ -64,16 +57,16 @@ NewConsoTempeYear_decomposed_df=Recompose(ConsoTempeYear_decomposed_df,Thermosen
 ### loop over years
 fig = go.Figure()
 TMP=ConsoTempeYear_decomposed_df.copy()
-TMP = TMP.reset_index().drop(columns="TIMESTAMP").assign(TIMESTAMP=range(1, len(TMP) + 1)).set_index(["TIMESTAMP"])
+TMP = TMP.reset_index().drop(columns="Date").assign(Date=range(1, len(TMP) + 1)).set_index(["Date"])
 fig = fig.add_trace(
     go.Scatter(x=TMP.index,y=ConsoTempeYear_decomposed_df['Consumption'],line=dict(color="#000000"),name="original"))
 for newyear in range(2000,2012):
-    NewConsoTempeYear_df = ConsoTempe_df[str(newyear)]
+    NewConsoTempeYear_df = ConsoTempe_df.loc[str(newyear)]
     ConsoSepareeNew_df=Recompose(ConsoTempeYear_decomposed_df,Thermosensibilite,
                                  Newdata_df=NewConsoTempeYear_df,
                                  TemperatureThreshold=TemperatureThreshold)
-    ConsoSepareeNew_df = ConsoSepareeNew_df.reset_index().drop(columns="TIMESTAMP").assign(
-        TIMESTAMP=range(1, len(ConsoSepareeNew_df) + 1)).set_index(["TIMESTAMP"])
+    ConsoSepareeNew_df = ConsoSepareeNew_df.reset_index().drop(columns="Date").assign(
+        Date=range(1, len(ConsoSepareeNew_df) + 1)).set_index(["Date"])
 
     fig.add_trace(go.Scatter(x=ConsoSepareeNew_df.index,
                              y=ConsoSepareeNew_df['Consumption'],
@@ -103,10 +96,9 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 
 #region Electric Vehicle
 
-VEProfile_df=pd.read_csv(InputFolder+'EVModel.csv', sep=';')
+VEProfile_df=pd.read_csv(InputFolder+'EVModel.csv', sep=';',parse_dates=['Date']).set_index(["Date"])
 year=2012
-NewConsoTempeYear_df = ConsoTempe_df[str(year)]
-EV_Consumption_df=Profile2Consumption(Profile_df=VEProfile_df,Temperature_df = NewConsoTempeYear_df[['Temperature']])
+EV_Consumption_df=Profile2Consumption(Profile_df=VEProfile_df,Temperature_df = ConsoTempe_df.loc[str(year)][['Temperature']])
 fig=MyStackedPlotly(y_df=EV_Consumption_df[["NTS_C","TS_C"]],
                     Names=['Conso VE non thermosensible','conso VE thermosensible'])
 fig=fig.update_layout(title_text="Consommation (MWh)", xaxis_title="Date")
@@ -120,12 +112,12 @@ year=2016 #only possible year
 
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0).set_index(["AREAS","TIMESTAMP"])
+                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["AREAS","Date"])
 fig = go.Figure()
 pal = sns.color_palette("bright", 4); i=0; #https://chrisalbon.com/python/data_visualization/seaborn_color_palettes/
 for region in ["FR","DE","ES"]: ### problem with spain data
     #tabl=areaConsumption[(region,slice(None))]
-    fig.add_trace(go.Scatter(x=areaConsumption.index.get_level_values("TIMESTAMP"),
+    fig.add_trace(go.Scatter(x=areaConsumption.index.get_level_values("Date"),
                              y=areaConsumption.loc[(region,slice(None)),"areaConsumption"],
                              line=dict(color=pal.as_hex()[i],width=1),
                              name=region))
@@ -135,16 +127,14 @@ plotly.offline.plot(fig, filename='file.html')
 #endregion
 
 #region consumption decomposition
-ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv')
-ConsoTempe_df["TIMESTAMP"]=pd.to_datetime(ConsoTempe_df['Date'])
-ConsoTempe_df=ConsoTempe_df.drop(columns=["Date"]).set_index(["TIMESTAMP"])
+ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv',parse_dates=['Date']).set_index(["Date"])
 year = 2012
-ConsoTempeYear_df=ConsoTempe_df[str(year)]
 Profile_df=pd.read_csv(InputFolder+"ConsumptionDetailedProfiles.csv").set_index(["Mois", "heures",'Nature', 'type', 'UsagesGroupe', 'UsageDetail', "WeekDay"])
-Profile_df_merged=ComplexProfile2Consumption(Profile_df,ConsoTempeYear_df)
-Profile_df_merged_spread = Profile_df_merged.groupby(["TIMESTAMP", "type"]).sum().reset_index(). \
+Profile_df_merged=ComplexProfile2Consumption(Profile_df,ConsoTempe_df[str(year)])
+
+Profile_df_merged_spread = Profile_df_merged.groupby(["Date","UsagesGroupe","type"]).sum().reset_index(). \
     drop(columns=["Temperature"]). \
-    pivot(index="TIMESTAMP", columns='type', values='Conso');
+    pivot(index="Date", columns=['type',"UsagesGroupe"], values='Conso');
 Profile_df_merged_spread
 fig = MyStackedPlotly(y_df=Profile_df_merged_spread)
 plotly.offline.plot(fig, filename='file.html')  ## offline
