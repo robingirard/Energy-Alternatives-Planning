@@ -1,8 +1,8 @@
 TECHNOLOGIES,energyCost,capacityCost,EnergyNbhourCap,minCapacity,maxCapacity,RampConstraintPlus,RampConstraintMoins,RampConstraintPlus2,RampConstraintMoins2
 TAC,84.0,100200.0,0,3600.0,400000,0.0,0.0,0,0
 Coal,80.0,128009.99999999999,0,1800.0,200000,0.06,0.06,0,0
-CCG,68.8,116890.0,0,10800.0,1200000,0.06,0.06,0,0
-OldNuke,7.0,245060.0,0,56700.0,6300000,0.04,0.04,0,0
+CCG,68.8,116890.0,0,0.0,12000,0.06,0.06,0,0
+OldNuke,7.0,245060.0,0,56700.0,63000,0.04,0.04,0,0
 NukeCarrene,7.0,312510.0,0,0.0,0,0.0,0.0,0,0
 NewNuke,7.0,394430.0,0,0.0,100000,0.0,0.0,0,0
 WindOnShore,0.0,132720.0,0,13410.0,1490000,0.0,0.0,0,0

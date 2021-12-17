@@ -269,7 +269,7 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 Zones="FR"
 year=2013
 
-Selected_TECHNOLOGIES=['CCG', 'WindOnShore','Solar',"curtailment",'HydroRiver', 'HydroReservoir']
+Selected_TECHNOLOGIES=['CCG', 'WindOnShore','WindOffShore','Solar',"curtailment",'HydroRiver', 'HydroReservoir']
 
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
@@ -433,7 +433,7 @@ production_df.groupby(by="AREAS").min()/1000 ### Pmax en GW
 #endregion
 
 
-#region VII - Simple single area demande side management : loading parameters
+#region VII - Simple single area +4 million EV +  demande side management +30TWh H2: loading parameters
 Zones="FR" ; year=2013
 #### reading areaConsumption availabilityFactor and TechParameters CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
@@ -454,18 +454,18 @@ ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv'
 ConsoTempe_df_nodup=ConsoTempe_df.loc[~ConsoTempe_df.index.duplicated(),:]
 (ConsoTempeYear_decomposed_df,Thermosensibilite)=Decomposeconso(areaConsumption.join(ConsoTempe_df_nodup)[['areaConsumption','Temperature']],
                                                                 TemperatureThreshold=15,ConsumptionName="areaConsumption")
-areaConsumption = areaConsumption.assign(areaConsumption = ConsoTempeYear_decomposed_df.loc[:,'TS_C']+1.0*ConsoTempeYear_decomposed_df.loc[:,'NTS_C'])#+VE_consumption.loc[:,'Consumption'])
+areaConsumption = areaConsumption.assign(areaConsumption = ConsoTempeYear_decomposed_df.loc[:,'TS_C']+ConsoTempeYear_decomposed_df.loc[:,'NTS_C'])#+VE_consumption.loc[:,'Consumption'])
 
 VEProfile_df=pd.read_csv(InputFolder+'EVModel.csv', sep=';')
-NbVE=4 # millions
+NbVE=10 # millions
 ev_consumption = NbVE*Profile2Consumption(Profile_df=VEProfile_df,Temperature_df = ConsoTempe_df_nodup.loc[str(year)][['Temperature']])[['Consumption']]
 
-TechParameters = pd.read_csv(InputFolder+'Planing-Simple_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
+TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1BIS_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
 StorageParameters = pd.read_csv(InputFolder + 'Planing-RAMP1_STOCK_TECHNO.csv', sep=',', decimal='.',
                                 skiprows=0).set_index(["STOCK_TECHNO"])
 ConsoParameters = pd.read_csv(InputFolder + "Planing-Conso-FLEX_CONSUM.csv", sep=";").set_index(["FLEX_CONSUM"])
 
-Selected_TECHNOLOGIES=['OldNuke','CCG'] #you can add technologies here
+Selected_TECHNOLOGIES=['OldNuke','CCG','TAC', 'WindOnShore', 'WindOffShore','HydroReservoir','HydroRiver','Solar','curtailment']#you can add technologies here
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
 TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
 
@@ -490,5 +490,6 @@ results=opt.solve(model)
 Variables = getVariables_panda_indexed(model)
 Variables.keys()
 Variables['increased_max_power'] ## on a ajouté X GW à ce qui existait.
-
+print(extractCosts(Variables))
+print(extractEnergyCapacity(Variables))
 Constraints = getConstraintsDual_panda(model)
