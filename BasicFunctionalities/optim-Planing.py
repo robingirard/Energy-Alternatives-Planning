@@ -209,9 +209,8 @@ Delta= production_df.sum(axis=1)-areaConsumption.areaConsumption
 abs(Delta).sum()
 
 ## adding dates
-production_df_=ChangeDate2Dates(production_df,year)
-areaConsumption_=ChangeDate2Dates(areaConsumption,year)
-fig=MyAreaStackedPlot(production_df_,Conso=areaConsumption_)
+
+fig=MyAreaStackedPlot(production_df,Conso=areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
 
@@ -232,7 +231,7 @@ availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
 TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1BIS_TECHNOLOGIES.csv',
                              sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
-StorageParameters = pd.read_csv(InputFolder+'Planing-RAMP1_STOCK_TECHNO.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["STOCK_TECHNO"])
+StorageParameters = pd.read_csv(InputFolder+'Planing-RAMP1_STOCK_TECHNO.csv',sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
 
 #### Selection of subset
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
@@ -388,7 +387,7 @@ availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+
 
 ExchangeParameters = pd.read_csv(InputFolder+'Hypothese_DE-FR_AREAS_AREAS.csv',
                                  sep=',',decimal='.',skiprows=0,comment="#").set_index(["AREAS","AREAS.1"])
-StorageParameters = pd.read_csv(InputFolder+'Planing_MultiNode_AREAS_DE-FR_STOCK_TECHNO.csv',sep=',',decimal='.',comment="#",skiprows=0,parse_dates=['Date']).set_index(["AREAS","STOCK_TECHNO"])
+StorageParameters = pd.read_csv(InputFolder+'Planing_MultiNode_AREAS_DE-FR_STOCK_TECHNO.csv',sep=',',decimal='.',comment="#",skiprows=0).set_index(["AREAS","STOCK_TECHNO"])
 
 #### Selection of subset
 TechParameters=TechParameters.loc[(Selected_AREAS,Selected_TECHNOLOGIES),:]
@@ -432,3 +431,64 @@ production_df[production_df>0].groupby(by="AREAS").sum()/10**6 ### energies prod
 production_df.groupby(by="AREAS").max()/1000 ### Pmax en GW ### le stockage ne fait rien en Allemagne ??? bizarre
 production_df.groupby(by="AREAS").min()/1000 ### Pmax en GW
 #endregion
+
+
+#region VII - Simple single area demande side management : loading parameters
+Zones="FR" ; year=2013
+#### reading areaConsumption availabilityFactor and TechParameters CSV files
+areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
+availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
+
+#obtaining industry-metal consumption
+Profile_df=pd.read_csv(InputFolder+"ConsumptionDetailedProfiles.csv").set_index(["Mois", "heures",'Nature', 'type', 'UsagesGroupe', 'UsageDetail', "WeekDay"])
+Profile_df_merged=ComplexProfile2Consumption(Profile_df,areaConsumption,TemperatureName='areaConsumption') #TODO : change ComplexProfile2Consumption to adapt to the new date format
+#Profile_df_merged_spread_0=Profile_df_merged.groupby(["Date","type"]).sum().reset_index().drop(columns=["areaConsumption"]).pivot(index="Date", columns=['type'], values='Conso');
+Profile_df_merged_spread = Profile_df_merged.groupby(["Date","Nature","UsagesGroupe","type"]).sum().reset_index().drop(columns=["areaConsumption"]).pivot(index="Date", columns=["Nature",'type',"UsagesGroupe"], values='Conso');
+steel_consumption=Profile_df_merged_spread.loc[:,("MineraiMetal","Ind",'Process')]*areaConsumption.loc[:,"areaConsumption"]
+steel_consumption.iloc[0]=110
+steel_consumption.max()
+steel_consumption[steel_consumption.isna()]=110
+steel_consumption.isna().sum()
+# if you want to change thermal sensitivity + add electric vehicle
+ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv',parse_dates=['Date']).set_index(["Date"]) #
+ConsoTempe_df_nodup=ConsoTempe_df.loc[~ConsoTempe_df.index.duplicated(),:]
+(ConsoTempeYear_decomposed_df,Thermosensibilite)=Decomposeconso(areaConsumption.join(ConsoTempe_df_nodup)[['areaConsumption','Temperature']],
+                                                                TemperatureThreshold=15,ConsumptionName="areaConsumption")
+areaConsumption = areaConsumption.assign(areaConsumption = ConsoTempeYear_decomposed_df.loc[:,'TS_C']+1.0*ConsoTempeYear_decomposed_df.loc[:,'NTS_C'])#+VE_consumption.loc[:,'Consumption'])
+
+VEProfile_df=pd.read_csv(InputFolder+'EVModel.csv', sep=';')
+NbVE=4 # millions
+ev_consumption = NbVE*Profile2Consumption(Profile_df=VEProfile_df,Temperature_df = ConsoTempe_df_nodup.loc[str(year)][['Temperature']])[['Consumption']]
+
+TechParameters = pd.read_csv(InputFolder+'Planing-Simple_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
+StorageParameters = pd.read_csv(InputFolder + 'Planing-RAMP1_STOCK_TECHNO.csv', sep=',', decimal='.',
+                                skiprows=0).set_index(["STOCK_TECHNO"])
+ConsoParameters = pd.read_csv(InputFolder + "Planing-Conso-FLEX_CONSUM.csv", sep=";").set_index(["FLEX_CONSUM"])
+
+Selected_TECHNOLOGIES=['OldNuke','CCG'] #you can add technologies here
+availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
+TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
+
+
+
+h2_Energy = 30000## H2 volume in GWh/year
+h2_Energy_flat_consumption = ev_consumption.Consumption*0+h2_Energy/8760
+to_flexible_consumption=pd.DataFrame({'areaConsumption': steel_consumption,'FLEX_CONSUM' : 'Steel'}).reset_index().set_index(['Date','FLEX_CONSUM']).\
+    append(pd.DataFrame({'areaConsumption': ev_consumption.Consumption,'FLEX_CONSUM' : 'EV'}).reset_index().set_index(['Date','FLEX_CONSUM'])).\
+    append(pd.DataFrame({'areaConsumption': h2_Energy_flat_consumption,'FLEX_CONSUM' : 'H2'}).reset_index().set_index(['Date','FLEX_CONSUM']))
+# endregion
+
+ConsoParameters.loc['H2','LoadCost']
+# €/kW/an coût fixe additionnel pour un GW d'électrolyseur en plus en supposant que l'on construit
+model= Model_SingleNode_online_flex(areaConsumption, availabilityFactor, to_flexible_consumption,
+                             ConsoParameters, TechParameters, StorageParameters)
+
+
+if solver in solverpath :  opt = SolverFactory(solver,executable=solverpath[solver])
+else : opt = SolverFactory(solver)
+results=opt.solve(model)
+Variables = getVariables_panda_indexed(model)
+Variables.keys()
+Variables['increased_max_power'] ## on a ajouté X GW à ce qui existait.
+
+Constraints = getConstraintsDual_panda(model)

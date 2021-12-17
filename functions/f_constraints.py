@@ -39,7 +39,7 @@ def set_RampConstraints_single_area(model, TechParameters):
     if "RampConstraintPlus" in TechParameters:
         def rampCtrPlus_rule(model, t, tech):  # INEQ forall t<
             if model.RampConstraintPlus[tech] > 0:
-                t_plus_1 = str(pd.to_datetime(t) + timedelta(hours=1))
+                t_plus_1 = t + timedelta(hours=1)
                 return model.energy[t_plus_1, tech] - model.energy[t, tech] <= model.capacity[tech] * \
                        model.RampConstraintPlus[tech];
             else:
@@ -50,7 +50,7 @@ def set_RampConstraints_single_area(model, TechParameters):
     if "RampConstraintMoins" in TechParameters:
         def rampCtrMoins_rule(model, t, tech):  # INEQ forall t<
             if model.RampConstraintMoins[tech] > 0:
-                t_plus_1 = str(pd.to_datetime(t) + timedelta(hours=1))
+                t_plus_1 = t + timedelta(hours=1)
                 return model.energy[t_plus_1, tech] - model.energy[t, tech] >= - model.capacity[tech] * \
                        model.RampConstraintMoins[tech];
             else:
@@ -61,9 +61,9 @@ def set_RampConstraints_single_area(model, TechParameters):
     if "RampConstraintPlus2" in TechParameters:
         def rampCtrPlus2_rule(model, t, tech):  # INEQ forall t<
             if model.RampConstraintPlus2[tech] > 0:
-                t_plus_1 = str(pd.to_datetime(t) + timedelta(hours=1))
-                t_plus_2 = str(pd.to_datetime(t) + timedelta(hours=2))
-                t_plus_3 = str(pd.to_datetime(t) + timedelta(hours=3))
+                t_plus_1 = t + timedelta(hours=1)
+                t_plus_2 = t + timedelta(hours=2)
+                t_plus_3 = t + timedelta(hours=3)
                 var = (model.energy[t_plus_2, tech] + model.energy[t_plus_3, tech]) / 2 - (
                             model.energy[t_plus_1, tech] + model.energy[t, tech]) / 2;
                 return var <= model.capacity[tech] * model.RampConstraintPlus[tech];
@@ -75,9 +75,9 @@ def set_RampConstraints_single_area(model, TechParameters):
     if "RampConstraintMoins2" in TechParameters:
         def rampCtrMoins2_rule(model, t, tech):  # INEQ forall t<
             if model.RampConstraintMoins2[tech] > 0:
-                t_plus_1 = str(pd.to_datetime(t) + timedelta(hours=1))
-                t_plus_2 = str(pd.to_datetime(t) + timedelta(hours=2))
-                t_plus_3 = str(pd.to_datetime(t) + timedelta(hours=3))
+                t_plus_1 = t + timedelta(hours=1)
+                t_plus_2 = t + timedelta(hours=2)
+                t_plus_3 = t + timedelta(hours=3)
                 var = (model.energy[t_plus_2, tech] + model.energy[t_plus_3, tech]) / 2 - (
                             model.energy[t_plus_1, tech] + model.energy[t, tech]) / 2;
                 return var >= - model.capacity[tech] * model.RampConstraintMoins2[tech];
@@ -105,7 +105,7 @@ def set_RampConstraints_multiple_areas(model,TechParameters):
     if "RampConstraintPlus" in TechParameters:
         def rampCtrPlus_rule(model,area,t,tech): #INEQ forall t<
             if model.RampConstraintPlus[(area,tech)]>0 :
-                t_plus_1 = str(pd.to_datetime(t) + timedelta(hours=1))
+                t_plus_1 = t + timedelta(hours=1)
                 return model.energy[area,t_plus_1,tech]  - model.energy[area,t,tech] <= model.capacity[area,tech]*model.RampConstraintPlus[area,tech] ;
             else:
                 return Constraint.Skip
@@ -114,7 +114,7 @@ def set_RampConstraints_multiple_areas(model,TechParameters):
     if "RampConstraintMoins" in TechParameters:
         def rampCtrMoins_rule(model,area,t,tech): #INEQ forall t<
             if model.RampConstraintMoins[area,tech]>0. :
-                t_plus_1 = str(pd.to_datetime(t) + timedelta(hours=1))
+                t_plus_1 = t + timedelta(hours=1)
                 return model.energy[area,t_plus_1,tech]  - model.energy[area,t,tech] >= - model.capacity[area,tech]*model.RampConstraintMoins[area,tech] ;
             else:
                 return Constraint.Skip
@@ -123,9 +123,9 @@ def set_RampConstraints_multiple_areas(model,TechParameters):
     if "RampConstraintPlus2" in TechParameters:
         def rampCtrPlus2_rule(model,area,t,tech): #INEQ forall t<
             if model.RampConstraintPlus2[(area,tech)]>0. :
-                t_plus_1 = str(pd.to_datetime(t) + timedelta(hours=1))
-                t_plus_2 = str(pd.to_datetime(t) + timedelta(hours=2))
-                t_plus_3 = str(pd.to_datetime(t) + timedelta(hours=3))
+                t_plus_1 = t + timedelta(hours=1)
+                t_plus_2 = t + timedelta(hours=2)
+                t_plus_3 = t + timedelta(hours=3)
                 var=(model.energy[area,t_plus_2,tech]+model.energy[area,t_plus_3,tech])/2 -  (model.energy[area,t_plus_1,tech]+model.energy[area,t,tech])/2;
                 return var <= model.capacity[area,tech]*model.RampConstraintPlus[area,tech] ;
             else:
@@ -135,9 +135,9 @@ def set_RampConstraints_multiple_areas(model,TechParameters):
     if "RampConstraintMoins2" in TechParameters:
         def rampCtrMoins2_rule(model,area,t,tech): #INEQ forall t<
             if model.RampConstraintMoins2[(area,tech)]>0 :
-                t_plus_1 = str(pd.to_datetime(t) + timedelta(hours=1))
-                t_plus_2 = str(pd.to_datetime(t) + timedelta(hours=2))
-                t_plus_3 = str(pd.to_datetime(t) + timedelta(hours=3))
+                t_plus_1 = t + timedelta(hours=1)
+                t_plus_2 = t + timedelta(hours=2)
+                t_plus_3 = t + timedelta(hours=3)
                 var=(model.energy[area,t_plus_2,tech]+model.energy[area,t_plus_3,tech])/2 -  (model.energy[area,t_plus_1,tech]+model.energy[area,t,tech])/2;
                 return var >= - model.capacity[area,tech]*model.RampConstraintMoins2[area,tech] ;
             else:
@@ -177,7 +177,7 @@ def set_storage_operation_constraints_single_area(model,Date_list):
     # contraintes de stock capacité
     def StockLevel_rule(model, t, s_tech):  # EQ forall t
         if t != Date_list[0]:
-            t_moins_1 = str(pd.to_datetime(t) - timedelta(hours=1))
+            t_moins_1 = t - timedelta(hours=1)
             return model.stockLevel[t, s_tech] == model.stockLevel[t_moins_1, s_tech] * (
                         1 - model.dissipation[s_tech]) + model.storageIn[t, s_tech] * model.efficiency_in[s_tech] - \
                    model.storageOut[t, s_tech] / model.efficiency_out[s_tech]
@@ -204,7 +204,7 @@ def set_storage_operation_constraints_multiple_area(model,Date_list):
     # AREAS x Date x STOCK_TECHNO
     def StockLevel_rule(model, area, t, s_tech):  # EQ forall t
         if t != Date_list[0]:
-            t_moins_1 = str(pd.to_datetime(t) - timedelta(hours=1))
+            t_moins_1 = t - timedelta(hours=1)
             return model.stockLevel[area, t, s_tech] == model.stockLevel[area, t_moins_1, s_tech] * (
                         1 - model.dissipation[area, s_tech]) + model.storageIn[area, t, s_tech] * \
                    model.efficiency_in[area, s_tech] - model.storageOut[area, t, s_tech] / model.efficiency_out[
