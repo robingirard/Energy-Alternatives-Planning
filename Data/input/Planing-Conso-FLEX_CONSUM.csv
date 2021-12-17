@@ -1,0 +1,4 @@
+﻿FLEX_CONSUM;LoadCost;flex_ratio;max_ratio;flex_type
+Steel;2009000;0.15;1.;week
+EV;3409;0.15;1.;week
+H2;5000;1.;1.;year
