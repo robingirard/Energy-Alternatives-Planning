@@ -165,12 +165,12 @@ def set_RampConstraints_multiple_areas(model,TechParameters):
 def set_storage_operation_constraints_single_area(model,Date_list):
     # contraintes de stock puissance
     def StoragePowerUB_rule(model, t, s_tech):  # INEQ forall t
-        return model.storageIn[t, s_tech] - model.p_max[s_tech] <= 0
+        return model.storageIn[t, s_tech] - model.Pmax[s_tech] <= 0
 
     model.StoragePowerUBCtr = Constraint(model.Date, model.STOCK_TECHNO, rule=StoragePowerUB_rule)
 
     def StoragePowerLB_rule(model, t, s_tech, ):  # INEQ forall t
-        return model.storageOut[t, s_tech] - model.p_max[s_tech] <= 0
+        return model.storageOut[t, s_tech] - model.Pmax[s_tech] <= 0
 
     model.StoragePowerLBCtr = Constraint(model.Date, model.STOCK_TECHNO, rule=StoragePowerLB_rule)
 
@@ -185,6 +185,11 @@ def set_storage_operation_constraints_single_area(model,Date_list):
             return model.stockLevel[t, s_tech] == 0
 
     model.StockLevelCtr = Constraint(model.Date, model.STOCK_TECHNO, rule=StockLevel_rule)
+
+    def StockCapacity_rule(model,t,s_tech,):  # INEQ forall t
+        return model.stockLevel[t,s_tech] <= model.Cmax[s_tech]
+    model.StockCapacityCtr = Constraint(model.Date,model.STOCK_TECHNO, rule=StockCapacity_rule)
+
     return model;
 
 def set_storage_operation_constraints_multiple_area(model,Date_list):
@@ -213,4 +218,8 @@ def set_storage_operation_constraints_multiple_area(model,Date_list):
             return model.stockLevel[area, t, s_tech] == 0
 
     model.StockLevelCtr = Constraint(model.AREAS, model.Date, model.STOCK_TECHNO, rule=StockLevel_rule)
+
+    def StockCapacity_rule(model,area,t,s_tech,):  # INEQ forall t
+        return model.stockLevel[area,t,s_tech] <= model.Cmax[area,s_tech]
+    model.StockCapacityCtr = Constraint(model.AREAS,model.Date,model.STOCK_TECHNO, rule=StockCapacity_rule)
     return model;

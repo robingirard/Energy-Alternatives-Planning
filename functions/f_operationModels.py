@@ -214,7 +214,7 @@ def GetElectricSystemModel_GestionSingleNode_withStorage(areaConsumption,availab
     ########################
 
     def ObjectiveFunction_rule(model): #OBJ
-    	return sum(model.energyCosts[tech] for tech in model.TECHNOLOGIES) + sum(model.c_max[s_tech]*model.storageCost[s_tech] 
+    	return sum(model.energyCosts[tech] for tech in model.TECHNOLOGIES) + sum(model.Cmax[s_tech]*model.storageCost[s_tech]
                                                                                  for s_tech in model.STOCK_TECHNO)
     model.OBJ = Objective(rule=ObjectiveFunction_rule, sense=minimize)
 
@@ -235,11 +235,9 @@ def GetElectricSystemModel_GestionSingleNode_withStorage(areaConsumption,availab
     	return    model.capacity[tech] * model.availabilityFactor[t,tech] >= model.energy[t,tech]
     model.CapacityCtr = Constraint(model.Date,model.TECHNOLOGIES, rule=Capacity_rule)
 
-    model=set_storage_operation_constraints_single_area(model)
+    model=set_storage_operation_constraints_single_area(model,Date_list)
 
-    def StockCapacity_rule(model,t,s_tech,):  # INEQ forall t
-        return model.stockLevel[t,s_tech] <= model.c_max[s_tech]
-    model.StockCapacityCtr = Constraint(model.Date,model.STOCK_TECHNO, rule=StockCapacity_rule)
+
     
     #contrainte d'equilibre offre demande
     def energyCtr_rule(model,t): #INEQ forall t
@@ -418,7 +416,7 @@ def GetElectricSystemModel_GestionMultiNode_withStorage(areaConsumption,availabi
     :param areaConsumption: panda table with consumption
     :param availabilityFactor: panda table
     :param isAbstract: boolean true is the model should be abstract. ConcreteModel otherwise
-    :param StorageParameters is a panda with p_max (maximal power), c_max (energy capacity in the storage : maximal energy)
+    :param StorageParameters is a panda with Pmax (maximal power), Cmax (energy capacity in the storage : maximal energy)
     :return: a dictionary with model : pyomo model without storage, storage : storage infos
     """
     
@@ -534,8 +532,8 @@ def GetElectricSystemModel_GestionMultiNode_withStorage(areaConsumption,availabi
         return sum(temp*model.energy[area,t,tech] for t in model.Date) == model.energyCosts[area,tech];
     model.energyCostsDef = Constraint(model.AREAS,model.TECHNOLOGIES, rule=energyCostsDef_rule)
     
-    def storageCostsDef_rule(model,area,s_tech): #EQ forall s_tech in STOCK_TECHNO   storageCosts  = storageCost[s_tech]*c_max[s_tech] / 1E6;
-        return model.storageCost[area,s_tech]*model.c_max[area,s_tech] == model.storageCosts[area,s_tech]#/10**6 ;;
+    def storageCostsDef_rule(model,area,s_tech): #EQ forall s_tech in STOCK_TECHNO   storageCosts  = storageCost[s_tech]*Cmax[s_tech] / 1E6;
+        return model.storageCost[area,s_tech]*model.Cmax[area,s_tech] == model.storageCosts[area,s_tech]#/10**6 ;;
     model.storageCostsDef = Constraint(model.AREAS,model.STOCK_TECHNO, rule=storageCostsDef_rule)
 
     #Exchange capacity constraint (duplicate of variable definition)
@@ -565,30 +563,9 @@ def GetElectricSystemModel_GestionMultiNode_withStorage(areaConsumption,availabi
     	return  model.capacity[area,tech] * model.availabilityFactor[area,t,tech] >=  model.energy[area,t,tech]
     model.CapacityCtr = Constraint(model.AREAS,model.Date,model.TECHNOLOGIES, rule=CapacityCtr_rule)
 
+    model= set_storage_operation_constraints_multiple_area(model, Date_list)
     
-    #contraintes de stock puissance
-    #AREAS x Date x STOCK_TECHNO
-    def StoragePowerUB_rule(model,area,t,s_tech):  # INEQ forall t
-        return model.storageIn[area,t,s_tech] - model.p_max[area,s_tech] <= 0
-    model.StoragePowerUBCtr = Constraint(model.AREAS,model.Date,model.STOCK_TECHNO, rule=StoragePowerUB_rule)
 
-    def StoragePowerLB_rule(model,area,t,s_tech,):  # INEQ forall t
-        return  model.storageOut[area,t,s_tech] - model.p_max[area,s_tech] <= 0
-    model.StoragePowerLBCtr = Constraint(model.AREAS,model.Date,model.STOCK_TECHNO, rule=StoragePowerLB_rule)
-
-    #contraintes de stock capacité
-    #AREAS x Date x STOCK_TECHNO
-    def StockLevel_rule(model,area,t,s_tech):  # EQ forall t
-        if t!=Date_list[0] :
-            t_moins_1 = str(pd.to_datetime(t) - timedelta(hours=1))
-            return model.stockLevel[area,t,s_tech] == model.stockLevel[area,t_moins_1,s_tech]*(1-model.dissipation[area,s_tech]) + model.storageIn[area,t,s_tech]*model.efficiency_in[area,s_tech]-model.storageOut[area,t,s_tech]/model.efficiency_out[area,s_tech]
-        else :
-            return model.stockLevel[area,t,s_tech] == 0
-    model.StockLevelCtr = Constraint(model.AREAS,model.Date,model.STOCK_TECHNO, rule=StockLevel_rule)
-    
-    def StockCapacity_rule(model,area,t,s_tech,):  # INEQ forall t
-        return model.stockLevel[area,t,s_tech] <= model.c_max[area,s_tech]
-    model.StockCapacityCtr = Constraint(model.AREAS,model.Date,model.STOCK_TECHNO, rule=StockCapacity_rule)
     
 
     #contrainte d'equilibre offre demande

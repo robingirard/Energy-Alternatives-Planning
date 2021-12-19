@@ -287,10 +287,7 @@ def GetElectricSystemModel_PlaningSingleNode_withStorage(areaConsumption,availab
     
     #contraintes de stock puissance
     model = set_storage_operation_constraints_single_area(model,Date_list)
-    
-    def StockCapacity_rule(model,t,s_tech,):  # INEQ forall t
-        return model.stockLevel[t,s_tech] <= model.Cmax[s_tech]
-    model.StockCapacityCtr = Constraint(model.Date,model.STOCK_TECHNO, rule=StockCapacity_rule)
+
     
     #contrainte d'equilibre offre demande 
     def energyCtr_rule(model,t): #INEQ forall t
@@ -553,11 +550,6 @@ def Model_SingleNode_online_flex(areaConsumption, availabilityFactor, to_flexibl
 
     # contraintes de stock puissance
     model = set_storage_operation_constraints_single_area(model, Date_list)
-
-    def StockCapacity_rule(model, t, s_tech, ):  # INEQ forall t
-        return model.stockLevel[t, s_tech] <= model.Cmax[s_tech]
-
-    model.StockCapacityCtr = Constraint(model.Date, model.STOCK_TECHNO, rule=StockCapacity_rule)
 
     # contrainte d'equilibre offre demande
     def energyCtr_rule(model, t):  # INEQ forall t
@@ -953,11 +945,6 @@ def GetElectricSystemModel_PlaningMultiNode_withStorage(areaConsumption,availabi
     model.storagePowerCtr = Constraint(model.AREAS,model.STOCK_TECHNO, rule=storagePower_rule)
 
     model=set_storage_operation_constraints_multiple_area(model,Date_list)
-
-    def StockCapacity_rule(model,area,t,s_tech,):  # INEQ forall t
-        return model.stockLevel[area,t,s_tech] <= model.Cmax[area,s_tech]
-    model.StockCapacityCtr = Constraint(model.AREAS,model.Date,model.STOCK_TECHNO, rule=StockCapacity_rule)
-    
 
     #contrainte d'equilibre offre demande
     #AREAS x Date x TECHNOLOGIES
