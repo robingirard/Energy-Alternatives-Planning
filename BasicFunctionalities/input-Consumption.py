@@ -132,9 +132,9 @@ year = 2012
 Profile_df=pd.read_csv(InputFolder+"ConsumptionDetailedProfiles.csv").set_index(["Mois", "heures",'Nature', 'type', 'UsagesGroupe', 'UsageDetail', "WeekDay"])
 Profile_df_merged=ComplexProfile2Consumption(Profile_df,ConsoTempe_df[str(year)])
 
-Profile_df_merged_spread = Profile_df_merged.groupby(["Date","UsagesGroupe","type"]).sum().reset_index(). \
+Profile_df_merged_spread = Profile_df_merged.groupby(["Date","UsagesGroupe"]).sum().reset_index(). \
     drop(columns=["Temperature"]). \
-    pivot(index="Date", columns=['type',"UsagesGroupe"], values='Conso');
+    pivot(index="Date", columns=["UsagesGroupe"], values='Conso');
 Profile_df_merged_spread
 fig = MyStackedPlotly(y_df=Profile_df_merged_spread)
 plotly.offline.plot(fig, filename='file.html')  ## offline
