@@ -28,7 +28,7 @@ def extractEnergyCapacity(Variables) :
     if "AREAS" in Variables['energy'].columns:
         production_df = EnergyAndExchange2Prod(Variables)
         EnergyCapacity_df = Variables['capacity'].set_index(["AREAS","TECHNOLOGIES"]) / 10 ** 3;
-        EnergyCapacity_df = EnergyCapacity_df.merge(pd.DataFrame(Variables['energy'].groupby(by=["AREAS","TECHNOLOGIES"]).sum().drop(columns="Date") / 10 ** 6),
+        EnergyCapacity_df = EnergyCapacity_df.merge(pd.DataFrame(Variables['energy'].groupby(by=["AREAS","TECHNOLOGIES"]).sum() / 10 ** 6),
                                                     left_on=["AREAS","TECHNOLOGIES"], right_on=["AREAS","TECHNOLOGIES"])
         EnergyCapacity_df.columns = ["Capacity_GW", "Production_TWh"]
     else:

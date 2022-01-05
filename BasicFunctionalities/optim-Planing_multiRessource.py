@@ -27,7 +27,7 @@ from sklearn import linear_model
 import sys
 
 from functions.f_multiRessourceModels import *
-from functions.f_optimization import *
+from functions.f_tools import *
 from functions.f_graphicalTools import *
 # Change this if you have other solvers obtained here
 ## https://ampl.com/products/solvers/open-source/

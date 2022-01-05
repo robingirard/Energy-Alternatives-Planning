@@ -18,9 +18,10 @@ if (myhost=="jupyter-sop"):
 import sys
 
 from functions.f_planingModels import *
-from functions.f_optimization import *
+from functions.f_tools import *
 from functions.f_graphicalTools import *
 from functions.f_consumptionModels import *
+from functions.f_model_definition import *
 # Change this if you have other solvers obtained here
 ## https://ampl.com/products/solvers/open-source/
 ## for eduction this site provides also several professional solvers, that are more efficient than e.g. cbc
@@ -56,7 +57,7 @@ ConsoTempe_df_nodup=ConsoTempe_df.loc[~ConsoTempe_df.index.duplicated(),:]
 VEProfile_df=pd.read_csv(InputFolder+'EVModel.csv', sep=';')
 NbVE=4 # millions
 VE_consumption = NbVE*Profile2Consumption(Profile_df=VEProfile_df,Temperature_df = ConsoTempe_df_nodup.loc[str(year)][['Temperature']])[['Consumption']]
-areaConsumption = areaConsumption.assign(areaConsumption = ConsoTempeYear_decomposed_df.loc[:,'TS_C']+0.4*ConsoTempeYear_decomposed_df.loc[:,'NTS_C']+VE_consumption.loc[:,'Consumption'])
+areaConsumption = areaConsumption.assign(areaConsumption = ConsoTempeYear_decomposed_df.loc[:,'TS_C']+1*ConsoTempeYear_decomposed_df.loc[:,'NTS_C']+VE_consumption.loc[:,'Consumption'])
 
 
 
@@ -72,7 +73,9 @@ TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
 #endregion
 
 #region I - Simple single area  : Solving and loading results
-model = GetElectricSystemModel_PlaningSingleNode(areaConsumption,availabilityFactor,TechParameters)
+model = GetElectricSystemModel_Planing(Parameters={"areaConsumption"      :   areaConsumption,
+                                                   "availabilityFactor"   :   availabilityFactor,
+                                                   "TechParameters"       :   TechParameters})
 
 if solver in solverpath :  opt = SolverFactory(solver,executable=solverpath[solver])
 else : opt = SolverFactory(solver)
@@ -91,8 +94,6 @@ abs(Delta).max()
 
 #region I - Simple single area  : visualisation and lagrange multipliers
 ### representation des résultats
-Date_d=pd.date_range(start=str(year)+"-01-01 00:00:00",end=str(year)+"-12-31 23:00:00",   freq="1H")
-production_df.index=Date_d; areaConsumption.index=Date_d;
 fig=MyStackedPlotly(y_df=production_df,Conso = areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
@@ -132,7 +133,9 @@ TechParameters.loc["OldNuke",'RampConstraintPlus']=0.02 ## a bit strong to put i
 #endregion
 
 #region II - Ramp Single area : solving and loading results
-model = GetElectricSystemModel_PlaningSingleNode(areaConsumption,availabilityFactor,TechParameters)
+model = GetElectricSystemModel_Planing(Parameters={"areaConsumption"      :   areaConsumption,
+                                                   "availabilityFactor"   :   availabilityFactor,
+                                                   "TechParameters"       :   TechParameters})
 opt = SolverFactory(solver)
 results=opt.solve(model)
 Variables=getVariables_panda_indexed(model)
@@ -147,8 +150,6 @@ abs(Delta).max()
 #endregion
 
 #region II - Ramp Single area : visualisation and lagrange multipliers
-Date_d=pd.date_range(start=str(year)+"-01-01 00:00:00",end=str(year)+"-12-31 23:00:00",   freq="1H")
-production_df.index=Date_d; areaConsumption.index=Date_d;
 fig=MyStackedPlotly(y_df=production_df,Conso = areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
@@ -195,10 +196,14 @@ TechParameters.loc[(slice(None),"OldNuke"),'RampConstraintPlus']=0.02 ## a bit s
 #region III - Ramp multiple area : solving and loading results
 ### small data cleaning
 availabilityFactor.availabilityFactor[availabilityFactor.availabilityFactor>1]=1
-model = GetElectricSystemModel_PlaningMultiNode(areaConsumption,availabilityFactor,TechParameters,ExchangeParameters)
+model = GetElectricSystemModel_Planing(Parameters={"areaConsumption"      :   areaConsumption,
+                                                   "availabilityFactor"   :   availabilityFactor,
+                                                   "TechParameters"       :   TechParameters,
+                                                   "ExchangeParameters"   : ExchangeParameters})
+
 opt = SolverFactory(solver)
 results=opt.solve(model)
-Variables=getVariables_panda(model)
+Variables=getVariables_panda_indexed(model)
 print(extractCosts(Variables))
 print(extractEnergyCapacity(Variables))
 
@@ -222,7 +227,7 @@ Constraints.keys()
 Zones="FR"
 year=2013
 
-Selected_TECHNOLOGIES=['OldNuke','WindOnShore', 'CCG',"curtailment"] ## try adding 'HydroRiver', 'HydroReservoir'
+Selected_TECHNOLOGIES=['OldNuke','WindOnShore', 'CCG',"curtailment",'HydroRiver', 'HydroReservoir',"Solar"] ## try adding 'HydroRiver', 'HydroReservoir'
 
 #### reading CSV files
 areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
@@ -237,14 +242,17 @@ StorageParameters = pd.read_csv(InputFolder+'Planing-RAMP1_STOCK_TECHNO.csv',sep
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
 TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
 #TechParameters.loc["CCG",'capacity']=100000 ## margin to make everything work
+TechParameters.loc["CCG",'maxCapacity']=50000
+TechParameters.loc["OldNuke",'maxCapacity']=30000
 TechParameters.loc["OldNuke",'RampConstraintMoins']=0.02 ## a bit strong to put in light the effect
 TechParameters.loc["OldNuke",'RampConstraintPlus']=0.02 ## a bit strong to put in light the effect
 #endregion
 
 #region IV Ramp+Storage single area : solving and loading results
-model= GetElectricSystemModel_PlaningSingleNode_withStorage(areaConsumption,availabilityFactor,
-                                                      TechParameters,StorageParameters)
-
+model = GetElectricSystemModel_Planing(Parameters={"areaConsumption"      :   areaConsumption,
+                                                   "availabilityFactor"   :   availabilityFactor,
+                                                   "TechParameters"       :   TechParameters,
+                                                   "StorageParameters"   : StorageParameters})
 if solver in solverpath :  opt = SolverFactory(solver,executable=solverpath[solver])
 else : opt = SolverFactory(solver)
 results=opt.solve(model)
@@ -257,8 +265,6 @@ production_df.sum(axis=0)/10**6 ### energies produites TWh
 production_df[production_df>0].sum(axis=0)/10**6 ### energies produites TWh
 production_df.max(axis=0)/1000 ### Pmax en GW
 
-Date_d=pd.date_range(start=str(year)+"-01-01 00:00:00",end=str(year)+"-12-31 23:00:00",   freq="1H")
-production_df.index=Date_d; areaConsumption.index=Date_d;
 fig=MyStackedPlotly(y_df=production_df, Conso=areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
@@ -279,19 +285,22 @@ availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+
 TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1BIS_TECHNOLOGIES.csv',
                              sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
 StorageParameters = pd.read_csv(InputFolder+'Planing-RAMP1_STOCK_TECHNO.csv',
-                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["STOCK_TECHNO"])
+                                sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
 #### Selection of subset
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
 TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
 #TechParameters.loc["CCG",'capacity']=100000 ## margin to make everything work
-TechParameters.loc["CCG",'energyCost']=300
-TechParameters.loc["CCG",'RampConstraintMoins']=0.05 ## a bit strong to put in light the effect
-TechParameters.loc["CCG",'RampConstraintPlus']=0.05 ## a bit strong to put in light the effect
+TechParameters.loc["CCG",'energyCost']=100
+TechParameters.loc["CCG",'maxCapacity']=50000
+TechParameters.loc["CCG",'RampConstraintMoins']=0.5 ## a bit strong to put in light the effect
+TechParameters.loc["CCG",'RampConstraintPlus']=0.5 ## a bit strong to put in light the effect
 #endregion
 
 #region V Case Storage + CCG + PV + Wind (Ramp+Storage single area) : solving and loading results
-model= GetElectricSystemModel_PlaningSingleNode_withStorage(areaConsumption,availabilityFactor,
-                                                      TechParameters,StorageParameters)
+model = GetElectricSystemModel_Planing(Parameters={"areaConsumption"      :   areaConsumption,
+                                                   "availabilityFactor"   :   availabilityFactor,
+                                                   "TechParameters"       :   TechParameters,
+                                                   "StorageParameters"   : StorageParameters})
 
 if solver in solverpath :  opt = SolverFactory(solver,executable=solverpath[solver])
 else : opt = SolverFactory(solver)
@@ -305,8 +314,6 @@ production_df.sum(axis=0)/10**6 ### energies produites TWh
 production_df[production_df>0].sum(axis=0)/10**6 ### energies produites TWh
 production_df.max(axis=0)/1000 ### Pmax en GW
 
-Date_d=pd.date_range(start=str(year)+"-01-01 00:00:00",end=str(year)+"-12-31 23:00:00",   freq="1H")
-production_df.index=Date_d; areaConsumption.index=Date_d;
 fig=MyStackedPlotly(y_df=production_df, Conso=areaConsumption)
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename='file.html') ## offline
@@ -326,13 +333,14 @@ availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
 TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1BIS_TECHNOLOGIES.csv',
                              sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
-StorageParameters = pd.read_csv(InputFolder+'Planing-RAMP1_STOCK_TECHNO.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["STOCK_TECHNO"])
+StorageParameters = pd.read_csv(InputFolder+'Planing-RAMP1_STOCK_TECHNO.csv',sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
 
 
 #### Selection of subset
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
 TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
 TechParameters.loc["CCG",'energyCost']=300
+TechParameters.loc["CCG",'maxCapacity']=50000
 TechParameters.loc["CCG",'RampConstraintMoins']=0.05 ## a bit strong to put in light the effect
 TechParameters.loc["CCG",'RampConstraintPlus']=0.05 ## a bit strong to put in light the effect
 TechParameters.loc["NewNuke",'RampConstraintMoins']=0.01 ## a bit strong to put in light the effect
@@ -340,8 +348,10 @@ TechParameters.loc["NewNuke",'RampConstraintPlus']=0.02 ## a bit strong to put i
 #endregion
 
 #region VI Case Storage + CCG + Nuke (Ramp+Storage single area) : solving and loading results
-model= GetElectricSystemModel_PlaningSingleNode_withStorage(areaConsumption,availabilityFactor,
-                                                      TechParameters,StorageParameters)
+model = GetElectricSystemModel_Planing(Parameters={"areaConsumption"      :   areaConsumption,
+                                                   "availabilityFactor"   :   availabilityFactor,
+                                                   "TechParameters"       :   TechParameters,
+                                                   "StorageParameters"   : StorageParameters})
 if solver in solverpath :  opt = SolverFactory(solver,executable=solverpath[solver])
 else : opt = SolverFactory(solver)
 results=opt.solve(model)
@@ -399,8 +409,11 @@ TechParameters.loc[(slice(None),"OldNuke"),'RampConstraintPlus']=0.02 ## a bit s
 #endregion
 
 #region VI Ramp+Storage multi area : solving and loading results
-model= GetElectricSystemModel_PlaningMultiNode_withStorage(areaConsumption,availabilityFactor,
-                                                      TechParameters,ExchangeParameters,StorageParameters)
+model = GetElectricSystemModel_Planing(Parameters={"areaConsumption"      :   areaConsumption,
+                                                   "availabilityFactor"   :   availabilityFactor,
+                                                   "TechParameters"       :   TechParameters,
+                                                   "StorageParameters"   : StorageParameters,
+                                                   "ExchangeParameters" : ExchangeParameters})
 if solver in solverpath :  opt = SolverFactory(solver,executable=solverpath[solver])
 else : opt = SolverFactory(solver)
 results=opt.solve(model)

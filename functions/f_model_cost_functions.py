@@ -1,0 +1,117 @@
+from functions.f_tools import *
+
+def set_Planing_base_cost_function(model):
+    """
+    Definition of the cost function
+
+    min energyCosts + capacityCosts + storageCosts
+
+    energyCosts = sum (energy * energyCost)
+
+    capacityCosts = capacityCost * len(model.Date)/ 8760 *capacity
+
+    storageCosts = storageCost * Cmax
+
+    :param model:
+    :return:
+    """
+
+    model = set_Planing_cost_OBJ(model) # min energyCosts + capacityCosts + storageCosts
+    model = set_Planing_cost_energyCostsCtr(model) # energyCosts = sum (energy * energyCost)
+    model = set_Planing_cost_capacityCostsCtr(model)#  capacityCosts = capacityCost * len(model.Date)/ 8760 *capacity
+    Set_names = get_allSetsnames(model)
+    if 'STOCK_TECHNO' in Set_names: model = set_Planing_cost_storageCostsCtr(model) #  storageCosts = storageCost * Cmax
+    return model
+
+
+def set_Planing_cost_OBJ(model):
+    Set_names = get_allSetsnames(model)
+    match list(Set_names):
+        case [*my_set_names] if allin(["AREAS", 'STOCK_TECHNO'], my_set_names):
+            # multiple area and storage
+            def ObjectiveFunction_rule(model):  # OBJ
+                return sum(
+                    model.energyCosts[area, tech] + model.capacityCosts[area, tech] for tech in model.TECHNOLOGIES for area in
+                    model.AREAS) + sum(
+                    model.storageCosts[area, s_tech] for s_tech in model.STOCK_TECHNO for area in model.AREAS)
+            model.OBJ = Objective(rule=ObjectiveFunction_rule, sense=minimize)
+        case [*my_set_names] if "AREAS" in my_set_names:
+            # multiple area without storage
+            def ObjectiveFunction_rule(model):  # OBJ
+                return sum(model.energyCosts[area, tech] + model.capacityCosts[area, tech] for tech in model.TECHNOLOGIES for area
+                    in model.AREAS)
+            model.OBJ = Objective(rule=ObjectiveFunction_rule, sense=minimize)
+        case [*my_set_names] if 'STOCK_TECHNO' in my_set_names:
+            # single area with storage
+            def ObjectiveFunction_rule(model):  # OBJ
+                return sum(model.energyCosts[tech] + model.capacityCosts[tech] for tech in model.TECHNOLOGIES) + sum(
+                    model.storageCosts[s_tech] for s_tech in model.STOCK_TECHNO)
+            model.OBJ = Objective(rule=ObjectiveFunction_rule, sense=minimize)
+        case _:
+            # single area without storage
+            def ObjectiveFunction_rule(model):  # OBJ
+                return sum(model.energyCosts[tech] + model.capacityCosts[tech] for tech in model.TECHNOLOGIES)
+            model.OBJ = Objective(rule=ObjectiveFunction_rule, sense=minimize)
+    return model
+
+def set_Planing_cost_energyCostsCtr(model):
+    Set_names = get_allSetsnames(model)
+    match list(Set_names):
+        case [*my_set_names] if "AREAS" in my_set_names:
+            # multiple area without storage
+
+            def energyCostsDef_rule(model, area,tech):  # EQ forall tech in TECHNOLOGIES   energyCosts  = sum{t in Date} energyCost[tech]*energy[t,tech] / 1E6;
+                temp = model.energyCost[area, tech]  # /10**6 ;
+                return sum(temp * model.energy[area, t, tech] for t in model.Date) == model.energyCosts[area, tech];
+            model.energyCostsDef = Constraint(model.AREAS, model.TECHNOLOGIES, rule=energyCostsDef_rule)
+
+        case _:
+            # single area without storage
+            def energyCostsDef_rule(model,tech):  # EQ forall tech in TECHNOLOGIES   energyCosts  = sum{t in Date} energyCost[tech]*energy[t,tech] / 1E6;
+                temp = model.energyCost[tech]  # /10**6 ;
+                return sum(temp * model.energy[t, tech] for t in model.Date) == model.energyCosts[tech]
+            model.energyCostsCtr = Constraint(model.TECHNOLOGIES, rule=energyCostsDef_rule)
+    return model
+
+def set_Planing_cost_capacityCostsCtr(model):
+    Set_names = get_allSetsnames(model)
+    match list(Set_names):
+        case [*my_set_names] if "AREAS" in my_set_names:
+            # multiple area
+            def capacityCostsDef_rule(model, area,
+                                      tech):  # EQ forall tech in TECHNOLOGIES   energyCosts  = sum{t in Date} energyCost[tech]*energy[t,tech] / 1E6;
+                temp = model.capacityCosts[area, tech]  # /10**6 ;
+                return model.capacityCost[area, tech] * len(model.Date) / 8760 * model.capacity[area, tech] == \
+                       model.capacityCosts[area, tech]  # .. ....... / 10**6
+
+            model.capacityCostsCtr = Constraint(model.AREAS, model.TECHNOLOGIES, rule=capacityCostsDef_rule)
+        case _:
+            # single area
+            def capacityCostsDef_rule(model,tech):  # EQ forall tech in TECHNOLOGIES   energyCosts  = sum{t in Date} energyCost[tech]*energy[t,tech] / 1E6;
+                temp = model.capacityCosts[tech]  # /10**6 ;
+                return model.capacityCost[tech] * model.capacity[tech] == model.capacityCosts[tech]
+                # return model.capacityCost[tech] * len(model.Date) / 8760 * model.capacity[tech] / 10 ** 6 == model.capacityCosts[tech]
+            model.capacityCostsCtr = Constraint(model.TECHNOLOGIES, rule=capacityCostsDef_rule)
+    return model
+
+def set_Planing_cost_storageCostsCtr(model):
+    Set_names = get_allSetsnames(model)
+    match list(Set_names):
+        case [*my_set_names] if "AREAS" in my_set_names:
+            # multiple area without storage
+            def storageCostsDef_rule(model, area,
+                                     s_tech):  # EQ forall s_tech in STOCK_TECHNO storageCosts = storageCost[area, s_tech]*c_max[area, s_tech] / 1E6;
+                return model.storageCost[area, s_tech] * model.Cmax[area, s_tech] == model.storageCosts[
+                    area, s_tech]  # /10**6 ;;
+
+            model.storageCostsDef = Constraint(model.AREAS, model.STOCK_TECHNO, rule=storageCostsDef_rule)
+
+        case _:
+            # single area without storage
+            def storageCostsDef_rule(model,
+                                     s_tech):  # EQ forall s_tech in STOCK_TECHNO storageCosts=storageCost[s_tech]*Cmax[s_tech] / 1E6;
+                return model.storageCost[s_tech] * model.Cmax[s_tech] == model.storageCosts[s_tech]
+
+            model.storageCostsCtr = Constraint(model.STOCK_TECHNO, rule=storageCostsDef_rule)
+    return model
+

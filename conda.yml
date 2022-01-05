@@ -1,6 +1,10 @@
 name : energyalternatives
+channels:
+  - conda-forge
+  - defaults
+  - conda-forge/label/broken
 dependencies :
-    - python=3.8
+    - python>=3.10
     - pandas
     - jupyter
     - numpy
@@ -17,5 +21,4 @@ dependencies :
       - plotly
       - matplotlib
       - sklearn
-      - docplex
 

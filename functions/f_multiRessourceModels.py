@@ -10,7 +10,7 @@ Created on Wed Apr 22 19:07:50 2020
 from __future__ import division
 from pyomo.environ import *
 from pyomo.core import *
-from functions.f_optimization import *
+from functions.f_tools import *
 
 def GetElectricSystemModel_MultiResources_SingleNode(areaConsumption, availabilityFactor, TechParameters, ResParameters,conversionFactor,isAbstract=False):
     """
