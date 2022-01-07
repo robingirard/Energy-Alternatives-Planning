@@ -29,13 +29,13 @@ def set_Operation_Constraints_CapacityCtr(model):
 
 def set_Operation_Constraints_energyCtr(model):
     """
-    [Default] energy = areaConsumption
+    [Default] sum(energy) = areaConsumption
 
-    [if STOCK_TECHNO] energy + storageOut-storageIn = areaConsumption
+    [if STOCK_TECHNO] sum(energy) + storageOut-storageIn = areaConsumption
 
-    [if AREAS] energy + exchange = areaConsumption
+    [if AREAS] sum(energy) + exchange = areaConsumption
 
-    [if AREAS & STOCK_TECHNO] energy + exchange + storageOut-storageIn = areaConsumption
+    [if AREAS & STOCK_TECHNO] sum(energy|tech) + exchange + storageOut-storageIn = areaConsumption
 
     :param model:
     :return:
@@ -44,6 +44,24 @@ def set_Operation_Constraints_energyCtr(model):
     Set_names = get_allSetsnames(model)
     ### CapacityCtr definition
     match list(Set_names):
+        case[*my_set_names] if allin(["FLEX_CONSUM", "AREAS", 'STOCK_TECHNO'], my_set_names):
+            # multiple area and storage and flex conso
+
+            def energyCtr_rule(model,area, t):  # INEQ forall t
+                return sum(model.energy[area,t, tech] for tech in model.TECHNOLOGIES)+ sum(
+                    model.exchange[b, area, t] for b in model.AREAS) + sum(
+                    model.storageOut[area,t, s_tech] - model.storageIn[area,t, s_tech] for s_tech in model.STOCK_TECHNO) >= \
+                       model.total_consumption[area,t]
+
+            model.energyCtr = Constraint(model.AREAS, model.Date, rule=energyCtr_rule)
+        case [*my_set_names] if allin(["FLEX_CONSUM", 'STOCK_TECHNO'], my_set_names):
+            # simple area and storage and flex conso
+            def energyCtr_rule(model, t):  # INEQ forall t
+                return sum(model.energy[t, tech] for tech in model.TECHNOLOGIES) + sum(
+                    model.storageOut[t, s_tech] - model.storageIn[t, s_tech] for s_tech in model.STOCK_TECHNO) >= \
+                       model.total_consumption[t]
+
+            model.energyCtr = Constraint(model.Date, rule=energyCtr_rule)
         case [*my_set_names] if allin(["AREAS", 'STOCK_TECHNO'], my_set_names):
             # multiple area and storage
             def energyCtr_rule(model, area, t):  # INEQ forall t
