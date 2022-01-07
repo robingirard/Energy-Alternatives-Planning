@@ -1,5 +1,7 @@
 from functions.f_tools import *
 
+#region general constraints
+
 def set_Operation_Constraints_CapacityCtr(model):
     """
     energy <= capacity * availabilityFactor
@@ -162,6 +164,182 @@ def set_Operation_Constraints_Ramp(model):
 
     return model;
 
+def set_Operation_Constraints_Storage(model):
+    """
+    is applied only if 'STOCK_TECHNO' exists
+
+    storageIn <= Pmax
+
+    storageOut <= Pmax
+
+    stockLevel[t] = stockLevel[t-1]*(1 - dissipation) -storageOut/efficiency_out
+
+    stockLevel <= Cmax
+
+    :param model:
+    :return:
+    """
+    Set_names = get_allSetsnames(model)
+    if 'STOCK_TECHNO' in Set_names:
+        model = set_Operation_Constraints_StoragePowerUBCtr(model) # storageIn-Pmax <= 0
+        model = set_Operation_Constraints_StoragePowerLBCtr(model) # storageOut-Pmax <= 0
+        model = set_Operation_Constraints_StorageLevelCtr(model) # stockLevel[t] = stockLevel[t-1]*(1 - dissipation) -storageOut/efficiency_out
+        model = set_Operation_Constraints_StorageCapacityCtr(model) # stockLevel <= Cmax
+    return model
+
+def set_Operation_Constraints_flex(model):
+    """
+    Applies only if 'FLEX_CONSUM' in Set_names
+
+    total_consumption = areaConsumption+sum(flex_consumption)
+
+    max_power + increased_max_power >= flex_consumption
+
+    [if model_type == 'week'] sum(flex_consumption|week) = sum(to_flex_consumption|week)
+
+    [if model_type == 'year']  sum(flex_consumption) = sum(to_flex_consumption)
+
+    flex_consumption= to_flex_consumption*(1-flex)
+
+    flex<= flex_ratio
+
+    flex>= - flex_ratio
+
+    flex_consumption-to_flex_consumption = a_plus +  a_minus
+
+    :param model:
+    :return:
+    """
+    Set_names = get_allSetsnames(model)
+    if 'FLEX_CONSUM' in Set_names:
+        model   =   set_Operation_Constraints_total_consumptionCtr(model)# total_consumption = areaConsumption+sum(flex_consumption)
+        model   =   set_Operation_Constraints_max_powerCtr(model)
+        model   =   set_Operation_Constraints_consum_eq_week_Ctr(model)
+        model   =   set_Operation_Constraints_consum_eq_year_Ctr(model)
+        model   =   set_Operation_Constraints_consum_flex_Ctr(model)
+        model   =   set_Operation_Constraints_flex_variation_supinf_Ctr(model)
+        model   =   set_Operation_Constraints_a_plus_minusCtr(model)
+    return model
+
+#endregion
+
+#region flex constraints
+
+def set_Operation_Constraints_total_consumptionCtr(model):
+    """
+    total_consumption = areaConsumption+sum(flex_consumption)
+
+    :param model:
+    :return:
+    """
+    # Total consumption constraint
+    # LoadCost;flex_ratio;max_ratio
+    def total_consumption_rule(model, t):
+        return model.total_consumption[t] == model.areaConsumption[t] + sum(
+            model.flex_consumption[t, name] for name in model.FLEX_CONSUM)
+    model.total_consumptionCtr = Constraint(model.Date, rule=total_consumption_rule)
+    return model
+
+def set_Operation_Constraints_max_powerCtr(model):
+    """
+    max_power + increased_max_power >= flex_consumption
+
+    :param model:
+    :return:
+    """
+    # Online flexible consumption constraints
+    def max_power_rule(model, conso_type, t):
+        return model.max_power[conso_type] + model.increased_max_power[conso_type] >= model.flex_consumption[t, conso_type]
+    model.max_powerCtr = Constraint(model.FLEX_CONSUM, model.Date, rule=max_power_rule)
+    return model
+
+def set_Operation_Constraints_consum_eq_week_Ctr(model):
+    """
+    sum(flex_consumption|week) = sum(to_flex_consumption|week)
+
+    :param model:
+    :return:
+    """
+    Date_list = pd.DataFrame({"Date" : getattr(model, "Date").data()})
+    Date_list["week"] = Date_list.Date.apply(lambda x: x.isocalendar().week)
+
+    # consumption equality within the same week
+    def consum_eq_week(model, t_week, conso_type):
+        if model.flex_type[conso_type] == 'week':
+            # Date_list=model.Date
+            t_range = Date_list.Date[Date_list.week == t_week]  # range((t_week-1)*7*24+1,(t_week)*7*24)
+            return sum(model.flex_consumption[t, conso_type] for t in t_range) == sum(
+                model.to_flex_consumption[t, conso_type] for t in t_range)
+        else:
+            return Constraint.Skip
+    model.consum_eq_week_Ctr = Constraint(model.WEEK_Date, model.FLEX_CONSUM, rule=consum_eq_week)
+    return model
+
+def set_Operation_Constraints_consum_eq_year_Ctr(model):
+    """
+    sum(flex_consumption) = sum(to_flex_consumption)
+
+    :param model:
+    :return:
+    """
+    def consum_eq_year(model, t_week, conso_type):
+        if model.flex_type[conso_type] == 'year':
+            return sum(model.flex_consumption[t, conso_type] for t in model.Date) == sum(
+                model.to_flex_consumption[t, conso_type] for t in model.Date)
+        else:
+            return Constraint.Skip
+    model.consum_eq_year_Ctr = Constraint(model.WEEK_Date, model.FLEX_CONSUM, rule=consum_eq_year)
+    return model
+
+def set_Operation_Constraints_consum_flex_Ctr(model):
+    """
+    flex_consumption= to_flex_consumption*(1-flex)
+
+    :param model:
+    :return:
+    """
+    def consum_flex_rule(model, t, conso_type):
+        return model.flex_consumption[t, conso_type] == model.to_flex_consumption[t, conso_type] * (
+                    1 - model.flex[t, conso_type])
+    model.consum_flex_Ctr = Constraint(model.Date, model.FLEX_CONSUM, rule=consum_flex_rule)
+    return model
+
+def set_Operation_Constraints_flex_variation_supinf_Ctr(model):
+    """
+    flex<= flex_ratio
+
+    flex>= - flex_ratio
+
+    :param model:
+    :return:
+    """
+
+    def flex_variation_sup_rule(model, t, conso_type):
+        return model.flex[t, conso_type] <= model.flex_ratio[conso_type]
+    model.flex_variation_sup_Ctr = Constraint(model.Date, model.FLEX_CONSUM, rule=flex_variation_sup_rule)
+
+    def flex_variation_inf_rule(model, t, conso_type):
+        return model.flex[t, conso_type] >= -model.flex_ratio[conso_type]
+    model.flex_variation_inf_Ctr = Constraint(model.Date, model.FLEX_CONSUM, rule=flex_variation_inf_rule)
+    return model
+    #Labour cost for flexibility consumption constraint
+
+def set_Operation_Constraints_a_plus_minusCtr(model):
+    """
+    flex_consumption-to_flex_consumption = a_plus +  a_minus
+
+    :param model:
+    :return:
+    """
+
+    def a_plus_minus_rule(model,conso_type,t):
+        return model.flex_consumption[t,conso_type]-model.to_flex_consumption[t,conso_type]==model.a_plus[t,conso_type]-model.a_minus[t,conso_type]
+    model.a_plus_minusCtr=Constraint(model.FLEX_CONSUM,model.Date,rule=a_plus_minus_rule)
+    return model
+
+#endregion
+
+#region Ramp constraints
 def set_Operation_Constraints_rampCtrPlus(model):
     """
     energy[t+1]-energy[t]<= capacity RampConstraintPlus
@@ -309,28 +487,9 @@ def set_Operation_Constraints_rampCtrMoins2(model):
 
     return model;
 
-def set_Operation_Constraints_Storage(model):
-    """
-    is applied only if 'STOCK_TECHNO' exists
+#endregion
 
-    storageIn <= Pmax
-
-    storageOut <= Pmax
-
-    stockLevel[t] = stockLevel[t-1]*(1 - dissipation) -storageOut/efficiency_out
-
-    stockLevel <= Cmax
-
-    :param model:
-    :return:
-    """
-    Set_names = get_allSetsnames(model)
-    if 'STOCK_TECHNO' in Set_names:
-        model = set_Operation_Constraints_StoragePowerUBCtr(model) # storageIn-Pmax <= 0
-        model = set_Operation_Constraints_StoragePowerLBCtr(model) # storageOut-Pmax <= 0
-        model = set_Operation_Constraints_StorageLevelCtr(model) # stockLevel[t] = stockLevel[t-1]*(1 - dissipation) -storageOut/efficiency_out
-        model = set_Operation_Constraints_StorageCapacityCtr(model) # stockLevel <= Cmax
-    return model
+#region Storage Constraints
 
 def set_Operation_Constraints_StoragePowerUBCtr(model):
     """
@@ -434,5 +593,4 @@ def set_Operation_Constraints_StorageCapacityCtr(model):
 
     return model
 
-
-
+#endregion

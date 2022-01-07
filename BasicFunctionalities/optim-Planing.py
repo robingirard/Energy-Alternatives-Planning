@@ -486,15 +486,46 @@ TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
 
 h2_Energy = 30000## H2 volume in GWh/year
 h2_Energy_flat_consumption = ev_consumption.Consumption*0+h2_Energy/8760
-to_flexible_consumption=pd.DataFrame({'areaConsumption': steel_consumption,'FLEX_CONSUM' : 'Steel'}).reset_index().set_index(['Date','FLEX_CONSUM']).\
-    append(pd.DataFrame({'areaConsumption': ev_consumption.Consumption,'FLEX_CONSUM' : 'EV'}).reset_index().set_index(['Date','FLEX_CONSUM'])).\
-    append(pd.DataFrame({'areaConsumption': h2_Energy_flat_consumption,'FLEX_CONSUM' : 'H2'}).reset_index().set_index(['Date','FLEX_CONSUM']))
-# endregion
+to_flex_consumption=pd.DataFrame({'to_flex_consumption': steel_consumption,'FLEX_CONSUM' : 'Steel'}).reset_index().set_index(['Date','FLEX_CONSUM']).\
+    append(pd.DataFrame({'to_flex_consumption': ev_consumption.Consumption,'FLEX_CONSUM' : 'EV'}).reset_index().set_index(['Date','FLEX_CONSUM'])).\
+    append(pd.DataFrame({'to_flex_consumption': h2_Energy_flat_consumption,'FLEX_CONSUM' : 'H2'}).reset_index().set_index(['Date','FLEX_CONSUM']))
+
+ConsoParameters_ = ConsoParameters.join(
+    to_flex_consumption.groupby("FLEX_CONSUM").max().rename(columns={"to_flex_consumption": "max_power"}))
+
+
+def labour_ratio_cost(df):  # higher labour costs at night
+    if df.hour in range(7, 17):
+        return 1
+    elif df.hour in range(17, 23):
+        return 1.5
+    else:
+        return 2
+
+
+labour_ratio = pd.DataFrame()
+labour_ratio["Date"] = areaConsumption.index.get_level_values('Date')
+labour_ratio["FLEX_CONSUM"] = "Steel"
+labour_ratio["labour_ratio"] = labour_ratio["Date"].apply(labour_ratio_cost)
+labour_ratio.set_index(["Date","FLEX_CONSUM"], inplace=True)
+#model.labour_ratio = Param(model.Date, initialize=labour_ratio.squeeze().to_dict())
+
+labour_ratio.head()
+to_flex_consumption.head()
 
 ConsoParameters.loc['H2','LoadCost']
+
+
+# endregion
 # €/kW/an coût fixe additionnel pour un GW d'électrolyseur en plus en supposant que l'on construit
-model= Model_SingleNode_online_flex(areaConsumption, availabilityFactor, to_flexible_consumption,
-                             ConsoParameters, TechParameters, StorageParameters)
+
+model =  GetElectricSystemModel_Planing(Parameters={"areaConsumption"      :   areaConsumption,
+                                           "availabilityFactor"   :   availabilityFactor,
+                                           "TechParameters"       :   TechParameters,
+                                           "StorageParameters"   : StorageParameters,
+                                           "to_flex_consumption" : to_flex_consumption,
+                                           "ConsoParameters_" : ConsoParameters_,
+                                           "labour_ratio": labour_ratio})
 
 
 if solver in solverpath :  opt = SolverFactory(solver,executable=solverpath[solver])

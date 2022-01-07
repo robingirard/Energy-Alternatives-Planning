@@ -18,9 +18,13 @@ from functions.f_model_operation_constraints import *
 
 #TODO allow to print equations with an optional parameter option
 def GetElectricSystemModel_Planing(Parameters):
-
+    #get_allSetsnames(model)
     model   =   Create_pyomo_model_sets_parameters(Parameters)# areaConsumption, availabilityFactor, TechParameters)
-    model   =   set_Planing_base_variables(model) #defined variables : energy energyCosts capacityCosts capacity if AREAS --> exchange if storage...
+
+    model   =   set_Operation_base_variables(model) # energy energyCosts  if AREAS --> exchange if storage...
+    model   =   set_Operation_flex_variables(model)
+    model   =   set_Planing_base_variables(model) #defined variables :  capacityCosts capacity
+    model   =   set_Planing_flex_variables(model)
 
     #cost function
     model   =   set_Planing_base_cost_function(model)
@@ -32,6 +36,7 @@ def GetElectricSystemModel_Planing(Parameters):
     model   =   set_Operation_Constraints_stockCtr(model)
     model   =   set_Operation_Constraints_Ramp(model)
     model   =   set_Operation_Constraints_exchangeCtr(model)
+    model   =   set_Operation_Constraints_flex(model)
 
     #planing constraints
     model   =   set_Planing_Constraints_maxminCapacityCtr(model)
@@ -263,13 +268,11 @@ def Model_SingleNode_online_flex(areaConsumption, availabilityFactor, to_flexibl
     # Storage max capacity constraint
     def storageCapacity_rule(model, s_tech):  # INEQ forall s_tech
         return model.Cmax[s_tech] <= model.c_max[s_tech]
-
     model.storageCapacityCtr = Constraint(model.STOCK_TECHNO, rule=storageCapacity_rule)
 
     # Storage max power constraint
     def storagePower_rule(model, s_tech):  # INEQ forall s_tech
         return model.Pmax[s_tech] <= model.p_max[s_tech]
-
     model.storagePowerCtr = Constraint(model.STOCK_TECHNO, rule=storagePower_rule)
 
     # contraintes de stock puissance
@@ -309,220 +312,4 @@ def Model_SingleNode_online_flex(areaConsumption, availabilityFactor, to_flexibl
     return model;
 
 
-
-
-def GetElectricSystemModel_PlaningMultiNode_withStorage(areaConsumption,availabilityFactor,
-                                                          TechParameters,ExchangeParameters,StorageParameters,isAbstract=False,
-                                                          solver='mosek'):
-    """
-    This function takes storage caracteristics, system caracteristics and optimise operation Set values
-    :param areaConsumption: panda table with consumption
-    :param availabilityFactor: panda table
-    :param isAbstract: boolean true is the model should be abstract. ConcreteModel otherwise
-    :param StorageParameters is a panda with p_max (maximal power), c_max (energy capacity in the storage : maximal energy),
-    :efficiency_in (input efficiency of storage),
-    :efficiency_out (output efficiency of storage).
-    :return: a dictionary with model : pyomo model without storage, storage : storage infos
-    """
-    #isAbstract=False
-    availabilityFactor.isna().sum()
-    
-    ### Cleaning
-    availabilityFactor=availabilityFactor.fillna(method='pad');
-    areaConsumption=areaConsumption.fillna(method='pad');
-    
-    ### obtaining dimensions values 
-    TECHNOLOGIES = set(TechParameters.index.get_level_values('TECHNOLOGIES').unique())
-    STOCK_TECHNO = set(StorageParameters.index.get_level_values('STOCK_TECHNO').unique())
-    Date = set(areaConsumption.index.get_level_values('Date').unique())
-    Date_list = areaConsumption.index.get_level_values('Date').unique()
-    AREAS = set(areaConsumption.index.get_level_values('AREAS').unique())
-    
-    #####################
-    #    Pyomo model    #
-    #####################
-    
-    if (isAbstract) : 
-        model = AbstractModel()
-    else:
-        model = ConcreteModel() 
-        
-    ###############
-    # Sets       ##
-    ###############
-    
-    #Simple
-    model.AREAS= Set(initialize=AREAS,doc = "Area",ordered=False)
-    model.TECHNOLOGIES = Set(initialize=TECHNOLOGIES,ordered=False)
-    model.STOCK_TECHNO = Set(initialize=STOCK_TECHNO,ordered=False)
-    model.Date = Set(initialize=Date,ordered=False)
-    
-    #Subset of Simple only required if ramp constraint
-    model.Date_MinusOne = Set(initialize=Date_list[: len(Date) - 1],ordered=False)
-    model.Date_MinusThree = Set(initialize=Date_list[: len(Date) - 3],ordered=False)
-    
-    #Products
-    model.Date_TECHNOLOGIES =  model.Date *model.TECHNOLOGIES
-    model.AREAS_AREAS= model.AREAS* model.AREAS
-    model.AREAS_TECHNOLOGIES= model.AREAS *model.TECHNOLOGIES
-    model.AREAS_STOCKTECHNO=model.AREAS*model.STOCK_TECHNO
-    model.AREAS_Date=model.AREAS * model.Date 
-    model.AREAS_Date_TECHNOLOGIES= model.AREAS*model.Date * model.TECHNOLOGIES
-
-
-    ###############
-    # Parameters ##
-    ###############
-    
-    model.areaConsumption =     Param(model.AREAS_Date,
-                                      initialize=areaConsumption.loc[:, "areaConsumption"].squeeze().to_dict(), domain=Any,mutable=True)
-    model.availabilityFactor =  Param(  model.AREAS_Date_TECHNOLOGIES, domain=PercentFraction,default=1,
-                                      initialize=availabilityFactor.squeeze().to_dict())
-
-    model.maxExchangeCapacity = Param( model.AREAS_AREAS,  initialize=ExchangeParameters.squeeze().to_dict(), domain=NonNegativeReals,default=0)
-    
-    #with test of existing columns on TechParameters
-    for COLNAME in TechParameters:
-            exec("model."+COLNAME+" =          Param(model.AREAS_TECHNOLOGIES, domain=NonNegativeReals,default=0,"+
-                                      "initialize=TechParameters."+COLNAME+".squeeze().to_dict())")
-    
-    for COLNAME in StorageParameters:
-            exec("model."+COLNAME+" =Param(model.AREAS_STOCKTECHNO,domain=NonNegativeReals,default=0,"+
-                                      "initialize=StorageParameters."+COLNAME+".squeeze().to_dict())")
-    
-    ################
-    # Variables    #
-    ################
-    
-    ###Production means :
-    model.energy=Var(model.AREAS,model.Date, model.TECHNOLOGIES, domain=NonNegativeReals) ### Energy produced by a production mean at time t
-    model.exchange=Var(model.AREAS_AREAS,model.Date)  
-    model.energyCosts=Var(model.AREAS,model.TECHNOLOGIES)   ### Cost of energy by a production mean for area at time t (explicitely defined by constraint energyCostsCtr)
-    
-    model.capacityCosts=Var(model.AREAS,model.TECHNOLOGIES)  ### Cost of energy for a production mean, explicitely defined by definition energyCostsDef    
-    model.capacity=Var(model.AREAS,model.TECHNOLOGIES, domain=NonNegativeReals) ### Energy produced by a production mean at time t
-    
-    ###Storage means :
-    model.storageIn=Var(model.AREAS,model.Date,model.STOCK_TECHNO,domain=NonNegativeReals) ### Energy stored by a storage mean for areas at time t 
-    model.storageOut=Var(model.AREAS,model.Date,model.STOCK_TECHNO,domain=NonNegativeReals) ### Energy taken out of a storage mean for areas at time t 
-    model.stockLevel=Var(model.AREAS,model.Date,model.STOCK_TECHNO,domain=NonNegativeReals) ### level of the energy stock in a storage mean at time t
-    model.storageCosts=Var(model.AREAS,model.STOCK_TECHNO)  ### Cost of storage for a storage mean, explicitely defined by definition storageCostsDef    
-    model.Cmax=Var(model.AREAS,model.STOCK_TECHNO) # Maximum capacity of a storage mean
-    model.Pmax=Var(model.AREAS,model.STOCK_TECHNO) # Maximum flow of energy in/out of a storage mean
-    
-    model.dual = Suffix(direction=Suffix.IMPORT)
-    model.rc = Suffix(direction=Suffix.IMPORT)
-    #model.slack = Suffix(direction=Suffix.IMPORT)
-    
-    ########################
-    # Objective Function   #
-    ########################
-    
-    def ObjectiveFunction_rule(model): #OBJ
-    	return sum(model.energyCosts[area,tech]+model.capacityCosts[area,tech] for tech in model.TECHNOLOGIES for area in model.AREAS)+sum(model.storageCosts[area,s_tech] for s_tech in model.STOCK_TECHNO for area in model.AREAS)
-    model.OBJ = Objective(rule=ObjectiveFunction_rule, sense=minimize)
-    
-    
-    
-    #################
-    # Constraints   #
-    ################# 
-    
-    #### 1 - Basics 
-    ########
-    
-    
-    # energyCosts definition Constraints
-    # AREAS x TECHNOLOGIES       
-    def energyCostsDef_rule(model,area,tech): #EQ forall tech in TECHNOLOGIES   energyCosts  = sum{t in Date} energyCost[tech]*energy[t,tech] / 1E6;
-        temp=model.energyCost[area,tech]#/10**6 ;
-        return sum(temp*model.energy[area,t,tech] for t in model.Date) == model.energyCosts[area,tech];
-    model.energyCostsDef = Constraint(model.AREAS,model.TECHNOLOGIES, rule=energyCostsDef_rule)    
-    
-    # capacityCosts definition Constraints
-    # AREAS x TECHNOLOGIES    
-    def capacityCostsDef_rule(model,area,tech): #EQ forall tech in TECHNOLOGIES   energyCosts  = sum{t in Date} energyCost[tech]*energy[t,tech] / 1E6;
-        temp=model.capacityCosts[area,tech]#/10**6 ;
-        return model.capacityCost[area,tech]*len(model.Date)/8760*model.capacity[area,tech]  == model.capacityCosts[area,tech] #  .. ....... / 10**6
-    model.capacityCostsCtr = Constraint(model.AREAS,model.TECHNOLOGIES, rule=capacityCostsDef_rule)    
-    
-    # capacityCosts definition Constraints
-    # AREAS x STOCK_TECHNO   
-    def storageCostsDef_rule(model,area,s_tech): #EQ forall s_tech in STOCK_TECHNO storageCosts = storageCost[area, s_tech]*c_max[area, s_tech] / 1E6;
-        return model.storageCost[area,s_tech]*model.Cmax[area,s_tech] == model.storageCosts[area,s_tech]#/10**6 ;;
-    model.storageCostsDef = Constraint(model.AREAS,model.STOCK_TECHNO, rule=storageCostsDef_rule)
-    
-    #Capacity constraint
-    #AREAS x Date x TECHNOLOGIES
-    def CapacityCtr_rule(model,area,t,tech): #INEQ forall t, tech 
-    	return model.capacity[area,tech] * model.availabilityFactor[area,t,tech] >= model.energy[area,t,tech]
-    model.CapacityCtr = Constraint(model.AREAS,model.Date,model.TECHNOLOGIES, rule=CapacityCtr_rule)
-
-    #Exchange capacity constraint (duplicate of variable definition)
-    # AREAS x AREAS x Date
-    def exchangeCtrPlus_rule(model,a, b, t): #INEQ forall area.axarea.b in AREASxAREAS  t in Date
-        if a!=b:
-            return model.exchange[a,b,t]  <= model.maxExchangeCapacity[a,b] ;
-        else:
-            return model.exchange[a, a, t] == 0
-    model.exchangeCtrPlus = Constraint(model.AREAS,model.AREAS,model.Date, rule=exchangeCtrPlus_rule)
-
-    def exchangeCtrMoins_rule(model,a, b, t): #INEQ forall area.axarea.b in AREASxAREAS  t in Date
-        if a!=b:
-            return model.exchange[a,b,t]  >= -model.maxExchangeCapacity[a,b] ;
-        else:
-            return model.exchange[a, a, t] == 0
-    model.exchangeCtrMoins = Constraint(model.AREAS,model.AREAS,model.Date, rule=exchangeCtrMoins_rule)
-
-    def exchangeCtr2_rule(model,a, b, t): #INEQ forall area.axarea.b in AREASxAREAS  t in Date
-        return model.exchange[a,b,t]  == -model.exchange[b,a,t] ;
-    model.exchangeCtr2 = Constraint(model.AREAS,model.AREAS,model.Date, rule=exchangeCtr2_rule)
-  
-    #Storage max capacity constraint
-    #AREAS x STOCK_TECHNO
-    def storageCapacity_rule(model,area,s_tech): #INEQ forall s_tech 
-    	return model.Cmax[area,s_tech]  <= model.c_max[area,s_tech]
-    model.storageCapacityCtr = Constraint(model.AREAS,model.STOCK_TECHNO, rule=storageCapacity_rule)   
-    
-    #Storage max power constraint
-    #AREAS x STOCK_TECHNO
-    def storagePower_rule(model,area,s_tech): #INEQ forall s_tech 
-    	return model.Pmax[area,s_tech]  <= model.p_max[area,s_tech]
-    model.storagePowerCtr = Constraint(model.AREAS,model.STOCK_TECHNO, rule=storagePower_rule)
-
-    model=set_storage_operation_constraints_multiple_area(model,Date_list)
-
-    #contrainte d'equilibre offre demande
-    #AREAS x Date x TECHNOLOGIES
-    def energyCtr_rule(model,area,t): #INEQ forall t
-    	return sum(model.energy[area,t,tech] for tech in model.TECHNOLOGIES ) + sum(model.exchange[b,area,t] for b in model.AREAS )+sum(model.storageOut[area,t,s_tech]-model.storageIn[area,t,s_tech]for s_tech in model.STOCK_TECHNO) == model.areaConsumption[area,t]
-    model.energyCtr = Constraint(model.AREAS,model.Date,rule=energyCtr_rule)
-
-
-    #### 2 - Optional 
-    ########
-
-    #contrainte de stock annuel 
-    if "maxCapacity" in TechParameters:
-        def maxCapacity_rule(model,area,tech) : #INEQ forall t, tech 
-            if model.maxCapacity[area,tech]>0 :
-                return model.maxCapacity[area,tech] >= model.capacity[area,tech] 
-            else:
-                return Constraint.Skip
-        model.maxCapacityCtr = Constraint(model.AREAS,model.TECHNOLOGIES, rule=maxCapacity_rule)
-    
-    if "minCapacity" in TechParameters:
-        def minCapacity_rule(model,area,tech) : #INEQ forall t, tech 
-            if model.minCapacity[area,tech]>0 :
-                return model.minCapacity[area,tech] <= model.capacity[area,tech] 
-            else:
-                return Constraint.Skip
-        model.minCapacityCtr = Constraint(model.AREAS,model.TECHNOLOGIES, rule=minCapacity_rule)
-    
-
-    model = set_EnergyNbHourCap_multiple_areas(model, TechParameters)
-
-    model = set_RampConstraints_multiple_areas(model,TechParameters)
-
-    return model;
 
