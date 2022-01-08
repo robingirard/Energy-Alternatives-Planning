@@ -1,3 +1,5 @@
+import pandas as pd
+
 from functions.f_tools import *
 
 #region general constraints
@@ -610,5 +612,11 @@ def set_Operation_Constraints_StorageCapacityCtr(model):
             model.StorageCapacityCtr = Constraint(model.Date, model.STOCK_TECHNO, rule=StorageCapacity_rule)
 
     return model
+
+#endregion
+
+
+#region test
+
 
 #endregion

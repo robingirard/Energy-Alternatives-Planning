@@ -41,13 +41,15 @@ def Create_pyomo_model_sets_parameters(Parameters,
     # Sets       ##
     ###############
     for set_name in Set_vals:
-        setattr(model,set_name,Set(initialize=Set_vals[set_name], ordered=False))
+        if set_name != "AREAS.1":
+            setattr(model,set_name,Set(initialize=Set_vals[set_name], ordered=False))
     #get_allSets(model).keys()
     #Set_names = get_allSetsnames(model)
     # product set are defined depending on existing parameters multi_index
     #TODO better codding bellow using "exec" ?
     for key_name in Parameters:
-        Index_names =Parameters[key_name].index.names
+        Index_names =list(Parameters[key_name].index.names)
+        Index_names = [string.replace("AREAS.1", "AREAS") for string in Index_names ]
         if len(Index_names)==2:
             Dim_name="_".join(Index_names)
             if Dim_name=="AREAS_AREAS.1": Dim_name="AREAS_AREAS";

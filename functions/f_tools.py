@@ -88,6 +88,26 @@ def getSetNames(model,setobject):
         cpt+=1;
     return res;
 
+def getSetNamesList(model,setobject):
+    """
+    This function finds the sets associated to a flat set product object
+    :param model: pyomo model
+    :param setobject: a pyomo set object
+    :return: a Set (not a pyomo set) with names
+    """
+    SimpleSets=get_SimpleSets(model)
+    #if not isinstance(setobject,pyomo.core.base.set.SetProduct):
+    #    print("warning setobject should be a SetProduct") ### not really actually
+    cpt=0;
+    res=[]
+    for subset in setobject.subsets():
+        for i in SimpleSets:
+            if SimpleSets[i]==subset.data():
+                res.append(i)
+        cpt+=1;
+    return res;
+
+
 
 def getParameters_panda(model):
     """
@@ -113,6 +133,38 @@ def getParameters_panda(model):
             Parameters[str(v)]= pd.concat([DIM,VAL],axis=1,sort=False)
             Parameters[str(v)]=Parameters[str(v)].rename(columns={0:str(varobject.index_set())})
     return Parameters;
+
+
+
+def get_ParametersNameWithSet(model):
+    """
+    This function takes Parameters and return values in panda form
+    :param model: pyomo model
+    :return: a Set (not a pyomo set) with names of variables and associated values in panda table
+    """
+    import pandas as pd
+    Parameters = {}
+    for v in model.component_objects(Param, active=True):
+        # print ("Variables",v)
+        varobject = getattr(model, str(v))
+        Parameters[str(v)] = getSetNamesList(model, varobject.index_set())
+    return Parameters;
+
+def get_VariableNameWithSet(model):
+    """
+    This function takes Parameters and return values in panda form
+    :param model: pyomo model
+    :return: a Set (not a pyomo set) with names of variables and associated values in panda table
+    """
+    import pandas as pd
+    Parameters = {}
+    for v in model.component_objects(Var, active=True):
+        # print ("Variables",v)
+        varobject = getattr(model, str(v))
+        Parameters[str(v)] = getSetNamesList(model, varobject.index_set())
+    return Parameters;
+
+
 
 def getVariables_panda(model):
     """
