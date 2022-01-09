@@ -28,10 +28,40 @@ def GetElectricSystemModel_Planing(Parameters):
 
     #cost function
     model   =   set_Planing_base_cost_function(model)
-
+    EQs = {}
     #operation constraints
-    model   =   set_Operation_Constraints_energyCtr(model)
-    model   =   set_Operation_Constraints_CapacityCtr(model)
+    #model   =   set_Operation_Constraints_energyCtr(model)
+    #model   =   set_Operation_Constraints_CapacityCtr(model)
+
+
+    ## different cas pour la contrainte d'équilibre offre demande
+    Set_names = get_allSetsnames(model)
+    match list(Set_names):
+        case[*my_set_names] if allin(["FLEX_CONSUM", "AREAS", 'STOCK_TECHNO'], my_set_names):
+            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(exchange|AREAS) + sum(storageOut-storageIn|STOCK_TECHNO) == total_consumption"
+        case [*my_set_names] if allin(["FLEX_CONSUM", 'STOCK_TECHNO'], my_set_names):
+            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(storageOut-storageIn|STOCK_TECHNO) == total_consumption"
+        case[*my_set_names] if allin(["AREAS", 'STOCK_TECHNO'], my_set_names):
+            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(exchange|AREAS) + sum(storageOut-storageIn|STOCK_TECHNO) == areaConsumption"
+        case [*my_set_names] if "AREAS" in my_set_names:
+            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(exchange|AREAS) == areaConsumption"
+        case[*my_set_names] if 'STOCK_TECHNO' in my_set_names:
+            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(storageOut-storageIn|STOCK_TECHNO) == areaConsumption"
+        case _: # single area without storage
+            energyCtr_EQ = "sum(energy|TECHNOLOGIES) == areaConsumption"
+
+    EQs["energyCtr"] = {
+        "domain":  ["AREAS","Date"] if "AREAS" in Set_names else ["Date"],
+        "equation": energyCtr_EQ}
+
+    EQs["CapacityCtr"] = {
+        "domain"   : ["AREAS","Date","TECHNOLOGIES"] if "AREAS" in Set_names else ["Date","TECHNOLOGIES"],
+        "equation" : "capacity * availabilityFactor >= energy"
+    }
+
+
+    model = math_to_pyomo_constraint(EQs, model)
+
     model   =   set_Operation_Constraints_Storage(model)
     model   =   set_Operation_Constraints_stockCtr(model)
     model   =   set_Operation_Constraints_Ramp(model)

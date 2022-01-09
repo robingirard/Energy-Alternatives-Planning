@@ -4,6 +4,8 @@ from pyomo.core import *
 from pyomo.opt import SolverFactory
 from datetime import timedelta
 import pandas as pd
+import re
+
 
 def allin(vec,dest):
     return(all([name in dest for name in vec]))
@@ -305,3 +307,43 @@ def get_dualValues(model,cobject):
          res[index] = model.dual[cobject[index]]
     return res;
 
+
+def math_to_pyomo_constraint(EQs,model,verbose =False):
+    Set_names = get_allSetsnames(model)
+    Parameters_names = get_ParametersNameWithSet(model)
+    Variables_names = get_VariableNameWithSet(model)
+
+    for curConstraintName in EQs.keys():
+        EQ = EQs[curConstraintName];
+        EQ["name"]= curConstraintName
+        for param in Parameters_names:
+            SET_val_names=[name+"_val" for name in Parameters_names[param]]
+            EQ["equation"]=EQ["equation"].replace(param,"model."+param+"["+",".join(SET_val_names)+"]")
+
+        for variable in Variables_names:
+            SET_val_names=[name+"_val" for name in Variables_names[variable]]
+            EQ["equation"]=EQ["equation"].replace(variable,"model."+variable+"["+",".join(SET_val_names)+"]")
+
+        for SET in Set_names:
+            SET_val_names=[name+"_val" for name in Variables_names[variable]]
+            EQ["equation"]=EQ["equation"].replace("|"+SET," for "+SET+"_val"+" in model."+SET)
+
+        regexp = re.compile("sum\([^\)]* for AREAS_val in model.AREAS\)")
+
+        searched = regexp.search(EQ["equation"])
+        if bool(searched):
+            replacement = regexp.search(EQ["equation"])[0].replace("AREAS_val,AREAS_val","b,AREAS_val")
+            replacement= replacement.replace("for AREAS_val in model.AREAS","for b in model.AREAS")
+            EQ["equation"] = regexp.sub(replacement,EQ["equation"])
+
+        #EQ["equation"]
+
+        domain_name = [name+"_val" for name in EQ["domain"]]
+        Constraint_function_definition = "def "+EQ["name"]+"_rule(model,"+",".join(domain_name)+"):\n"+"\t return "+EQ["equation"]
+        if verbose: print(Constraint_function_definition)
+        exec(Constraint_function_definition)
+        domain_model = ["model."+name for name in EQ["domain"]]
+        Constraint_assignation = "model."+EQ["name"]+"=Constraint("+",".join(domain_model)+",rule="+EQ["name"]+"_rule)"
+        if verbose: print(Constraint_assignation)
+        exec(Constraint_assignation)
+    return model
