@@ -73,6 +73,9 @@ TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
 #endregion
 
 #region I - Simple single area  : Solving and loading results
+
+
+
 model = GetElectricSystemModel_Planing(Parameters={"areaConsumption"      :   areaConsumption,
                                                    "availabilityFactor"   :   availabilityFactor,
                                                    "TechParameters"       :   TechParameters})

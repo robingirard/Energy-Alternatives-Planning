@@ -9,9 +9,7 @@ def Create_pyomo_model_sets_parameters(Parameters,
                                  domain ={"availabilityFactor" : "PercentFraction","maxExchangeCapacity" : "NonNegativeReals",
                                           "a_minus": "NonNegativeReals","a_plus": "NonNegativeReals",
                                           "increased_max_power": "NonNegativeReals"}):
-    # isAbstract=False
-    #Parameters.availabilityFactor.isna().sum()
-    #model=self
+
     model = ConcreteModel()
 
     ### Cleaning
@@ -36,6 +34,8 @@ def Create_pyomo_model_sets_parameters(Parameters,
             if set_name in Parameters[key_name].index.names:
                 Set_vals[set_name]=Set_vals[set_name].union(set(Parameters[key_name].index.get_level_values(set_name).unique()))
                 if set_name == "Date": Date_list = Parameters[key_name].index.get_level_values(set_name).unique()
+
+
 
     ###############
     # Sets       ##
@@ -90,11 +90,15 @@ def Create_pyomo_model_sets_parameters(Parameters,
             exec("model." + COLNAME + " =Param(model."+Dim_name+", default="+default[COLNAME]+"," +"initialize=Parameters[key_name]." + COLNAME + ".squeeze().to_dict(),mutable="+mutable[COLNAME]+",domain="+domain[COLNAME]+")")
 
     #self = model
+    model.dual = Suffix(direction=Suffix.IMPORT)
+    model.rc = Suffix(direction=Suffix.IMPORT)
+    model.slack = Suffix(direction=Suffix.IMPORT)
+
     return model
 
 #pyomo.core.base.PyomoModel.ConcreteModel.Create_pyomo_model_sets_parameters=Create_pyomo_model_sets_parameters
 
-def set_Operation_variables(model):
+def set_Operation_variables(model,verbose=False):
     """
     Defined variables :
 
@@ -109,11 +113,40 @@ def set_Operation_variables(model):
     :param model:
     :return:
     """
-    model   =   set_Operation_base_variables(model) # energy | energyCosts |exchange
-    model   =   set_Operation_flex_variables(model)
+
+    Set_names = get_allSetsnames(model)
+
+
+    if "AREAS" in Set_names:
+        Vars = ["energy[AREAS,Date,TECHNOLOGIES]>=0", "energyCosts[AREAS,TECHNOLOGIES]>=0",
+                "exchange[AREAS,AREAS,Date]>=0",]
+    else: Vars = ["energy[Date,TECHNOLOGIES]>=0", "energyCosts[TECHNOLOGIES]>=0", ]
+
+    if "FLEX_CONSUM" in Set_names:
+        if "AREAS" in Set_names:
+            Vars = Vars+ ["total_consumption[AREAS,Date]>=0", "flex_consumption[AREAS,Date,FLEX_CONSUM]>=0",
+                            "lab_cost[AREAS,Date,FLEX_CONSUM]>=0", "a_plus[AREAS,Date,FLEX_CONSUM]>=0",
+                            "a_minus[AREAS,Date,FLEX_CONSUM]>=0", "flex[AREAS,Date,FLEX_CONSUM]",
+                          "increased_max_power[AREAS,FLEX_CONSUM]>=0"]
+        else:
+            Vars = Vars + ["total_consumption[Date]>=0","flex_consumption[Date,FLEX_CONSUM]>=0",
+                            "lab_cost[Date,FLEX_CONSUM]>=0","a_plus[Date,FLEX_CONSUM]>=0",
+                            "a_minus[Date,FLEX_CONSUM]>=0","flex[Date,FLEX_CONSUM]",
+                           "increased_max_power[FLEX_CONSUM]>=0"]
+
+    if 'STOCK_TECHNO' in Set_names:
+        if "AREAS" in Set_names:
+            Vars = Vars+ ["storageIn[AREAS,Date,STOCK_TECHNO]>=0",
+                    "storageOut[AREAS,Date,STOCK_TECHNO]>=0","stockLevel[AREAS,Date,STOCK_TECHNO]",]
+        else:
+            Vars = Vars + ["storageIn[Date,STOCK_TECHNO]>=0","storageOut[Date,STOCK_TECHNO]>=0",
+                           "stockLevel[Date,STOCK_TECHNO]>=0" ]
+
+
+    model=math_to_pyomo_Vardef(Vars,model,verbose=verbose)
     return model
 
-def set_Planing_variables(model):
+def set_Planing_variables(model,verbose=False):
     """
     Defined variables :
 
@@ -121,14 +154,38 @@ def set_Planing_variables(model):
 
     [if STOCK_TECHNO]   storageCosts | Cmax | Pmax
 
-    [if FLEX_CONSUM] consumption_power_cost | lab_cost
+    [if FLEX_CONSUM] consumption_power_cost
 
     :param model:
     :return:
     """
-    model   =   set_Planing_base_variables(model) # energy | energyCosts |exchange
-    model   =   set_Planing_flex_variables(model)
+    Set_names = get_allSetsnames(model)
+
+    if "AREAS" in Set_names:
+        Vars = ["capacity[AREAS,TECHNOLOGIES]>=0", "capacityCosts[AREAS,TECHNOLOGIES]>=0"]
+    else:
+        Vars = ["capacity[TECHNOLOGIES]>=0", "capacityCosts[TECHNOLOGIES]>=0", ]
+
+    if "FLEX_CONSUM" in Set_names:
+        if "AREAS" in Set_names:
+            Vars = Vars+ ["consumption_power_cost[AREAS,FLEX_CONSUM]>=0"]
+        else:
+            Vars = Vars + ["consumption_power_cost[FLEX_CONSUM]>=0"]
+
+    if 'STOCK_TECHNO' in Set_names:
+        if "AREAS" in Set_names:
+            Vars = Vars+ ["storageCosts[AREAS,STOCK_TECHNO]>=0",
+                    "Cmax[AREAS,STOCK_TECHNO]>=0","Pmax[AREAS,STOCK_TECHNO]",]
+        else:
+            Vars = Vars + ["storageCosts[STOCK_TECHNO]>=0",
+                    "Cmax[STOCK_TECHNO]>=0","Pmax[STOCK_TECHNO]",]
+
+
+    model=math_to_pyomo_Vardef(Vars,model,verbose=verbose)
     return model
+
+
+
 
 def set_Operation_base_variables(model):
     """
@@ -150,9 +207,7 @@ def set_Operation_base_variables(model):
         model.energy = Var(model.Date, model.TECHNOLOGIES,domain=NonNegativeReals)  ### Energy produced by a production mean at time t
         model.energyCosts = Var(model.TECHNOLOGIES,domain=NonNegativeReals)  ### Cost of energy for a production mean, explicitely defined by definition energyCostsDef
 
-    model.dual = Suffix(direction=Suffix.IMPORT)
-    model.rc = Suffix(direction=Suffix.IMPORT)
-    model.slack = Suffix(direction=Suffix.IMPORT)
+
     return model
 
 def set_Planing_base_variables(model):
@@ -189,6 +244,7 @@ def set_Operation_flex_variables(model):
     :param model:
     :return:
     """
+
     Set_names = get_allSetsnames(model)
     if 'STOCK_TECHNO' in Set_names:
         if "AREAS" in Set_names :

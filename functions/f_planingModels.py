@@ -17,55 +17,29 @@ from functions.f_model_planing_constraints import *
 from functions.f_model_operation_constraints import *
 
 #TODO allow to print equations with an optional parameter option
-def GetElectricSystemModel_Planing(Parameters):
+def GetElectricSystemModel_Planing(Parameters,Vars=None,EQs = {},verbose=False):
     #get_allSetsnames(model)
     model   =   Create_pyomo_model_sets_parameters(Parameters)# areaConsumption, availabilityFactor, TechParameters)
 
-    model   =   set_Operation_base_variables(model) # energy energyCosts  if AREAS --> exchange if storage...
-    model   =   set_Operation_flex_variables(model)
-    model   =   set_Planing_base_variables(model) #defined variables :  capacityCosts capacity
-    model   =   set_Planing_flex_variables(model)
+    if Vars == None:
+        model = set_Operation_variables(model, verbose=verbose)
+        model = set_Planing_variables(model, verbose=verbose)
+    else :
+        model = math_to_pyomo_Vardef(Vars, model, verbose=verbose)
 
     #cost function
     model   =   set_Planing_base_cost_function(model)
-    EQs = {}
-    #operation constraints
-    #model   =   set_Operation_Constraints_energyCtr(model)
-    #model   =   set_Operation_Constraints_CapacityCtr(model)
 
+    if len(EQs)==0:
+        model   =   set_Operation_Constraints_energyCapacityexchange(EQs,model)
+    else:
+        model = math_to_pyomo_constraint(EQs, model)
 
-    ## different cas pour la contrainte d'équilibre offre demande
-    Set_names = get_allSetsnames(model)
-    match list(Set_names):
-        case[*my_set_names] if allin(["FLEX_CONSUM", "AREAS", 'STOCK_TECHNO'], my_set_names):
-            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(exchange|AREAS) + sum(storageOut-storageIn|STOCK_TECHNO) == total_consumption"
-        case [*my_set_names] if allin(["FLEX_CONSUM", 'STOCK_TECHNO'], my_set_names):
-            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(storageOut-storageIn|STOCK_TECHNO) == total_consumption"
-        case[*my_set_names] if allin(["AREAS", 'STOCK_TECHNO'], my_set_names):
-            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(exchange|AREAS) + sum(storageOut-storageIn|STOCK_TECHNO) == areaConsumption"
-        case [*my_set_names] if "AREAS" in my_set_names:
-            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(exchange|AREAS) == areaConsumption"
-        case[*my_set_names] if 'STOCK_TECHNO' in my_set_names:
-            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(storageOut-storageIn|STOCK_TECHNO) == areaConsumption"
-        case _: # single area without storage
-            energyCtr_EQ = "sum(energy|TECHNOLOGIES) == areaConsumption"
-
-    EQs["energyCtr"] = {
-        "domain":  ["AREAS","Date"] if "AREAS" in Set_names else ["Date"],
-        "equation": energyCtr_EQ}
-
-    EQs["CapacityCtr"] = {
-        "domain"   : ["AREAS","Date","TECHNOLOGIES"] if "AREAS" in Set_names else ["Date","TECHNOLOGIES"],
-        "equation" : "capacity * availabilityFactor >= energy"
-    }
-
-
-    model = math_to_pyomo_constraint(EQs, model)
+    ## different cas pour la contrainte d'équilibre offre demande --- energyCtr_EQ
 
     model   =   set_Operation_Constraints_Storage(model)
     model   =   set_Operation_Constraints_stockCtr(model)
     model   =   set_Operation_Constraints_Ramp(model)
-    model   =   set_Operation_Constraints_exchangeCtr(model)
     model   =   set_Operation_Constraints_flex(model)
 
     #planing constraints

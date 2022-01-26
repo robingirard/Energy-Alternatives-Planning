@@ -347,3 +347,35 @@ def math_to_pyomo_constraint(EQs,model,verbose =False):
         if verbose: print(Constraint_assignation)
         exec(Constraint_assignation)
     return model
+
+
+def math_to_pyomo_Vardef(Vars, model, verbose=False):
+    Set_names = get_allSetsnames(model)
+    Parameters_names = get_ParametersNameWithSet(model)
+    Variables_names = get_VariableNameWithSet(model)
+    Date_list = pd.DataFrame({"Date" : getattr(model, "Date").data()})
+    Date_list["week"] = Date_list.Date.apply(lambda x: x.isocalendar().week)
+
+    for curVarName in Vars:
+
+        Var_definition_script_splitted = re.compile("[\[\]]").split(curVarName)
+        for SET in Set_names:
+            Var_definition_script_splitted[1] = Var_definition_script_splitted[1].replace(SET, "model." + SET)
+        Domain_text = Var_definition_script_splitted[2]
+        match Domain_text:
+            case "":
+                Var_Domain = ""
+            case ">=0":
+                Var_Domain = ",domain=NonNegativeReals"
+            case "<=0":
+                Var_Domain = ",domain=NonPositiveReals"
+            case [*Domain_text] if bool(re.compile(Domain_text).search("(.+)\-(.+)")):
+                domain_split = re.compile(Domain_text).split("\-")
+                Var_Domain = ",bounds=(" + domain_split[0] + "," + domain_split[1] + ")"
+
+        Var_definition_script = "model." + Var_definition_script_splitted[0] + "=Var(" + Var_definition_script_splitted[
+            1] + Var_Domain + ")"
+        if verbose: print(Var_definition_script)
+        exec(Var_definition_script)
+
+    return model

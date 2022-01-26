@@ -39,10 +39,11 @@ def set_Planing_cost_OBJ(model):
         case [*my_set_names] if allin(["FLEX_CONSUM","AREAS", 'STOCK_TECHNO'], my_set_names):
             # multiple area and storage
             def ObjectiveFunction_rule(model):  # OBJ
-                return sum(
-                    model.energyCosts[area, tech] + model.capacityCosts[area, tech] for tech in model.TECHNOLOGIES for area in
-                    model.AREAS) + sum(
-                    model.storageCosts[area, s_tech] for s_tech in model.STOCK_TECHNO for area in model.AREAS)
+                return sum( model.energyCosts[area, tech] + model.capacityCosts[area, tech] for tech in model.TECHNOLOGIES for area in model.AREAS) + \
+                       sum( model.storageCosts[area, s_tech] for s_tech in model.STOCK_TECHNO for area in model.AREAS) + \
+                       sum(model.consumption_power_cost[area,name] for name in model.FLEX_CONSUM for area in model.AREAS)+ \
+                       sum(model.lab_cost[area,t, name] for t in model.Date for name in model.FLEX_CONSUM for area in model.AREAS)
+
             model.OBJ = Objective(rule=ObjectiveFunction_rule, sense=minimize)
         case[*my_set_names] if  allin(["FLEX_CONSUM", 'STOCK_TECHNO'], my_set_names):
             # single area with storage and Flex consumption

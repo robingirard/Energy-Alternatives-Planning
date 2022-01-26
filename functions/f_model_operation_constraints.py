@@ -4,112 +4,32 @@ from functions.f_tools import *
 
 #region general constraints
 
-def set_Operation_Constraints_CapacityCtr(model):
-    """
-    energy <= capacity * availabilityFactor
 
-    :param model:
-    :return:
-    """
+def set_Operation_Constraints_energyCapacityexchange(EQs,model):
     Set_names = get_allSetsnames(model)
-
-    ### CapacityCtr definition
-    match list(Set_names):
-        case [*my_set_names] if "AREAS" in my_set_names:
-            #multiple area (with or without storage)
-            def CapacityCtr_rule(model, area, t, tech):  # INEQ forall t, tech
-                return model.capacity[area, tech] * model.availabilityFactor[area, t, tech] >= model.energy[
-                    area, t, tech]
-            model.CapacityCtr = Constraint(model.AREAS, model.Date, model.TECHNOLOGIES, rule=CapacityCtr_rule)
-
-        case _:
-            # single area (with or without storage)
-            def Capacity_rule(model, t, tech):  # INEQ forall t, tech
-                return model.capacity[tech] * model.availabilityFactor[t, tech] >= model.energy[t, tech]
-            model.CapacityCtr = Constraint(model.Date, model.TECHNOLOGIES, rule=Capacity_rule)
-    return model
-
-def set_Operation_Constraints_energyCtr(model):
-    """
-    [Default] sum(energy) = areaConsumption
-
-    [if STOCK_TECHNO] sum(energy) + storageOut-storageIn = areaConsumption
-
-    [if AREAS] sum(energy) + exchange = areaConsumption
-
-    [if AREAS & STOCK_TECHNO] sum(energy|tech) + exchange + storageOut-storageIn = areaConsumption
-
-    :param model:
-    :return:
-    """
-
-    Set_names = get_allSetsnames(model)
-    ### CapacityCtr definition
     match list(Set_names):
         case[*my_set_names] if allin(["FLEX_CONSUM", "AREAS", 'STOCK_TECHNO'], my_set_names):
-            # multiple area and storage and flex conso
-
-            def energyCtr_rule(model,area, t):  # INEQ forall t
-                return sum(model.energy[area,t, tech] for tech in model.TECHNOLOGIES)+ sum(
-                    model.exchange[b, area, t] for b in model.AREAS) + sum(
-                    model.storageOut[area,t, s_tech] - model.storageIn[area,t, s_tech] for s_tech in model.STOCK_TECHNO) >= \
-                       model.total_consumption[area,t]
-
-            model.energyCtr = Constraint(model.AREAS, model.Date, rule=energyCtr_rule)
+            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(exchange|AREAS) + sum(storageOut-storageIn|STOCK_TECHNO) == total_consumption"
         case [*my_set_names] if allin(["FLEX_CONSUM", 'STOCK_TECHNO'], my_set_names):
-            # simple area and storage and flex conso
-            def energyCtr_rule(model, t):  # INEQ forall t
-                return sum(model.energy[t, tech] for tech in model.TECHNOLOGIES) + sum(
-                    model.storageOut[t, s_tech] - model.storageIn[t, s_tech] for s_tech in model.STOCK_TECHNO) >= \
-                       model.total_consumption[t]
-
-            model.energyCtr = Constraint(model.Date, rule=energyCtr_rule)
-        case [*my_set_names] if allin(["AREAS", 'STOCK_TECHNO'], my_set_names):
-            # multiple area and storage
-            def energyCtr_rule(model, area, t):  # INEQ forall t
-                return sum(model.energy[area, t, tech] for tech in model.TECHNOLOGIES) + sum(
-                    model.exchange[b, area, t] for b in model.AREAS) + sum(
-                    model.storageOut[area, t, s_tech] - model.storageIn[area, t, s_tech] for s_tech in model.STOCK_TECHNO) == \
-                       model.areaConsumption[area, t]
-            model.energyCtr = Constraint(model.AREAS, model.Date, rule=energyCtr_rule)
-
+            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(storageOut-storageIn|STOCK_TECHNO) == total_consumption"
+        case[*my_set_names] if allin(["AREAS", 'STOCK_TECHNO'], my_set_names):
+            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(exchange|AREAS) + sum(storageOut-storageIn|STOCK_TECHNO) == areaConsumption"
         case [*my_set_names] if "AREAS" in my_set_names:
-            # multiple area without storage
-            def energyCtr_rule(model, area, t):  # INEQ forall t
-                return sum(model.energy[area, t, tech] for tech in model.TECHNOLOGIES) + sum(
-                    model.exchange[b, area, t] for b in model.AREAS) == model.areaConsumption[area, t]
-            model.energyCtr = Constraint(model.AREAS, model.Date, rule=energyCtr_rule)
+            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(exchange|AREAS) == areaConsumption"
+        case[*my_set_names] if 'STOCK_TECHNO' in my_set_names:
+            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(storageOut-storageIn|STOCK_TECHNO) == areaConsumption"
+        case _: # single area without storage
+            energyCtr_EQ = "sum(energy|TECHNOLOGIES) == areaConsumption"
 
-        case [*my_set_names] if 'STOCK_TECHNO' in my_set_names:
-            # single area with storage
-            def energyCtr_rule(model, t):  # INEQ forall t
-                return sum(model.energy[t, tech] for tech in model.TECHNOLOGIES) + sum(
-                    model.storageOut[t, s_tech] - model.storageIn[t, s_tech] for s_tech in model.STOCK_TECHNO) == \
-                       model.areaConsumption[t]
-            model.energyCtr = Constraint(model.Date, rule=energyCtr_rule)
+    EQs["energyCtr"] = {
+        "domain":  ["AREAS","Date"] if "AREAS" in Set_names else ["Date"],
+        "equation": energyCtr_EQ}
 
-        case _:
-            # single area without storage
-            def energyCtr_rule(model, t):  # INEQ forall t
-                return sum(model.energy[t, tech] for tech in model.TECHNOLOGIES) == model.areaConsumption[t]
-            model.energyCtr = Constraint(model.Date, rule=energyCtr_rule)
+    EQs["CapacityCtr"] = {
+        "domain"   : ["AREAS","Date","TECHNOLOGIES"] if "AREAS" in Set_names else ["Date","TECHNOLOGIES"],
+        "equation" : "capacity * availabilityFactor >= energy"
+    }
 
-    return model
-
-def set_Operation_Constraints_exchangeCtr(model):
-    """
-    [Applies only if "AREAS" in Set_names]
-
-    exchange[a,b] <=  maxExchangeCapacity[a,b]
-
-    exchange[a,b] >= - maxExchangeCapacity[a,b]
-
-    exchange[a,b] == -exchange[b,a]
-
-    :param model:
-    :return:
-    """
-    Set_names = get_allSetsnames(model)
     if "AREAS" in Set_names:
         def exchangeCtrPlus_rule(model,a, b, t): #INEQ forall area.axarea.b in AREASxAREAS  t in Date
             if a!=b:
@@ -128,7 +48,13 @@ def set_Operation_Constraints_exchangeCtr(model):
         def exchangeCtr2_rule(model,a, b, t): #INEQ forall area.axarea.b in AREASxAREAS  t in Date
             return model.exchange[a,b,t]  == -model.exchange[b,a,t] ;
         model.exchangeCtr2 = Constraint(model.AREAS,model.AREAS,model.Date, rule=exchangeCtr2_rule)
+
+
+
+    model = math_to_pyomo_constraint(EQs, model)
     return model
+
+
 
 def set_Operation_Constraints_stockCtr(model):
     """
@@ -286,7 +212,7 @@ def set_Operation_Constraints_consum_eq_week_Ctr(model):
     # consumption equality within the same week
     def consum_eq_week(model, t_week, conso_type):
         if model.flex_type[conso_type] == 'week':
-            # Date_list=model.Date
+            #Date_list=getattr(model, "Date").data()
             t_range = Date_list.Date[Date_list.week == t_week]  # range((t_week-1)*7*24+1,(t_week)*7*24)
             return sum(model.flex_consumption[t, conso_type] for t in t_range) == sum(
                 model.to_flex_consumption[t, conso_type] for t in t_range)
@@ -616,7 +542,100 @@ def set_Operation_Constraints_StorageCapacityCtr(model):
 #endregion
 
 
-#region test
+#region oldies
+
+
+def set_Operation_Constraints_CapacityCtr(model):
+    """
+    energy <= capacity * availabilityFactor
+
+    :param model:
+    :return:
+    """
+    Set_names = get_allSetsnames(model)
+
+    ### CapacityCtr definition
+    match list(Set_names):
+        case [*my_set_names] if "AREAS" in my_set_names:
+            #multiple area (with or without storage)
+            def CapacityCtr_rule(model, area, t, tech):  # INEQ forall t, tech
+                return model.capacity[area, tech] * model.availabilityFactor[area, t, tech] >= model.energy[
+                    area, t, tech]
+            model.CapacityCtr = Constraint(model.AREAS, model.Date, model.TECHNOLOGIES, rule=CapacityCtr_rule)
+
+        case _:
+            # single area (with or without storage)
+            def Capacity_rule(model, t, tech):  # INEQ forall t, tech
+                return model.capacity[tech] * model.availabilityFactor[t, tech] >= model.energy[t, tech]
+            model.CapacityCtr = Constraint(model.Date, model.TECHNOLOGIES, rule=Capacity_rule)
+    return model
+
+def set_Operation_Constraints_energyCtr(model):
+    """
+    [Default] sum(energy) = areaConsumption
+
+    [if STOCK_TECHNO] sum(energy) + storageOut-storageIn = areaConsumption
+
+    [if AREAS] sum(energy) + exchange = areaConsumption
+
+    [if AREAS & STOCK_TECHNO] sum(energy|tech) + exchange + storageOut-storageIn = areaConsumption
+
+    :param model:
+    :return:
+    """
+
+    Set_names = get_allSetsnames(model)
+    ### CapacityCtr definition
+    match list(Set_names):
+        case[*my_set_names] if allin(["FLEX_CONSUM", "AREAS", 'STOCK_TECHNO'], my_set_names):
+            # multiple area and storage and flex conso
+
+            def energyCtr_rule(model,area, t):  # INEQ forall t
+                return sum(model.energy[area,t, tech] for tech in model.TECHNOLOGIES)+ sum(
+                    model.exchange[b, area, t] for b in model.AREAS) + sum(
+                    model.storageOut[area,t, s_tech] - model.storageIn[area,t, s_tech] for s_tech in model.STOCK_TECHNO) >= \
+                       model.total_consumption[area,t]
+
+            model.energyCtr = Constraint(model.AREAS, model.Date, rule=energyCtr_rule)
+        case [*my_set_names] if allin(["FLEX_CONSUM", 'STOCK_TECHNO'], my_set_names):
+            # simple area and storage and flex conso
+            def energyCtr_rule(model, t):  # INEQ forall t
+                return sum(model.energy[t, tech] for tech in model.TECHNOLOGIES) + sum(
+                    model.storageOut[t, s_tech] - model.storageIn[t, s_tech] for s_tech in model.STOCK_TECHNO) >= \
+                       model.total_consumption[t]
+
+            model.energyCtr = Constraint(model.Date, rule=energyCtr_rule)
+        case [*my_set_names] if allin(["AREAS", 'STOCK_TECHNO'], my_set_names):
+            # multiple area and storage
+            def energyCtr_rule(model, area, t):  # INEQ forall t
+                return sum(model.energy[area, t, tech] for tech in model.TECHNOLOGIES) + sum(
+                    model.exchange[b, area, t] for b in model.AREAS) + sum(
+                    model.storageOut[area, t, s_tech] - model.storageIn[area, t, s_tech] for s_tech in model.STOCK_TECHNO) == \
+                       model.areaConsumption[area, t]
+            model.energyCtr = Constraint(model.AREAS, model.Date, rule=energyCtr_rule)
+
+        case [*my_set_names] if "AREAS" in my_set_names:
+            # multiple area without storage
+            def energyCtr_rule(model, area, t):  # INEQ forall t
+                return sum(model.energy[area, t, tech] for tech in model.TECHNOLOGIES) + sum(
+                    model.exchange[b, area, t] for b in model.AREAS) == model.areaConsumption[area, t]
+            model.energyCtr = Constraint(model.AREAS, model.Date, rule=energyCtr_rule)
+
+        case [*my_set_names] if 'STOCK_TECHNO' in my_set_names:
+            # single area with storage
+            def energyCtr_rule(model, t):  # INEQ forall t
+                return sum(model.energy[t, tech] for tech in model.TECHNOLOGIES) + sum(
+                    model.storageOut[t, s_tech] - model.storageIn[t, s_tech] for s_tech in model.STOCK_TECHNO) == \
+                       model.areaConsumption[t]
+            model.energyCtr = Constraint(model.Date, rule=energyCtr_rule)
+
+        case _:
+            # single area without storage
+            def energyCtr_rule(model, t):  # INEQ forall t
+                return sum(model.energy[t, tech] for tech in model.TECHNOLOGIES) == model.areaConsumption[t]
+            model.energyCtr = Constraint(model.Date, rule=energyCtr_rule)
+
+    return model
 
 
 #endregion
