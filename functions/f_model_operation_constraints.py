@@ -38,13 +38,15 @@ def set_Operation_Constraints_energyCapacityexchange(EQs,model):
                 return model.exchange[a, a, t] == 0
         model.exchangeCtrPlus = Constraint(model.AREAS,model.AREAS,model.Date, rule=exchangeCtrPlus_rule)
 
+        # TODO on peut pas mettre ces contraintes si on definit model.exchange>=0 (j'ai enlevé ce dernier) lors de la création de la variable
         def exchangeCtrMoins_rule(model,a, b, t): #INEQ forall area.axarea.b in AREASxAREAS  t in Date
             if a!=b:
-                return model.exchange[a,b,t]  >= -model.maxExchangeCapacity[a,b] ;
+                return model.exchange[a,b,t]  >= -model.maxExchangeCapacity[b,a]#[a,b] ;
             else:
                 return model.exchange[a, a, t] == 0
         model.exchangeCtrMoins = Constraint(model.AREAS,model.AREAS,model.Date, rule=exchangeCtrMoins_rule)
 
+        # TODO il n'y a pas la même capacité max en import et en export ==> cette contrainte implique qu'on limite à la plus petite capacité
         def exchangeCtr2_rule(model,a, b, t): #INEQ forall area.axarea.b in AREASxAREAS  t in Date
             return model.exchange[a,b,t]  == -model.exchange[b,a,t] ;
         model.exchangeCtr2 = Constraint(model.AREAS,model.AREAS,model.Date, rule=exchangeCtr2_rule)
@@ -180,10 +182,10 @@ def set_Operation_Constraints_total_consumptionCtr(model):
     """
     # Total consumption constraint
     # LoadCost;flex_ratio;max_ratio
-    def total_consumption_rule(model, t):
-        return model.total_consumption[t] == model.areaConsumption[t] + sum(
-            model.flex_consumption[t, name] for name in model.FLEX_CONSUM)
-    model.total_consumptionCtr = Constraint(model.Date, rule=total_consumption_rule)
+    def total_consumption_rule(model, t,area):
+        return model.total_consumption[area,t] == model.areaConsumption[area,t] + sum(
+            model.flex_consumption[area,t, name] for name in model.FLEX_CONSUM)
+    model.total_consumptionCtr = Constraint(model.Date, model.AREAS, rule=total_consumption_rule)
     return model
 
 def set_Operation_Constraints_max_powerCtr(model):
@@ -194,9 +196,9 @@ def set_Operation_Constraints_max_powerCtr(model):
     :return:
     """
     # Online flexible consumption constraints
-    def max_power_rule(model, conso_type, t):
-        return model.max_power[conso_type] + model.increased_max_power[conso_type] >= model.flex_consumption[t, conso_type]
-    model.max_powerCtr = Constraint(model.FLEX_CONSUM, model.Date, rule=max_power_rule)
+    def max_power_rule(model, area,conso_type, t):
+        return model.max_power[area,conso_type] + model.increased_max_power[area,conso_type] >= model.flex_consumption[area,t, conso_type]
+    model.max_powerCtr = Constraint(model.AREAS,model.FLEX_CONSUM, model.Date, rule=max_power_rule)
     return model
 
 def set_Operation_Constraints_consum_eq_week_Ctr(model):
@@ -210,15 +212,15 @@ def set_Operation_Constraints_consum_eq_week_Ctr(model):
     Date_list["week"] = Date_list.Date.apply(lambda x: x.isocalendar().week)
 
     # consumption equality within the same week
-    def consum_eq_week(model, t_week, conso_type):
-        if model.flex_type[conso_type] == 'week':
+    def consum_eq_week(model, area,t_week, conso_type):
+        if model.flex_type[area,conso_type] == 'week':
             #Date_list=getattr(model, "Date").data()
             t_range = Date_list.Date[Date_list.week == t_week]  # range((t_week-1)*7*24+1,(t_week)*7*24)
-            return sum(model.flex_consumption[t, conso_type] for t in t_range) == sum(
-                model.to_flex_consumption[t, conso_type] for t in t_range)
+            return sum(model.flex_consumption[area,t, conso_type] for t in t_range) == sum(
+                model.to_flex_consumption[area,t, conso_type] for t in t_range)
         else:
             return Constraint.Skip
-    model.consum_eq_week_Ctr = Constraint(model.WEEK_Date, model.FLEX_CONSUM, rule=consum_eq_week)
+    model.consum_eq_week_Ctr = Constraint(model.AREAS,model.WEEK_Date, model.FLEX_CONSUM, rule=consum_eq_week)
     return model
 
 def set_Operation_Constraints_consum_eq_year_Ctr(model):
@@ -228,13 +230,13 @@ def set_Operation_Constraints_consum_eq_year_Ctr(model):
     :param model:
     :return:
     """
-    def consum_eq_year(model, t_week, conso_type):
-        if model.flex_type[conso_type] == 'year':
-            return sum(model.flex_consumption[t, conso_type] for t in model.Date) == sum(
-                model.to_flex_consumption[t, conso_type] for t in model.Date)
+    def consum_eq_year(model, area, conso_type):
+        if model.flex_type[area,conso_type] == 'year':
+            return sum(model.flex_consumption[area,t, conso_type] for t in model.Date) == sum(
+                model.to_flex_consumption[area,t, conso_type] for t in model.Date)
         else:
             return Constraint.Skip
-    model.consum_eq_year_Ctr = Constraint(model.WEEK_Date, model.FLEX_CONSUM, rule=consum_eq_year)
+    model.consum_eq_year_Ctr = Constraint(model.AREAS, model.FLEX_CONSUM, rule=consum_eq_year)
     return model
 
 def set_Operation_Constraints_consum_flex_Ctr(model):
@@ -244,10 +246,10 @@ def set_Operation_Constraints_consum_flex_Ctr(model):
     :param model:
     :return:
     """
-    def consum_flex_rule(model, t, conso_type):
-        return model.flex_consumption[t, conso_type] == model.to_flex_consumption[t, conso_type] * (
-                    1 - model.flex[t, conso_type])
-    model.consum_flex_Ctr = Constraint(model.Date, model.FLEX_CONSUM, rule=consum_flex_rule)
+    def consum_flex_rule(model, area,t, conso_type):
+        return model.flex_consumption[area,t, conso_type] == model.to_flex_consumption[area,t, conso_type] * (
+                    1 - model.flex[area,t, conso_type])
+    model.consum_flex_Ctr = Constraint(model.AREAS,model.Date, model.FLEX_CONSUM, rule=consum_flex_rule)
     return model
 
 def set_Operation_Constraints_flex_variation_supinf_Ctr(model):
@@ -260,13 +262,13 @@ def set_Operation_Constraints_flex_variation_supinf_Ctr(model):
     :return:
     """
 
-    def flex_variation_sup_rule(model, t, conso_type):
-        return model.flex[t, conso_type] <= model.flex_ratio[conso_type]
-    model.flex_variation_sup_Ctr = Constraint(model.Date, model.FLEX_CONSUM, rule=flex_variation_sup_rule)
+    def flex_variation_sup_rule(model, area,t, conso_type):
+        return model.flex[area,t, conso_type] <= model.flex_ratio[area,conso_type]
+    model.flex_variation_sup_Ctr = Constraint(model.AREAS,model.Date, model.FLEX_CONSUM, rule=flex_variation_sup_rule)
 
-    def flex_variation_inf_rule(model, t, conso_type):
-        return model.flex[t, conso_type] >= -model.flex_ratio[conso_type]
-    model.flex_variation_inf_Ctr = Constraint(model.Date, model.FLEX_CONSUM, rule=flex_variation_inf_rule)
+    def flex_variation_inf_rule(model, area,t, conso_type):
+        return model.flex[area,t, conso_type] >= -model.flex_ratio[area,conso_type]
+    model.flex_variation_inf_Ctr = Constraint(model.AREAS,model.Date, model.FLEX_CONSUM, rule=flex_variation_inf_rule)
     return model
     #Labour cost for flexibility consumption constraint
 
@@ -278,9 +280,9 @@ def set_Operation_Constraints_a_plus_minusCtr(model):
     :return:
     """
 
-    def a_plus_minus_rule(model,conso_type,t):
-        return model.flex_consumption[t,conso_type]-model.to_flex_consumption[t,conso_type]==model.a_plus[t,conso_type]-model.a_minus[t,conso_type]
-    model.a_plus_minusCtr=Constraint(model.FLEX_CONSUM,model.Date,rule=a_plus_minus_rule)
+    def a_plus_minus_rule(model,area,conso_type,t):
+        return model.flex_consumption[area,t,conso_type]-model.to_flex_consumption[area,t,conso_type]==model.a_plus[area,t,conso_type]-model.a_minus[area,t,conso_type]
+    model.a_plus_minusCtr=Constraint(model.AREAS,model.FLEX_CONSUM,model.Date,rule=a_plus_minus_rule)
     return model
 
 #endregion
@@ -302,7 +304,7 @@ def set_Operation_Constraints_rampCtrPlus(model):
                     t_plus_1 = t + timedelta(hours=1)
                     return model.energy[area, t_plus_1, tech] - model.energy[area, t, tech] <= model.capacity[
                         area, tech] * \
-                           model.RampConstraintPlus[area, tech];
+                           model.RampConstraintPlus[area, tech]*model.availabilityFactor[area,t,tech];
                 else:
                     return Constraint.Skip
             model.rampCtrPlus = Constraint(model.AREAS, model.Date_MinusOne, model.TECHNOLOGIES, rule=rampCtrPlus_rule)
@@ -312,7 +314,7 @@ def set_Operation_Constraints_rampCtrPlus(model):
                 if model.RampConstraintPlus[tech] > 0:
                     t_plus_1 = t + timedelta(hours=1)
                     return model.energy[t_plus_1, tech] - model.energy[t, tech] <= model.capacity[tech] * \
-                           model.RampConstraintPlus[tech];
+                           model.RampConstraintPlus[tech]*model.availabilityFactor[t,tech];
                 else:
                     return Constraint.Skip
             model.rampCtrPlus = Constraint(model.Date_MinusOne, model.TECHNOLOGIES, rule=rampCtrPlus_rule)
@@ -335,7 +337,7 @@ def set_Operation_Constraints_rampCtrMoins(model):
                     t_plus_1 = t + timedelta(hours=1)
                     return model.energy[area, t_plus_1, tech] - model.energy[area, t, tech] >= - model.capacity[
                         area, tech] * \
-                           model.RampConstraintMoins[area, tech];
+                           model.RampConstraintMoins[area, tech]*model.availabilityFactor[area,t,tech];
                 else:
                     return Constraint.Skip
             model.rampCtrMoins = Constraint(model.AREAS, model.Date_MinusOne, model.TECHNOLOGIES,
@@ -346,7 +348,7 @@ def set_Operation_Constraints_rampCtrMoins(model):
                 if model.RampConstraintMoins[tech] > 0:
                     t_plus_1 = t + timedelta(hours=1)
                     return model.energy[t_plus_1, tech] - model.energy[t, tech] >= - model.capacity[tech] * \
-                           model.RampConstraintMoins[tech];
+                           model.RampConstraintMoins[tech]**model.availabilityFactor[t,tech];
                 else:
                     return Constraint.Skip
             model.rampCtrMoins = Constraint(model.Date_MinusOne, model.TECHNOLOGIES, rule=rampCtrMoins_rule)
@@ -371,7 +373,7 @@ def set_Operation_Constraints_rampCtrPlus2(model):
                     t_plus_3 = t + timedelta(hours=3)
                     var = (model.energy[area, t_plus_2, tech] + model.energy[area, t_plus_3, tech]) / 2 - (
                             model.energy[area, t_plus_1, tech] + model.energy[area, t, tech]) / 2;
-                    return var <= model.capacity[area, tech] * model.RampConstraintPlus[area, tech];
+                    return var <= model.capacity[area, tech] * model.RampConstraintPlus2[area, tech]*model.availabilityFactor[area,t,tech];
                 else:
                     return Constraint.Skip
 
@@ -386,7 +388,7 @@ def set_Operation_Constraints_rampCtrPlus2(model):
                     t_plus_3 = t + timedelta(hours=3)
                     var = (model.energy[t_plus_2, tech] + model.energy[t_plus_3, tech]) / 2 - (
                             model.energy[t_plus_1, tech] + model.energy[t, tech]) / 2;
-                    return var <= model.capacity[tech] * model.RampConstraintPlus2[tech];
+                    return var <= model.capacity[tech] * model.RampConstraintPlus2[tech]*model.availabilityFactor[t,tech];
                 else:
                     return Constraint.Skip
 
@@ -412,7 +414,7 @@ def set_Operation_Constraints_rampCtrMoins2(model):
                     t_plus_3 = t + timedelta(hours=3)
                     var = (model.energy[area, t_plus_2, tech] + model.energy[area, t_plus_3, tech]) / 2 - (
                             model.energy[area, t_plus_1, tech] + model.energy[area, t, tech]) / 2;
-                    return var >= - model.capacity[area, tech] * model.RampConstraintMoins2[area, tech];
+                    return var >= - model.capacity[area, tech] * model.RampConstraintMoins2[area, tech]*model.availabilityFactor[area,t,tech];
                 else:
                     return Constraint.Skip
             model.rampCtrMoins2 = Constraint(model.AREAS, model.Date_MinusThree, model.TECHNOLOGIES,
@@ -426,7 +428,7 @@ def set_Operation_Constraints_rampCtrMoins2(model):
                     t_plus_3 = t + timedelta(hours=3)
                     var = (model.energy[t_plus_2, tech] + model.energy[t_plus_3, tech]) / 2 - (
                             model.energy[t_plus_1, tech] + model.energy[t, tech]) / 2;
-                    return var >= - model.capacity[tech] * model.RampConstraintMoins2[tech];
+                    return var >= - model.capacity[tech] * model.RampConstraintMoins2[tech]*model.availabilityFactor[t,tech];
                 else:
                     return Constraint.Skip
             model.rampCtrMoins2 = Constraint(model.Date_MinusThree, model.TECHNOLOGIES, rule=rampCtrMoins2_rule)
@@ -495,13 +497,26 @@ def set_Operation_Constraints_StorageLevelCtr(model):
             def StorageLevel_rule(model, area, t, s_tech):  # EQ forall t
                 if t != min(getattr(model, "Date").data()):
                     t_moins_1 = t - timedelta(hours=1)
+                    # print(s_tech,area,model.efficiency_in[area, s_tech])
                     return model.stockLevel[area, t, s_tech] == model.stockLevel[area, t_moins_1, s_tech] * (
                             1 - model.dissipation[area, s_tech]) + model.storageIn[area, t, s_tech] * \
                            model.efficiency_in[area, s_tech] - model.storageOut[area, t, s_tech] / model.efficiency_out[
                                area, s_tech]
-                else:
-                    return model.stockLevel[area, t, s_tech] == 0
+                else: #TODO initialize initial stockLevel
+                    return model.stockLevel[area, t, s_tech] == model.stockLevel_ini[area,s_tech]
             model.StorageLevelCtr = Constraint(model.AREAS, model.Date, model.STOCK_TECHNO, rule=StorageLevel_rule)
+
+            def FinalStorageLevel_rule(model, area, t, s_tech):
+                if t==max(getattr(model, "Date").data()): #TODO initialize final stockLevel (which is equal to initial stockLevel)
+                    return model.stockLevel[area, t, s_tech] == model.stockLevel_ini[area,s_tech]
+                else:
+                    return Constraint.Skip
+            model.FinalStorageLevelCtr=Constraint(model.AREAS,model.Date,model.STOCK_TECHNO,rule=FinalStorageLevel_rule)
+
+            def StorageLevel_ini_rule(model, area,s_tech):
+                return model.stockLevel_ini[area,s_tech] <= model.Cmax[area,s_tech]
+            model.StorageLevel_iniCtr = Constraint(model.AREAS,model.STOCK_TECHNO, rule=StorageLevel_ini_rule)
+
         case _:
             # single area
             def StorageLevel_rule(model, t, s_tech):  # EQ forall t
@@ -510,9 +525,20 @@ def set_Operation_Constraints_StorageLevelCtr(model):
                     return model.stockLevel[t, s_tech] == model.stockLevel[t_moins_1, s_tech] * (
                             1 - model.dissipation[s_tech]) + model.storageIn[t, s_tech] * model.efficiency_in[s_tech] - \
                            model.storageOut[t, s_tech] / model.efficiency_out[s_tech]
-                else:
-                    return model.stockLevel[t, s_tech] == 0
+                else: #TODO initialize initial stockLevel
+                    return model.stockLevel[t, s_tech] == model.stockLevel_ini[s_tech]
             model.StorageLevelCtr = Constraint(model.Date, model.STOCK_TECHNO, rule=StorageLevel_rule)
+
+            def FinalStorageLevel_rule(model, t, s_tech):
+                if t == max(getattr(model,"Date").data()):  # TODO initialize final stockLevel (which is equal to initial stockLevel)
+                    return model.stockLevel[t, s_tech] == model.stockLevel_ini[ s_tech]
+                else:
+                    return Constraint.Skip
+            model.FinalStorageLevelCtr = Constraint(model.Date, model.STOCK_TECHNO,rule=FinalStorageLevel_rule)
+
+            def StorageLevel_ini_rule(model,  s_tech):
+                    return model.stockLevel_ini[ s_tech] <=model.Cmax[s_tech]
+            model.StorageLevel_iniCtr = Constraint( model.STOCK_TECHNO, rule=StorageLevel_ini_rule)
 
     return model
 
@@ -597,6 +623,8 @@ def set_Operation_Constraints_energyCtr(model):
                        model.total_consumption[area,t]
 
             model.energyCtr = Constraint(model.AREAS, model.Date, rule=energyCtr_rule)
+
+
         case [*my_set_names] if allin(["FLEX_CONSUM", 'STOCK_TECHNO'], my_set_names):
             # simple area and storage and flex conso
             def energyCtr_rule(model, t):  # INEQ forall t
@@ -614,20 +642,22 @@ def set_Operation_Constraints_energyCtr(model):
                        model.areaConsumption[area, t]
             model.energyCtr = Constraint(model.AREAS, model.Date, rule=energyCtr_rule)
 
-        case [*my_set_names] if "AREAS" in my_set_names:
-            # multiple area without storage
-            def energyCtr_rule(model, area, t):  # INEQ forall t
-                return sum(model.energy[area, t, tech] for tech in model.TECHNOLOGIES) + sum(
-                    model.exchange[b, area, t] for b in model.AREAS) == model.areaConsumption[area, t]
-            model.energyCtr = Constraint(model.AREAS, model.Date, rule=energyCtr_rule)
 
-        case [*my_set_names] if 'STOCK_TECHNO' in my_set_names:
-            # single area with storage
-            def energyCtr_rule(model, t):  # INEQ forall t
-                return sum(model.energy[t, tech] for tech in model.TECHNOLOGIES) + sum(
-                    model.storageOut[t, s_tech] - model.storageIn[t, s_tech] for s_tech in model.STOCK_TECHNO) == \
-                       model.areaConsumption[t]
-            model.energyCtr = Constraint(model.Date, rule=energyCtr_rule)
+
+        # case [*my_set_names] if "AREAS" in my_set_names:
+        #     # multiple area without storage
+        #     def energyCtr_rule(model, area, t):  # INEQ forall t
+        #         return sum(model.energy[area, t, tech] for tech in model.TECHNOLOGIES) + sum(
+        #             model.exchange[b, area, t] for b in model.AREAS) == model.areaConsumption[area, t]
+        #     model.energyCtr = Constraint(model.AREAS, model.Date, rule=energyCtr_rule)
+        #
+        # case [*my_set_names] if 'STOCK_TECHNO' in my_set_names:
+        #     # single area with storage
+        #     def energyCtr_rule(model, t):  # INEQ forall t
+        #         return sum(model.energy[t, tech] for tech in model.TECHNOLOGIES) + sum(
+        #             model.storageOut[t, s_tech] - model.storageIn[t, s_tech] for s_tech in model.STOCK_TECHNO) == \
+        #                model.areaConsumption[t]
+        #     model.energyCtr = Constraint(model.Date, rule=energyCtr_rule)
 
         case _:
             # single area without storage

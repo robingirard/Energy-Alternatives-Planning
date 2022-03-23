@@ -119,8 +119,8 @@ def set_Operation_variables(model,verbose=False):
 
     if "AREAS" in Set_names:
         Vars = ["energy[AREAS,Date,TECHNOLOGIES]>=0", "energyCosts[AREAS,TECHNOLOGIES]>=0",
-                "exchange[AREAS,AREAS,Date]>=0",]
-    else: Vars = ["energy[Date,TECHNOLOGIES]>=0", "energyCosts[TECHNOLOGIES]>=0", ]
+                "exchange[AREAS,AREAS,Date]"]#todo j'ai enlevé le >=0 car exchange(a,b,t)=-exchange(b,a,t) en contrainte
+    else: Vars = ["energy[Date,TECHNOLOGIES]>=0", "energyCosts[TECHNOLOGIES]>=0"]
 
     if "FLEX_CONSUM" in Set_names:
         if "AREAS" in Set_names:
@@ -137,10 +137,11 @@ def set_Operation_variables(model,verbose=False):
     if 'STOCK_TECHNO' in Set_names:
         if "AREAS" in Set_names:
             Vars = Vars+ ["storageIn[AREAS,Date,STOCK_TECHNO]>=0",
-                    "storageOut[AREAS,Date,STOCK_TECHNO]>=0","stockLevel[AREAS,Date,STOCK_TECHNO]",]
+                    "storageOut[AREAS,Date,STOCK_TECHNO]>=0","stockLevel[AREAS,Date,STOCK_TECHNO]>=0"
+                ,"stockLevel_ini[AREAS,STOCK_TECHNO]>=0"] #todo j'ai rajouté le >=0 au stockLevel
         else:
             Vars = Vars + ["storageIn[Date,STOCK_TECHNO]>=0","storageOut[Date,STOCK_TECHNO]>=0",
-                           "stockLevel[Date,STOCK_TECHNO]>=0" ]
+                           "stockLevel[Date,STOCK_TECHNO]>=0","stockLevel_ini[STOCK_TECHNO]>=0" ]
 
 
     model=math_to_pyomo_Vardef(Vars,model,verbose=verbose)
@@ -251,11 +252,12 @@ def set_Operation_flex_variables(model):
             model.storageIn = Var(model.AREAS, model.Date, model.STOCK_TECHNO,domain=NonNegativeReals)  ### Energy stored by a storage mean for areas at time t
             model.storageOut = Var(model.AREAS, model.Date, model.STOCK_TECHNO,domain=NonNegativeReals)  ### Energy taken out of a storage mean for areas at time t
             model.stockLevel = Var(model.AREAS, model.Date, model.STOCK_TECHNO,domain=NonNegativeReals)  ### level of the energy stock in a storage mean at time t
+            model.stockLevel_ini = Var(model.AREAS, model.STOCK_TECHNO, domain=NonNegativeReals) ### initial & final level of energy
         else:
             model.storageIn = Var(model.Date, model.STOCK_TECHNO,domain=NonNegativeReals)  ### Energy stored in a storage mean at time t
             model.storageOut = Var(model.Date, model.STOCK_TECHNO,domain=NonNegativeReals)  ### Energy taken out of a storage mean at time t
             model.stockLevel = Var(model.Date, model.STOCK_TECHNO,domain=NonNegativeReals)  ### level of the energy stock in a storage mean at time t
-
+            model.stockLevel_ini = Var( model.STOCK_TECHNO,domain=NonNegativeReals)  ### initial & final level of energy
 
     if 'FLEX_CONSUM'  in Set_names:
         if "AREAS" in Set_names :

@@ -28,7 +28,7 @@ def set_Planing_Constraints_maxCapacityCtr(model):
     if "maxCapacity" in All_parameters:
         if "AREAS" in Set_names:
             def maxCapacity_rule(model, area, tech):  # INEQ forall t, tech
-                if model.maxCapacity[area, tech] > 0:
+                if model.maxCapacity[area, tech] >= 0: #todo j'ai rajouté le = car sinon une technologie à 0MW en paramètre peut se retrouver avec de la puissance installée
                     return model.maxCapacity[area, tech] >= model.capacity[area, tech]
                 else:
                     return Constraint.Skip
@@ -36,7 +36,7 @@ def set_Planing_Constraints_maxCapacityCtr(model):
 
         else:
             def maxCapacity_rule(model, tech):  # INEQ forall t, tech
-                if model.maxCapacity[tech] > 0:
+                if model.maxCapacity[tech] >= 0: #todo j'ai rajouté le = car sinon une technologie à 0MW en paramètre peut se retrouver avec de la puissance installée
                     return model.maxCapacity[tech] >= model.capacity[tech]
                 else:
                     return Constraint.Skip
@@ -101,14 +101,20 @@ def set_Planing_Constraints_storageCapacityCtr(model):
     match list(Set_names):
         case [*my_set_names] if "AREAS" in my_set_names:
             # multiple area without storage
-            def storageCapacity_rule(model, area, s_tech):  # INEQ forall s_tech
+            def storageCapacitysup_rule(model, area, s_tech):  # INEQ forall s_tech
                 return model.Cmax[area, s_tech] <= model.c_max[area, s_tech]
-            model.storageCapacityCtr = Constraint(model.AREAS, model.STOCK_TECHNO, rule=storageCapacity_rule)
+            model.storageCapacitysupCtr = Constraint(model.AREAS, model.STOCK_TECHNO, rule=storageCapacitysup_rule)
+            def storageCapacityinf_rule(model, area, s_tech):  # INEQ forall s_tech
+                return model.Cmax[area, s_tech] >= model.c_min[area, s_tech]
+            model.storageCapacityinfCtr = Constraint(model.AREAS, model.STOCK_TECHNO, rule=storageCapacityinf_rule)
         case _:
             # single area without storage
-            def storageCapacity_rule(model, s_tech):  # INEQ forall s_tech
+            def storageCapacitysup_rule(model, s_tech):  # INEQ forall s_tech
                 return model.Cmax[s_tech] <= model.c_max[s_tech]
-            model.storageCapacityCtr = Constraint(model.STOCK_TECHNO, rule=storageCapacity_rule)
+            model.storageCapacitysupCtr = Constraint(model.STOCK_TECHNO, rule=storageCapacitysup_rule)
+            def storageCapacityinf_rule(model, s_tech):  # INEQ forall s_tech
+                return model.Cmax[s_tech] >= model.c_min[s_tech]
+            model.storageCapacityinfCtr = Constraint(model.STOCK_TECHNO, rule=storageCapacityinf_rule)
 
     return model
 
