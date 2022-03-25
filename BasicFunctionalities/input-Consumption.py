@@ -161,9 +161,6 @@ NTS_profil_hourly=ComplexProfile2Consumption(NTS_profil,ConsoTempe_df[str(year)]
     pivot(index="Date", columns="type", values="Consumption")
 ### etrange d'aavoir à faire le grouby ci-dessus
 ### si on veut visualiser les poids, il faut remplacer "Consumption" par "poids" ci-dessus
-NTS_profil_hourly.loc[:,("Consumption",slice(None))]
-NTS_profil_hourly.loc[:,("poids",slice(None))]
-
 
 fig = MyStackedPlotly(y_df=NTS_profil_hourly)
 plotly.offline.plot(fig, filename='file.html')  ## offline
