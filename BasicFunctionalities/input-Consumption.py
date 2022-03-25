@@ -96,7 +96,7 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 
 #region Electric Vehicle
 
-VEProfile_df=pd.read_csv(InputFolder+'EVModel.csv', sep=';',parse_dates=['Date']).set_index(["Date"])
+VEProfile_df=pd.read_csv(InputFolder+'EVModel.csv', sep=';')#.set_index(["Date"])
 year=2012
 EV_Consumption_df=Profile2Consumption(Profile_df=VEProfile_df,Temperature_df = ConsoTempe_df.loc[str(year)][['Temperature']])
 fig=MyStackedPlotly(y_df=EV_Consumption_df[["NTS_C","TS_C"]],
@@ -140,6 +140,34 @@ fig = MyStackedPlotly(y_df=Profile_df_merged_spread)
 plotly.offline.plot(fig, filename='file.html')  ## offline
 #endregion
 
+
+#region  decomposition avec les profils de Pierrick
+
+#ECS_profil= pd.read_csv(InputFolder+"Conso_model/Profil_ECS.csv")
+ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv',
+                          parse_dates=['Date']).\
+    set_index(["Date"])
+year = 2012
+
+NTS_profil=  pd.read_csv(InputFolder+"Conso_model/Profil_NTS.csv",sep=";", decimal=",").\
+    melt(id_vars=['Heure','Jour', 'Mois'],
+          value_vars=['Industrie','Autres residentiel','Autres tertiaire','Eclairage','Cuisson'],
+         var_name='type', value_name='poids').\
+    set_index(["Jour","Mois","Heure"])
+
+NTS_profil_hourly=ComplexProfile2Consumption(NTS_profil,ConsoTempe_df[str(year)]).\
+    reset_index()[["Consumption","Date","type"]].\
+    groupby(["Date","type"]).sum().reset_index().\
+    pivot(index="Date", columns="type", values="Consumption")
+### etrange d'aavoir à faire le grouby ci-dessus
+### si on veut visualiser les poids, il faut remplacer "Consumption" par "poids" ci-dessus
+NTS_profil_hourly.loc[:,("Consumption",slice(None))]
+NTS_profil_hourly.loc[:,("poids",slice(None))]
+
+
+fig = MyStackedPlotly(y_df=NTS_profil_hourly)
+plotly.offline.plot(fig, filename='file.html')  ## offline
+#endregion
 
 ####
 #Day="Samedi"

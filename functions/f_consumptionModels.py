@@ -113,26 +113,34 @@ def Profile2Consumption(Profile_df,Temperature_df, TemperatureThreshold=14,
 
 
 #Profile_df_Week,Profile_df_Sat,Profile_df_Sun,ConsoTempeYear_df
-#Temperature_df=ConsoTempeYear_df
+#Temperature_df=ConsoTempe_df[str(year)]
+#Profile_df=NTS_profil
 def ComplexProfile2Consumption(Profile_df,
                                Temperature_df, TemperatureThreshold=14,
                         TemperatureMinimum=0,TemperatureName='Temperature',
+                        poidsName='poids',
                         ConsumptionName='Consumption',TimeName='Date',
-                        VarName='Puissance.MW.par.million'):
+                        VarName='Puissance.MW.par.million',french=True):
 
     ## initialisation
-    ConsoSepareeNew_df=Temperature_df.loc[:,[TemperatureName]]
+    ConsoSepareeNew_df=Temperature_df.loc[:,[ConsumptionName]]
     #ConsoSepareeNew_df.loc[:,[ConsumptionName]]=np.NaN
     #ConsoSepareeNew_df.loc[:,['NTS_C']]=0
     #ConsoSepareeNew_df.loc[:,['TS_C']]=0
-    ConsoSepareeNew_df=ConsoSepareeNew_df.assign(
-        WeekDay=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.weekday,
+    ConsoSepareeNew_df = ConsoSepareeNew_df.assign(
+        Jour=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.weekday,
         Mois=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.month,
-        heures=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.hour);
-    ConsoSepareeNew_df['WeekDay']=ConsoSepareeNew_df['WeekDay'].apply(lambda x: "Week" if x<5 else "Sat" if x==5 else "Sun")
-    ConsoSepareeNew_df=ConsoSepareeNew_df.set_index(["WeekDay","Mois","heures"], append=True)
+        Heure=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.hour);
+    if french:
+        ConsoSepareeNew_df['Jour']=ConsoSepareeNew_df['Jour'].\
+            apply(lambda x: "Semaine" if x<5 else "Samedi" if x==5 else "Dimanche")
+    else:
+        ConsoSepareeNew_df['Jour'] = ConsoSepareeNew_df['Jour'].\
+            apply(lambda x: "Week" if x < 5 else "Sat" if x == 5 else "Sun")
+    ConsoSepareeNew_df=ConsoSepareeNew_df.reset_index().set_index(["Jour","Mois","Heure"])
 
     Profile_df_merged=Profile_df.join(ConsoSepareeNew_df,how="inner")
+    Profile_df_merged.loc[:,[ConsumptionName]]=Profile_df_merged[ConsumptionName]*Profile_df_merged[poidsName]
     return(Profile_df_merged)
     #cte=(TemperatureThreshold-TemperatureMinimum)
 
