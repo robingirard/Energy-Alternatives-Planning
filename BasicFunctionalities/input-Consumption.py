@@ -147,7 +147,13 @@ plotly.offline.plot(fig, filename='file.html')  ## offline
 ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv',
                           parse_dates=['Date']).\
     set_index(["Date"])
+TemperatureThreshold=15
 year = 2012
+(ConsoTempeYear_decomposed_df,Thermosensibilite)=Decomposeconso(ConsoTempe_df[str(year)],TemperatureThreshold=TemperatureThreshold)
+ConsoTempeYear_decomposed_df.loc[:,"NTS_C"]# partie non thermosensible
+ConsoTempeYear_decomposed_df.loc[:,"TS_C"] # partie thermosensible
+
+Conso_non_thermosensible = ConsoTempeYear_decomposed_df[["NTS_C"]].rename(columns= {"NTS_C":"Consumption"})
 
 NTS_profil=  pd.read_csv(InputFolder+"Conso_model/Profil_NTS.csv",sep=";", decimal=",").\
     melt(id_vars=['Heure','Jour', 'Mois'],
@@ -155,7 +161,7 @@ NTS_profil=  pd.read_csv(InputFolder+"Conso_model/Profil_NTS.csv",sep=";", decim
          var_name='type', value_name='poids').\
     set_index(["Jour","Mois","Heure"])
 
-NTS_profil_hourly=ComplexProfile2Consumption(NTS_profil,ConsoTempe_df[str(year)]).\
+NTS_profil_hourly=ComplexProfile2Consumption(NTS_profil,Conso_non_thermosensible).\
     reset_index()[["Consumption","Date","type"]].\
     groupby(["Date","type"]).sum().reset_index().\
     pivot(index="Date", columns="type", values="Consumption")

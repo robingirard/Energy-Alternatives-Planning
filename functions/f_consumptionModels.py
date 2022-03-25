@@ -113,7 +113,7 @@ def Profile2Consumption(Profile_df,Temperature_df, TemperatureThreshold=14,
 
 
 #Profile_df_Week,Profile_df_Sat,Profile_df_Sun,ConsoTempeYear_df
-#Temperature_df=ConsoTempe_df[str(year)]
+#Temperature_df=ConsoTempeYear_decomposed_df.loc[:,"NTS_C"]
 #Profile_df=NTS_profil
 def ComplexProfile2Consumption(Profile_df,
                                Temperature_df, TemperatureThreshold=14,
