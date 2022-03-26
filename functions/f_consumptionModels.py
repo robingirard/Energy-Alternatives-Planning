@@ -37,6 +37,57 @@ def Decomposeconso(data_df, TemperatureThreshold=14, TemperatureName='Temperatur
 
     return(ConsoSeparee_df, Thermosensibilite)
 
+def Decomposeconso2(data_df,T0=15,T1=20,TemperatureName='Temperature',
+                    ConsumptionName='Consumption',TimeName='Date'):
+    '''
+    Function decomposing the consumption into thermosensitive and non-thermosensitive part
+    taking into account air condition in summer.
+
+    Parameters
+    ----------
+    data_df : panda data frame with "Temperature" and "Consumption" as columns.
+    T0 : float, optional
+        Threshold temperature for heating in winter. The default is 15.
+    T1 : TYPE, optional
+        Threshold temperature for air condition in summer. The default is 20.
+    TemperatureName : str, optional
+        The default is 'Temperature'.
+    ConsumptionName : str, optional
+        The default is 'Consumption'.
+    TimeName : str, optional
+        The default is 'Date'.
+
+    Returns
+    -------
+    a dictionary with Thermosensitivity_winter, Thermosensitivity_summer, 
+    and a panda data frame with two new columns NTS_C (non thermosensitive), 
+    TSW_C (thermosensitive winter), TSS_C (thermosensitive summer)
+    '''
+    
+    dataNoNA_df=data_df.dropna()
+    ## Remove NA
+    ConsoSeparee_df=dataNoNA_df.assign(NTS_C=dataNoNA_df[ConsumptionName], TSW_C=dataNoNA_df[ConsumptionName]*0,
+                                       TSS_C=dataNoNA_df[ConsumptionName]*0)
+
+    Thermosensitivity_winter={}
+    Thermosensitivity_summer={}
+    #pd.DataFrame(data=np.zeros((24,1)), columns=['Thermosensibilite'])## one value per hour of the day
+    #Thermosensibilite.index.name='hour of the day'
+    for hour in range(24):
+        indexesWinterHour = (dataNoNA_df[TemperatureName] <= T0) & (dataNoNA_df.index.get_level_values(TimeName).to_series().dt.hour == hour)
+        indexesSummerHour = (dataNoNA_df[TemperatureName] >= T1) & (dataNoNA_df.index.get_level_values(TimeName).to_series().dt.hour == hour)
+        dataWinterHour_df = dataNoNA_df.loc[indexesWinterHour,:]
+        dataSummerHour_df = dataNoNA_df.loc[indexesSummerHour,:]
+        lrw = linear_model.LinearRegression().fit(dataWinterHour_df[[TemperatureName]],dataWinterHour_df[ConsumptionName])
+        Thermosensitivity_winter[hour]=lrw.coef_[0]
+        lrs = linear_model.LinearRegression().fit(dataSummerHour_df[[TemperatureName]],dataSummerHour_df[ConsumptionName])
+        Thermosensitivity_summer[hour]=lrs.coef_[0]
+        ConsoSeparee_df.loc[indexesWinterHour,'TSW_C']=Thermosensitivity_winter[hour]*dataWinterHour_df.loc[:, TemperatureName]-Thermosensitivity_winter[hour]*T0
+        ConsoSeparee_df.loc[indexesWinterHour,'NTS_C']=dataWinterHour_df.loc[:, ConsumptionName]-ConsoSeparee_df.TSW_C.loc[indexesWinterHour]
+        ConsoSeparee_df.loc[indexesSummerHour,'TSS_C']=Thermosensitivity_summer[hour]*dataSummerHour_df.loc[:, TemperatureName]-Thermosensitivity_summer[hour]*T1
+        ConsoSeparee_df.loc[indexesSummerHour,'NTS_C']=dataSummerHour_df.loc[:, ConsumptionName]-ConsoSeparee_df.TSS_C.loc[indexesSummerHour]
+
+    return (ConsoSeparee_df[['NTS_C','TSW_C','TSS_C']], Thermosensitivity_winter,Thermosensitivity_summer)
 
 #ConsoSeparee_df=ConsoTempeYear_decomposed_df
 def Recompose(ConsoSeparee_df,Thermosensibilite,Newdata_df=-1, TemperatureThreshold=14,TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='Date'):
