@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from sklearn import linear_model
 from datetime import time
 from datetime import datetime
+from datetime import date
 
 #data_df=areaConsumption.join(ConsoTempe_df)[['areaConsumption','Temperature']]
 def Decomposeconso(data_df, TemperatureThreshold=14, TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='Date') :
@@ -195,6 +196,57 @@ def ComplexProfile2Consumption(Profile_df,
     return(Profile_df_merged)
     #cte=(TemperatureThreshold-TemperatureMinimum)
 
+# Tient compte des vacances et jours feriés en France en 2019
+def ComplexProfile2ConsumptionCJO2019(Profile_df,
+                               Temperature_df, TemperatureThreshold=14,
+                        TemperatureMinimum=0,TemperatureName='Temperature',
+                        poidsName='poids',
+                        ConsumptionName='Consumption',TimeName='Date',
+                        VarName='Puissance.MW.par.million',french=True):
+
+    ## initialisation
+    ConsoSepareeNew_df=Temperature_df.loc[:,[ConsumptionName]]
+    #ConsoSepareeNew_df.loc[:,[ConsumptionName]]=np.NaN
+    #ConsoSepareeNew_df.loc[:,['NTS_C']]=0
+    #ConsoSepareeNew_df.loc[:,['TS_C']]=0
+    ConsoSepareeNew_df = ConsoSepareeNew_df.assign(
+        Jour=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.weekday,
+        Mois=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.month,
+        Heure=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.hour);
+    if french:
+        index_dim_feries=(ConsoSepareeNew_df["Jour"]==6)\
+        |((ConsoSepareeNew_df.index.month==1)&(ConsoSepareeNew_df.index.day==1))\
+        |((ConsoSepareeNew_df.index.month==4)&(ConsoSepareeNew_df.index.day==22))\
+        |((ConsoSepareeNew_df.index.month==5)&(ConsoSepareeNew_df.index.day==1))\
+        |((ConsoSepareeNew_df.index.month==5)&(ConsoSepareeNew_df.index.day==8))\
+        |((ConsoSepareeNew_df.index.month==5)&(ConsoSepareeNew_df.index.day==30))\
+        |((ConsoSepareeNew_df.index.month==6)&(ConsoSepareeNew_df.index.day==10))\
+        |((ConsoSepareeNew_df.index.month==7)&(ConsoSepareeNew_df.index.day==14))\
+        |((ConsoSepareeNew_df.index.month==8)&(ConsoSepareeNew_df.index.day==15))\
+        |((ConsoSepareeNew_df.index.month==11)&(ConsoSepareeNew_df.index.day==1))\
+        |((ConsoSepareeNew_df.index.month==11)&(ConsoSepareeNew_df.index.day==11))\
+        |((ConsoSepareeNew_df.index.month==12)&(ConsoSepareeNew_df.index.day==25))
+        
+        index_sam_vacances=((ConsoSepareeNew_df["Jour"]==5)\
+        |((ConsoSepareeNew_df.index.month==1)&(ConsoSepareeNew_df.index.day<=6))\
+        |((ConsoSepareeNew_df.index.month==8)&(ConsoSepareeNew_df.index.day>=3)&(ConsoSepareeNew_df.index.day<=18))\
+        |((ConsoSepareeNew_df.index.month==12)&(ConsoSepareeNew_df.index.day>=21))\
+        &(index_dim_feries==False))
+        
+        index_semaine=(index_dim_feries==False)&(index_sam_vacances==False)
+        
+        ConsoSepareeNew_df.loc[index_dim_feries,"Jour"]="Dimanche"
+        ConsoSepareeNew_df.loc[index_sam_vacances,"Jour"]="Samedi"
+        ConsoSepareeNew_df.loc[index_semaine,"Jour"]="Semaine"
+    else:
+        ConsoSepareeNew_df['Jour'] = ConsoSepareeNew_df['Jour'].\
+            apply(lambda x: "Week" if x < 5 else "Sat" if x == 5 else "Sun")
+    ConsoSepareeNew_df=ConsoSepareeNew_df.reset_index().set_index(["Jour","Mois","Heure"])
+
+    Profile_df_merged=Profile_df.join(ConsoSepareeNew_df,how="inner")
+    Profile_df_merged.loc[:,[ConsumptionName]]=Profile_df_merged[ConsumptionName]*Profile_df_merged[poidsName]
+    return(Profile_df_merged)
+    #cte=(TemperatureThreshold-TemperatureMinimum)
 
 def CleanProfile(df,Nature,type,Usages,UsagesGroupe):
     df=df.assign(Nature=df.loc[:,"Branche Nom"]).replace({"Nature": Nature})
