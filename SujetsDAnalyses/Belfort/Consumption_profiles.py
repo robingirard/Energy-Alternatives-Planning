@@ -59,10 +59,6 @@ for hour in range(24):
 
 ## Decomposition Thermosensible et non-thermosensible
 (ConsoSeparee_df, Thermosensitivity_winter,Thermosensitivity_summer)=Decomposeconso2(ConsoTemp_2019_df,T0,T1,'Temperature','Consommation','Date')
-print(Thermosensitivity_winter)
-print(Thermosensitivity_summer)
-
-print(ConsoSeparee_df.head())
 
 ##Creation du profil
 Conso_non_thermosensible = ConsoSeparee_df[["NTS_C"]].rename(columns= {"NTS_C":"Consumption"})
@@ -73,7 +69,7 @@ NTS_profil=  pd.read_csv(InputFolder+"Profil_NTS.csv",sep=";", decimal=",").\
          var_name='type', value_name='poids').\
     set_index(["Jour","Mois","Heure"])
 
-NTS_profil_hourly=ComplexProfile2Consumption(NTS_profil,Conso_non_thermosensible).\
+NTS_profil_hourly=ComplexProfile2ConsumptionCJO2019(NTS_profil,Conso_non_thermosensible).\
     reset_index()[["Consumption","Date","type"]].\
     groupby(["Date","type"]).sum().reset_index().\
     pivot(index="Date", columns="type", values="Consumption")
@@ -82,3 +78,6 @@ NTS_profil_hourly=ComplexProfile2Consumption(NTS_profil,Conso_non_thermosensible
 # print(NTS_profil_hourly)
 fig = MyStackedPlotly(y_df=NTS_profil_hourly)
 plotly.offline.plot(fig, filename='file.html')## offline
+
+## Enregistrement
+NTS_profil_hourly.to_csv(InputFolder+"Conso_NTS_2019.csv",sep=";",decimal=".")
