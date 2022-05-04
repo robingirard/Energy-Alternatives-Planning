@@ -79,6 +79,6 @@ NTS_profil_hourly=ComplexProfile2Consumption(NTS_profil,Conso_non_thermosensible
     pivot(index="Date", columns="type", values="Consumption")
 ### etrange d'aavoir à faire le grouby ci-dessus
 ### si on veut visualiser les poids, il faut remplacer "Consumption" par "poids" ci-dessus
-
+# print(NTS_profil_hourly)
 fig = MyStackedPlotly(y_df=NTS_profil_hourly)
 plotly.offline.plot(fig, filename='file.html')## offline
