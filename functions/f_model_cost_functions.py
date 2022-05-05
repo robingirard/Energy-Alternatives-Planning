@@ -39,8 +39,9 @@ def set_Planing_cost_OBJ(model):
         case [*my_set_names] if allin(["FLEX_CONSUM","AREAS", 'STOCK_TECHNO'], my_set_names):
             # multiple area and storage
             def ObjectiveFunction_rule(model):  # OBJ
-                return sum( model.energy[area, t, tech] * model.energyCost[area, tech] + model.margvarCost[area, tech] * model.energy[
-                        area, t, tech] ** 2 + model.capacityCosts[area, tech] for tech in model.TECHNOLOGIES for area in model.AREAS for t in model.Date) + \
+                return sum( model.energy[area, t, tech] * model.energyCost[area, tech] +\
+                            #+ model.margvarCost[area, tech] * model.energy[area, t, tech] ** 2 +\
+                    model.capacityCosts[area, tech] for tech in model.TECHNOLOGIES for area in model.AREAS for t in model.Date) + \
                        sum( model.storageCosts[area, s_tech] for s_tech in model.STOCK_TECHNO for area in model.AREAS) + \
                        sum(model.consumption_power_cost[area,name] for name in model.FLEX_CONSUM for area in model.AREAS)+ \
                        sum(model.lab_cost[area,t, name] for t in model.Date for name in model.FLEX_CONSUM for area in model.AREAS)
@@ -61,9 +62,9 @@ def set_Planing_cost_OBJ(model):
             # multiple area with storage
             def ObjectiveFunction_rule(model):  # OBJ ##TODO à corriger pour rajouter le storage cost
                 return sum(
-                    model.energy[area, t, tech] * model.energyCost[area, tech] + model.margvarCost[area, tech] * model.energy[
-                        area, t, tech] ** 2
-                    + model.capacityCosts[area, tech] for t in model.Date for tech in model.TECHNOLOGIES for area
+                    model.energy[area, t, tech] * model.energyCost[area, tech] +\
+                    #model.margvarCost[area, tech] * model.energy[area, t, tech] ** 2 + \
+                     model.capacityCosts[area, tech] for t in model.Date for tech in model.TECHNOLOGIES for area
                     in model.AREAS) + sum(model.storageCosts[area,s_tech] for area in model.AREAS for s_tech in model.STOCK_TECHNO)
 
             model.OBJ = Objective(rule=ObjectiveFunction_rule, sense=minimize)
@@ -71,16 +72,17 @@ def set_Planing_cost_OBJ(model):
         case [*my_set_names] if "AREAS" in my_set_names:
             # multiple area without storage
             def ObjectiveFunction_rule(model):  # OBJ
-                return sum(model.energy[area, t, tech]*model.energyCost[area, tech]+ model.margvarCost[area,tech]*model.energy[area, t, tech]**2
+                return sum(model.energy[area, t, tech]*model.energyCost[area, tech]#+ model.margvarCost[area,tech]*model.energy[area, t, tech]**2
                            + model.capacityCosts[area, tech] for t in model.Date for tech in model.TECHNOLOGIES for area
                     in model.AREAS)
             model.OBJ = Objective(rule=ObjectiveFunction_rule, sense=minimize)
         case [*my_set_names] if 'STOCK_TECHNO' in my_set_names:
             # single area with storage
             def ObjectiveFunction_rule(model):  # OBJ
-                return sum(model.energy[t, tech] * model.energyCost[tech] + model.margvarCost[tech] *
-                           model.energy[
-                               t, tech] ** 2
+                return sum(model.energy[t, tech] * model.energyCost[tech] +\
+                           # model.margvarCost[tech] *
+                           # model.energy[
+                           #     t, tech] ** 2
                            + model.capacityCosts[tech] for t in model.Date for tech in model.TECHNOLOGIES) + sum(
                     model.storageCosts[s_tech] for s_tech in model.STOCK_TECHNO)
             model.OBJ = Objective(rule=ObjectiveFunction_rule, sense=minimize)
@@ -88,9 +90,11 @@ def set_Planing_cost_OBJ(model):
         case _:
             # single area without storage
             def ObjectiveFunction_rule(model):  # OBJ
-                return sum(model.energy[t, tech] * model.energyCost[tech] + model.margvarCost[tech] *
-                           model.energy[
-                               t, tech] ** 2  + model.capacityCosts[tech] for tech in model.TECHNOLOGIES for t in model.Date)
+                return sum(model.energy[t, tech] * model.energyCost[tech] +\
+                           # model.margvarCost[tech] *
+                           # model.energy[
+                           #     t, tech] ** 2  +\
+                           model.capacityCosts[tech] for tech in model.TECHNOLOGIES for t in model.Date)
             model.OBJ = Objective(rule=ObjectiveFunction_rule, sense=minimize)
     return model
 

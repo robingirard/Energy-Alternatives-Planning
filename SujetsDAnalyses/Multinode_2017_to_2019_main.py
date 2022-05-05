@@ -148,10 +148,11 @@ def main(year,with_external_nodes=True,error_deactivation=False,fr_flexibility=F
     TechParameters["energyCost"]=TechParameters["energyCost"]-TechParameters["margvarCost"]*TechParameters["minCapacity"]/2
 
     #Add RampCtr2 to Nuke
-    TechParameters.reset_index(inplace=True)
-    TechParameters.loc[TechParameters.TECHNOLOGIES=="OldNuke","RampConstraintPlus2"] = 0.003
-    TechParameters.loc[TechParameters.TECHNOLOGIES=="OldNuke","RampConstraintMoins2"] = 0.003
-    TechParameters.set_index(["AREAS", "TECHNOLOGIES"], inplace=True)
+    # TechParameters.reset_index(inplace=True)
+    # TechParameters.loc[TechParameters.TECHNOLOGIES=="OldNuke","RampConstraintPlus2"] = 0.003
+    # TechParameters.loc[TechParameters.TECHNOLOGIES=="OldNuke","RampConstraintMoins2"] = 0.003
+    # TechParameters.set_index(["AREAS", "TECHNOLOGIES"], inplace=True)
+
 
     if fr_flexibility:
         ConsoParameters = pd.read_csv(InputFolder_other + "Planing-Conso-FLEX_CONSUM.csv",
@@ -191,9 +192,9 @@ def main(year,with_external_nodes=True,error_deactivation=False,fr_flexibility=F
         # print(to_flex_consumption)
         ConsoParameters_ = ConsoParameters.join(
             to_flex_consumption.groupby("FLEX_CONSUM").max().rename(columns={"to_flex_consumption": "max_power"}))
-        ConsoParameters.loc["Steel", "flex_ratio"] = fr_flex_consum["ratio"]["steel_ratio"]
-        ConsoParameters.loc["EV", "flex_ratio"] = fr_flex_consum["ratio"]["VE_ratio"]
-        ConsoParameters.loc["H2", "flex_ratio"] = fr_flex_consum["ratio"]["H2_ratio"]
+        ConsoParameters_.loc[("FR","Steel"), "flex_ratio"] = fr_flex_consum["ratio"]["steel_ratio"]
+        ConsoParameters_.loc[("FR","EV"), "flex_ratio"] = fr_flex_consum["ratio"]["VE_ratio"]
+        ConsoParameters_.loc[("FR","H2"), "flex_ratio"] = fr_flex_consum["ratio"]["H2_ratio"]
 
         def labour_ratio_cost(df):  # higher labour costs at night
             if df.hour in range(7, 17):
@@ -240,20 +241,27 @@ def main(year,with_external_nodes=True,error_deactivation=False,fr_flexibility=F
                                                "StorageParameters"   : StorageParameters,
                                                "ExchangeParameters" : ExchangeParameters
                                                             })
+
     end_time = datetime.now()
     print('\t Start solving at {}'.format(end_time - start_time))
+
     opt = SolverFactory(solver)
-    results=opt.solve(model)
+    # opt.options["InfUnbdInfo "] = 1
+    # opt.options["ScaleFlag"] = -0.5
+
+    # model.task.optimize()
+    results=opt.solve(model)#,tee=True,options={"dparam.intpnt_tol_step_size":1.0e-10,"dparam.intpnt_tol_rel_gap": 1.0e-10,
+                                               # "dparam.mio_tol_rel_gap": 1.0e-10})
 
     end_time = datetime.now()
     print('\t Solved at {}'.format(end_time - start_time))
     Variables = getVariables_panda_indexed(model)
-    print(Variables)
+    # print(Variables)
     if with_external_nodes:
-        with open('SujetsDAnalyses/'+str(year)+'_multinode_results.pickle', 'wb') as f:
+        with open('SujetsDAnalyses/'+str(year)+'_multinode_results_external.pickle', 'wb') as f:
             pickle.dump(Variables, f,protocol=pickle.HIGHEST_PROTOCOL)
     else:
-        with open('SujetsDAnalyses/'+str(year)+'_multinode_results_fossil_no_external.pickle', 'wb') as f:
+        with open('SujetsDAnalyses/'+str(year)+'_multinode_results_no_external.pickle', 'wb') as f:
             pickle.dump(Variables, f,protocol=pickle.HIGHEST_PROTOCOL)
 
     end_time = datetime.now()
@@ -261,6 +269,7 @@ def main(year,with_external_nodes=True,error_deactivation=False,fr_flexibility=F
 
 
 # main(2017)
-main(2018,with_external_nodes=False,fr_flexibility=True,
-     fr_flex_consum={'conso':{"nbVE":10,"steel_twh":0,"H2_twh":30},'ratio':{"VE_ratio":0.25,"steel_ratio":0,"H2_ratio":0.15}})
+main(2018,with_external_nodes=True,error_deactivation=False,fr_flexibility=True,fr_flex_consum={'conso':{"nbVE":30,"steel_twh":0,"H2_twh":0},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":0}})
+
+
 # main(2019)

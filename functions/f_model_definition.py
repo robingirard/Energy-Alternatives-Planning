@@ -11,7 +11,6 @@ def Create_pyomo_model_sets_parameters(Parameters,
                                           "increased_max_power": "NonNegativeReals"}):
 
     model = ConcreteModel()
-
     ### Cleaning
     #TODO : workout something more generic here
     for key_name in ["availabilityFactor","areaConsumption"]:
@@ -73,6 +72,7 @@ def Create_pyomo_model_sets_parameters(Parameters,
     model.Date_MinusOne = Set(initialize=Date_list[: len(Set_vals["Date"]) - 1], ordered=False)
     model.Date_MinusThree = Set(initialize=Date_list[: len(Set_vals["Date"]) - 3], ordered=False)
     model.WEEK_Date=Set(initialize=pd.Int64Index(Date_list.isocalendar().week).unique())
+    model.DAY_Date = Set(initialize=pd.Int64Index(Date_list.dayofyear).unique())
 
     ###############
     # Parameters ##

@@ -162,6 +162,7 @@ def set_Operation_Constraints_flex(model):
     if 'FLEX_CONSUM' in Set_names:
         model   =   set_Operation_Constraints_total_consumptionCtr(model)# total_consumption = areaConsumption+sum(flex_consumption)
         model   =   set_Operation_Constraints_max_powerCtr(model)
+        model = set_Operation_Constraints_consum_eq_day_Ctr(model)
         model   =   set_Operation_Constraints_consum_eq_week_Ctr(model)
         model   =   set_Operation_Constraints_consum_eq_year_Ctr(model)
         model   =   set_Operation_Constraints_consum_flex_Ctr(model)
@@ -201,6 +202,27 @@ def set_Operation_Constraints_max_powerCtr(model):
     model.max_powerCtr = Constraint(model.AREAS,model.FLEX_CONSUM, model.Date, rule=max_power_rule)
     return model
 
+def set_Operation_Constraints_consum_eq_day_Ctr(model):
+    """
+    sum(flex_consumption|week) = sum(to_flex_consumption|week)
+
+    :param model:
+    :return:
+    """
+    Date_list = pd.DataFrame({"Date" : getattr(model, "Date").data()})
+    Date_list["day"] = Date_list.Date.apply(lambda x: x.dayofyear)
+
+    # consumption equality within the same week
+    def consum_eq_day(model, area,t_day, conso_type):
+        if model.flex_type[area,conso_type] == 'day':
+            #Date_list=getattr(model, "Date").data()
+            t_range = Date_list.Date[Date_list.day == t_day]  # range((t_week-1)*7*24+1,(t_week)*7*24)
+            return sum(model.flex_consumption[area,t, conso_type] for t in t_range) == sum(
+                model.to_flex_consumption[area,t, conso_type] for t in t_range)
+        else:
+            return Constraint.Skip
+    model.consum_eq_day_Ctr = Constraint(model.AREAS,model.DAY_Date, model.FLEX_CONSUM, rule=consum_eq_day)
+    return model
 def set_Operation_Constraints_consum_eq_week_Ctr(model):
     """
     sum(flex_consumption|week) = sum(to_flex_consumption|week)
