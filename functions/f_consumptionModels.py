@@ -248,6 +248,94 @@ def ComplexProfile2ConsumptionCJO2019(Profile_df,
     return(Profile_df_merged)
     #cte=(TemperatureThreshold-TemperatureMinimum)
 
+
+# Adaptée aux nouvelles données de RTE
+def ComplexProfile2Consumption_2(Profile_df,
+                                      Temperature_df,poidsName='poids',
+                                      ConsumptionName='Consumption', TimeName='Date',GroupName='type'):
+
+    ## Processing dates indexing Temperature
+    ConsoSepareeNew_df = Temperature_df.loc[:, [ConsumptionName]]
+    ConsoSepareeNew_df = ConsoSepareeNew_df.assign(
+        Jour=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.weekday,
+        Mois=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.month,
+        Heure=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.hour);
+
+    L_week = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+
+    ConsoSepareeNew_df['Jour'] = ConsoSepareeNew_df['Jour']. \
+            apply(lambda x: L_week[x])
+    ConsoSepareeNew_df = ConsoSepareeNew_df.reset_index().set_index(["Mois", "Jour", "Heure"])
+
+    ## Processing the profile to make every month appear
+    Profile_df=Profile_df.reset_index()
+    Profile_summer=Profile_df[Profile_df.Saison=="Ete"][["Jour","Heure",GroupName,poidsName]].reset_index()# Janvier
+    Profile_winter= Profile_df[Profile_df.Saison == "Hiver"][["Jour","Heure",GroupName,poidsName]].reset_index()# Juin
+
+    Profile_month=Profile_winter.copy().assign(Mois=1)
+    for month in range(2,13):
+        Profile_temp=Profile_winter.copy().assign(Mois=month)
+        Profile_temp[poidsName]=Profile_winter[poidsName]*np.cos(np.pi*(month-1)/12)**2\
+                                +(Profile_summer[poidsName]-Profile_winter[poidsName]*np.cos(np.pi*5/12)**2)\
+                                *np.sin(np.pi*(month-1)/12)**2/np.sin(np.pi*5/12)**2
+        Profile_month=pd.concat([Profile_month,Profile_temp],ignore_index=True)
+    Profile_month=Profile_month.reset_index().set_index(["Mois","Jour","Heure"])
+
+
+    Profile_month_merged = ConsoSepareeNew_df.join(Profile_month, how="right")
+    Profile_month_merged.loc[:, [ConsumptionName]] = Profile_month_merged[ConsumptionName] * Profile_month_merged[poidsName]
+    return Profile_month_merged.reset_index()[[ConsumptionName,TimeName,GroupName]].\
+        groupby([TimeName,GroupName]).sum().reset_index().\
+        pivot(index=TimeName, columns=GroupName, values=ConsumptionName)
+    # cte=(TemperatureThreshold-TemperatureMinimum)
+
+def colReindus(col,reindus=False,industryName='Industrie hors metallurgie',steelName='Metallurgie',
+                       reindusName='reindustrialisation'):
+    if reindus and col in [industryName,steelName]:
+        return col+' '+reindusName
+    else:
+        return col
+
+def ProjectionConsoNTS(Conso_profile_df,Projections_df,year,reindus=False,
+                       industryName='Industrie hors metallurgie',steelName='Metallurgie',
+                       reindusName='reindustrialisation'):
+    '''
+    Projette la consommation sectorisée.avec des coefficients pour les années futures.
+
+    :param Conso_profile_df: consommation sectorisée à l'année de référence (2019)
+    :param Projections_df: coefficients de chaque secteur
+    :param year:
+    :param reindus: True si scénario de réindustrialisation, False si scénario de référence
+    :param industryName:
+    :param steelName:
+    :param reindusName:
+    :return: Retourne un dataframe donnant la somme des consommations sectorielles projetées.
+    '''
+    Conso_profile_new_df=Conso_profile_df.copy()
+    L_cols=list(Conso_profile_df.columns)
+    L_years=list(Projections_df.index)
+    if year<=L_years[0]:
+        for col in L_cols:
+            col_proj=colReindus(col,reindus,industryName,steelName,reindusName)
+            Conso_profile_new_df[col]=Projections_df.loc[L_years[0],col_proj]*Conso_profile_new_df[col]
+    elif year>=L_years[-1]:
+        for col in L_cols:
+            col_proj = colReindus(col, reindus, industryName, steelName, reindusName)
+            Conso_profile_new_df[col] = Projections_df.loc[L_years[-1], col_proj] * Conso_profile_new_df[col]
+    else:
+        i=0
+        while i<len(L_years) and year>=L_years[i]:
+            i+=1
+        for col in L_cols:
+            col_proj = colReindus(col, reindus, industryName, steelName, reindusName)
+            Conso_profile_new_df[col] = (Projections_df.loc[L_years[i-1], col_proj]+(year-L_years[i-1])/(L_years[i]-L_years[i-1])*(Projections_df.loc[L_years[i], col_proj]-Projections_df.loc[L_years[i-1], col_proj])) * Conso_profile_new_df[col]
+
+    Conso_profile_new_df=Conso_profile_new_df.assign(Total=0)
+    for col in L_cols:
+        Conso_profile_new_df["Total"]+=Conso_profile_new_df[col]
+    return Conso_profile_new_df[["Total"]]
+
+
 def CleanProfile(df,Nature,type,Usages,UsagesGroupe):
     df=df.assign(Nature=df.loc[:,"Branche Nom"]).replace({"Nature": Nature})
     df=df.assign(type=df.loc[:,"Branche Nom"]).replace({"type": type}).drop(columns=['Branche Nom'])

@@ -5,6 +5,7 @@ from pyomo.opt import SolverFactory
 from datetime import timedelta
 import pandas as pd
 import re
+import sys
 
 
 def allin(vec,dest):
@@ -372,7 +373,7 @@ def math_to_pyomo_Vardef(Vars, model, verbose=False):
             case [*Domain_text] if bool(re.compile(Domain_text).search("(.+)\-(.+)")):
                 domain_split = re.compile(Domain_text).split("\-")
                 Var_Domain = ",bounds=(" + domain_split[0] + "," + domain_split[1] + ")"
-
+            
         Var_definition_script = "model." + Var_definition_script_splitted[0] + "=Var(" + Var_definition_script_splitted[
             1] + Var_Domain + ")"
         if verbose: print(Var_definition_script)
