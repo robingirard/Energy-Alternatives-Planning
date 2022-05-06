@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns # you might have to isntall seaborn yourself : conda install seaborn
 import csv
-import datetime
+from datetime import datetime, timedelta
 import copy
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
@@ -33,12 +33,19 @@ Temp_df=pd.read_csv(InputFolder+'Temp_FR_2017_2022.csv',sep=';',decimal='.',pars
 index2019=(Temp_df.index.to_series().dt.minute==0)&(Temp_df.index.to_series().dt.year==2019)
 Temp_2019_df=Temp_df[index2019]
 
+#Temp_df=pd.read_csv(InputFolder+'Temp_FR_1980_2022.csv',sep=',',decimal='.',parse_dates=['Date'])
+#delta=timedelta(hours=6)
+#Temp_df["Date"]=Temp_df["Date"].apply(lambda x: pd.Timestamp(x.to_pydatetime()+delta))
+#Temp_df=Temp_df.set_index("Date")
+#index2019=(Temp_df.index.to_series().dt.year==2019)
+#Temp_2019_df=Temp_df[index2019][["temperature"]].rename(columns={"temperature": "Temperature"})
+
 ConsoTemp_2019_df=Conso_df.join(Temp_2019_df,on='Date')
 
 
-T0=15# Température de référence chauffage
-T1=20# Température seuil clim
-T2=20# Temperature de référence pertes et ECS
+T0=15# Température de référence chauffage (15)
+T1=20# Température seuil clim (20)
+T2=20# Temperature de référence pertes et ECS (20)
 
 ## Pertes
 taux_pertes=0.06927
@@ -76,6 +83,9 @@ NTS_profil_hourly=ComplexProfile2Consumption_2(NTS_profil,Conso_non_thermosensib
 #Pour visualiser
 fig = MyStackedPlotly(y_df=NTS_profil_hourly)
 plotly.offline.plot(fig, filename='file.html')## offline
+
+#print(Thermosensitivity_winter)
+#print(Thermosensitivity_summer)
 
 ## Enregistrement du profil
 NTS_profil_hourly.to_csv(InputFolder+"Conso_NTS_2019.csv",sep=";",decimal=".")

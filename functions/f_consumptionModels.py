@@ -296,7 +296,7 @@ def colReindus(col,reindus=False,industryName='Industrie hors metallurgie',steel
     else:
         return col
 
-def ProjectionConsoNTS(Conso_profile_df,Projections_df,year,reindus=False,
+def ProjectionConsoNTS(Conso_profile_df,Projections_df,year,reindus=True,
                        industryName='Industrie hors metallurgie',steelName='Metallurgie',
                        reindusName='reindustrialisation'):
     '''
@@ -332,8 +332,216 @@ def ProjectionConsoNTS(Conso_profile_df,Projections_df,year,reindus=False,
 
     Conso_profile_new_df=Conso_profile_new_df.assign(Total=0)
     for col in L_cols:
-        Conso_profile_new_df["Total"]+=Conso_profile_new_df[col]
-    return Conso_profile_new_df[["Total"]]
+        if col!=steelName:
+            Conso_profile_new_df["Total"]+=Conso_profile_new_df[col]
+    Conso_profile_new_df=Conso_profile_new_df.rename(columns={"Total":"Consommation hors metallurgie"})
+    return Conso_profile_new_df[["Consommation hors metallurgie",steelName]]
+
+def COP_air_eau(T,year,COP_coeffs_air_eau=[4.8e-4,7e-2,2.26],
+                efficiency_gain=0.01):
+    return (1-min(0.3,efficiency_gain*(year-2018)))*(T**2*COP_coeffs_air_eau[0]+T*COP_coeffs_air_eau[1]\
+                                                     +COP_coeffs_air_eau[2])
+
+def COP_air_air(T,year,COP_coeffs_air_air=[0.05,1.85],
+                efficiency_gain=0.01):
+    return (1-min(0.3,efficiency_gain*(year-2018)))*(T*COP_coeffs_air_air[0]+COP_coeffs_air_air[1])
+
+def Factor_joule(T,T0=15):
+    if T>T0:
+        return 0
+    else:
+        return 1
+
+def Factor_air_eau(T,year,COP_coeffs_air_eau=[4.8e-4,7e-2,2.26],
+                efficiency_gain=0.01,T0=15):
+    if T>T0:
+        return 0
+    else:
+        return 1/COP_air_eau(T,year,COP_coeffs_air_eau,efficiency_gain)
+
+def Factor_air_air(T,year,COP_coeffs_air_air=[0.05,1.85],
+                efficiency_gain=0.01,T0=15):
+    if T>T0:
+        return 0
+    else:
+        return 1/COP_air_air(T,year,COP_coeffs_air_air,efficiency_gain)
+
+def Factor_hybrid(T,year,COP_coeffs_air_eau=[4.8e-4,7e-2,2.26],
+                efficiency_gain=0.01,T0=15,T_hybrid0=3,T_hybrid1=5):
+    if T>T0 or T<T_hybrid0:
+        return 0
+    elif T>=T_hybrid1:
+        return 1/COP_air_eau(T,year,COP_coeffs_air_eau,efficiency_gain)
+    else:
+        return (1-(T-T_hybrid1)/(T_hybrid0-T_hybrid1))/COP_air_eau(T,year,COP_coeffs_air_eau,efficiency_gain)
+
+def ConsoHeat(Temperature_df,Thermosensitivity_df,
+              Energy_houses_df,Energy_apartments_df,Energy_offices_df,Part_PAC_df,year,
+              bati_hyp="ref",T0=15,T_hybrid0=3,T_hybrid1=5,
+              COP_coeffs_air_eau=[4.8e-4,7e-2,2.26],COP_coeffs_air_air=[0.05,0.85],
+              efficiency_gain=0.01,efficiency_rc=0.826,part_heat_rc=0.885,
+              TemperatureName="Temperature",CUName="Chauffage urbain",
+              JouleName="Chauffage électrique",PACaeName="Pompes à chaleur air-eau",
+              PACaaName="Pompes à chaleur air-air",PAChName="Pompes à chaleur hybride",
+              ThermoName="Thermosensibilite hiver (GW/degre)",HourName="Heure",TimeName="Date",
+              PartPACName="Part PAC",
+              year_ref=2021,year_end=2060):
+    '''
+    Calcul de la consommation thermosensible de chauffage.
+
+    :param Temperature_df:
+    :param Thermosensitivity_df:
+    :param Energy_houses_df:
+    :param Energy_apartments_df:
+    :param Energy_offices_df:
+    :param Part_PAC_df:
+    :param year:
+    :param bati_hyp:
+    :param T0:
+    :param T_hybrid0:
+    :param T_hybrid1:
+    :param COP_coeffs_air_eau:
+    :param COP_coeffs_air_air:
+    :param efficiency_gain:
+    :param efficiency_rc:
+    :param part_heat_rc:
+    :param TemperatureName:
+    :param CUName:
+    :param JouleName:
+    :param PACaeName:
+    :param PACaaName:
+    :param PAChName:
+    :param ThermoName:
+    :param HourName:
+    :param TimeName:
+    :param PartPACName:
+    :param year_ref:
+    :param year_end:
+    :return:
+    '''
+    #Temperature_new_df=Temperature_df.rename(columns={TemperatureName:"Temperature"})
+    Temperature_new_df = Temperature_df.assign(Factor_j=0,
+                                                   Factor_ae=0,
+                                                   Factor_aa=0,
+                                                   Factor_h=0)
+
+    Temperature_new_df["Factor_j"]=Temperature_new_df[TemperatureName].apply(lambda x: Factor_joule(x,T0))
+    Temperature_new_df["Factor_ae"] = Temperature_new_df[TemperatureName].apply(
+        lambda x: Factor_air_eau(x,year,COP_coeffs_air_eau,efficiency_gain,T0))
+    Temperature_new_df["Factor_aa"] = Temperature_new_df[TemperatureName].apply(
+        lambda x: Factor_air_air(x,year,COP_coeffs_air_air,efficiency_gain,T0))
+    Temperature_new_df["Factor_h"] = Temperature_new_df[TemperatureName].apply(
+        lambda x: Factor_hybrid(x,year,COP_coeffs_air_eau,efficiency_gain,T0,T_hybrid0,T_hybrid1))
+
+    F_ae=Temperature_new_df.loc[(Temperature_new_df.Temperature<=T0),"Factor_ae"].mean()
+    F_aa=Temperature_new_df.loc[(Temperature_new_df.Temperature <= T0), "Factor_aa"].mean()
+
+    L_E0=[Energy_houses_df.loc[year_ref,name]+Energy_apartments_df.loc[year_ref,name]\
+    +Energy_offices_df.loc[year_ref,name] for name in [JouleName,PACaeName,PACaaName,PAChName]]
+    L_E0[-1]+=Part_PAC_df.loc[year_ref,PartPACName+" "+bati_hyp]/(efficiency_rc*part_heat_rc)* \
+              (Energy_houses_df.loc[year_ref,CUName]+Energy_apartments_df.loc[year_ref,CUName]\
+               +Energy_offices_df.loc[year_ref,CUName])
+
+    if year<year_ref:
+        year_ret=year_ref
+    elif year>year_end:
+        year_ret=year_end
+    else:
+        year_ret=year
+
+    L_E_year=[Energy_houses_df.loc[year_ret,name]+Energy_apartments_df.loc[year_ret,name]\
+    +Energy_offices_df.loc[year_ret,name] for name in [JouleName,PACaeName,PACaaName,PAChName]]
+    L_E_year[-1]+=Part_PAC_df.loc[year_ret,PartPACName+" "+bati_hyp]/(efficiency_rc*part_heat_rc)* \
+              (Energy_houses_df.loc[year_ret,CUName]+Energy_apartments_df.loc[year_ret,CUName]\
+               +Energy_offices_df.loc[year_ret,CUName])
+
+    denom=L_E0[0]+L_E0[1]*F_ae+L_E0[2]*F_aa+L_E0[3]*F_ae
+    Thermosensitivity_new_df=Thermosensitivity_df.assign(Thermo_joule=L_E_year[0]/denom,
+                                                         Thermo_ae=L_E_year[1]/denom,
+                                                         Thermo_aa=L_E_year[2]/denom,
+                                                         Thermo_h=L_E_year[3]/denom)
+
+    for name in ["Thermo_joule","Thermo_ae","Thermo_aa","Thermo_h"]:
+        Thermosensitivity_new_df[name]=Thermosensitivity_new_df[ThermoName]*Thermosensitivity_new_df[name]
+
+
+    Thermosensitivity_new_df=Thermosensitivity_new_df.reset_index().rename(columns={HourName:"Heure"})
+    Temperature_new_df=Temperature_new_df.assign(Heure=Temperature_new_df.index.get_level_values(TimeName).to_series().dt.hour,Conso_TS_heat=0)
+    Temperature_new_df=pd.merge(Temperature_new_df.reset_index(),Thermosensitivity_new_df,on="Heure").set_index(TimeName).sort_index()
+
+    Temperature_new_df["Conso_TS_heat"]=(Temperature_new_df[TemperatureName]-T0)*(Temperature_new_df["Thermo_joule"]*Temperature_new_df["Factor_j"]\
+                                                                           +Temperature_new_df["Thermo_ae"]*Temperature_new_df["Factor_ae"]\
+                                                                           +Temperature_new_df["Thermo_aa"]*Temperature_new_df["Factor_aa"]\
+                                                                           +Temperature_new_df["Thermo_h"]*Temperature_new_df["Factor_h"])
+
+    return Temperature_new_df[["Conso_TS_heat"]]
+
+def ConsoAirCon(Temperature_df,Thermosensitivity_df,
+              Energy_houses_df,Energy_apartments_df,Energy_offices_df,year,
+              T1=20,taux_clim_res0=0.22,taux_clim_res1=0.55,
+              taux_clim_ter0=0.3,taux_clim_ter1=0.55,
+              TemperatureName="Temperature",ThermoName="Thermosensibilite ete (GW/degre)",
+              HourName="Heure",TimeName="Date",year_ref=2021,year_clim1=2050,year_end=2060):
+    '''
+    Calcul de la consommation thermosensible de climatisation.
+
+    :param Temperature_df:
+    :param Thermosensitivity_df:
+    :param Energy_houses_df:
+    :param Energy_apartments_df:
+    :param Energy_offices_df:
+    :param Part_PAC_df:
+    :param year:
+    :param bati_hyp:
+    :param T1:
+    :param taux_clim_res0: part des logements climatisés aujourd'hui (d'après RTE 2050, chapitre consommation)
+    :param taux_clim_res1: part de logements climatisés en 2050 (d'après RTE 2050, chapitre consommation)
+    :param taux_clim_ter0: part de surfaces tertiaires climatisées aujourd'hui (d'après RTE, GT - consommation tertiaire)
+    :param taux_clim_ter1: part de surfaces tertiaires climatisées en 2050 (hypothèse=logement)
+    :param TemperatureName:
+    :param CUName:
+    :param JouleName:
+    :param PACaeName:
+    :param PACaaName:
+    :param PAChName:
+    :param ThermoName:
+    :param HourName:
+    :param TimeName:
+    :param PartPACName:
+    :param year_ref:
+    :param year_clim1:
+    :param year_end:
+    :return:
+    '''
+
+    L_cols=list(Energy_houses_df.columns)
+    E0=taux_clim_res0*(sum([Energy_houses_df.loc[year_ref,col] for col in L_cols])\
+        +sum([Energy_apartments_df.loc[year_ref,col] for col in L_cols]))\
+        +taux_clim_ter0*sum([Energy_offices_df.loc[year_ref,col] for col in L_cols])
+
+    if year<year_ref:
+        year_ret=year_ref
+    elif year>year_end:
+        year_ret=year_end
+    else:
+        year_ret=year
+    E_year=(taux_clim_res0+(year_ret-year_ref)/(year_clim1-year_ref)*(taux_clim_res1-taux_clim_res0))\
+           *(sum([Energy_houses_df.loc[year_ref,col] for col in L_cols])\
+        +sum([Energy_apartments_df.loc[year_ref,col] for col in L_cols]))\
+        +(taux_clim_ter0+(year_ret-year_ref)/(year_clim1-year_ref)*(taux_clim_ter1-taux_clim_ter0))\
+           *sum([Energy_offices_df.loc[year_ref,col] for col in L_cols])
+
+    Thermosensitivity_new_df=Thermosensitivity_df.copy()
+    Thermosensitivity_new_df[ThermoName]=E_year/E0*Thermosensitivity_new_df[ThermoName]
+
+    Thermosensitivity_new_df = Thermosensitivity_new_df.reset_index().rename(columns={HourName: "Heure"})
+    Temperature_new_df = Temperature_df.assign(
+        Heure=Temperature_df.index.get_level_values(TimeName).to_series().dt.hour, Conso_TS_air_con=0)
+    Temperature_new_df = pd.merge(Temperature_new_df.reset_index(), Thermosensitivity_new_df, on="Heure").set_index(
+        TimeName).sort_index()
+    Temperature_new_df["Conso_TS_air_con"]=Temperature_new_df[TemperatureName].apply(lambda T: T-T1 if T>=T1 else 0)*Temperature_new_df[ThermoName]
+
+    return Temperature_new_df[["Conso_TS_air_con"]]
 
 
 def CleanProfile(df,Nature,type,Usages,UsagesGroupe):
