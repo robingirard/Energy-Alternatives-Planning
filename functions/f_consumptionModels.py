@@ -543,6 +543,50 @@ def ConsoAirCon(Temperature_df,Thermosensitivity_df,
 
     return Temperature_new_df[["Conso_TS_air_con"]]
 
+def Conso_ECS(Temperature_df,Profil_ECS_df,Projections_ECS_df,year,T2=20,TimeName="Date",
+              ThermoName="Thermosensibilite (MW/degre)",ECSName="ECS a 20 degres",
+              ECSCoeffName="Eau chaude sanitaire"):
+    '''
+    Projection consommation ECS
+
+    :param Profil_ECS_df:
+    :param Projections_ECS_df:
+    :param year:
+    :param T2: temperature de reference de la courbe de charge de Profil_ECS_df
+    :return:
+    '''
+
+    Temperature_new_df = Temperature_df.assign(
+        Jour=Temperature_df.index.get_level_values(TimeName).to_series().dt.weekday,
+        Heure=Temperature_df.index.get_level_values(TimeName).to_series().dt.hour,
+        Conso_ECS=0)
+
+    L_week = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+
+    Temperature_new_df['Jour'] = Temperature_new_df['Jour']. \
+        apply(lambda x: L_week[x])
+    Temperature_new_df = Temperature_new_df.reset_index().set_index(["Jour", "Heure"])
+
+    Profil_ECS_new_df=Profil_ECS_df.reset_index().set_index(["Jour", "Heure"])
+    Temperature_new_df=Temperature_new_df.join(Profil_ECS_new_df, how="right")
+
+    L_years = list(Projections_ECS_df.index)
+    if year <= L_years[0]:
+        C=Projections_ECS_df.loc[L_years[0],ECSCoeffName]
+    elif year >= L_years[-1]:
+        C = Projections_ECS_df.loc[L_years[-1], ECSCoeffName]
+    else:
+        i = 0
+        while i < len(L_years) and year >= L_years[i]:
+            i += 1
+        C= Projections_ECS_df.loc[L_years[i - 1],ECSCoeffName] + (year - L_years[i - 1]) / (L_years[i] - L_years[i - 1]) \
+           * (Projections_ECS_df.loc[L_years[i],ECSCoeffName]- Projections_ECS_df.loc[L_years[i - 1],ECSCoeffName])
+
+    Temperature_new_df["Conso_ECS"]=C*((Temperature_new_df["Temperature"]-T2)*Temperature_new_df[ThermoName]\
+                                    +Temperature_new_df[ECSName])
+
+    Temperature_new_df=Temperature_new_df.reset_index().set_index(TimeName).sort_index()
+    return Temperature_new_df[["Conso_ECS"]]
 
 def CleanProfile(df,Nature,type,Usages,UsagesGroupe):
     df=df.assign(Nature=df.loc[:,"Branche Nom"]).replace({"Nature": Nature})

@@ -28,6 +28,8 @@ Projections_df=pd.read_csv(InputFolder+'Projections_NTS.csv',sep=';',decimal=','
 
 Conso_projected_df=ProjectionConsoNTS(NTS_profil_df,Projections_df,2050,reindus)
 print(Conso_projected_df)
+print(Conso_projected_df["Consommation hors metallurgie"].sum())
+print(Conso_projected_df["Metallurgie"].sum())
 
 # Heating
 Energy_houses_df=pd.read_csv(InputFolder+'Bati/Energie_TWh_maisons_type_de_chauffage_'+bati_hyp+'.csv',sep=';',decimal='.').set_index("Année")
@@ -51,6 +53,15 @@ print(Conso_TS_heat_df["Conso_TS_heat"].sum())
 Conso_TS_air_con_df=ConsoAirCon(Temp_2019_df,Thermosensitivity_df,Energy_houses_df,Energy_apartments_df,Energy_offices_df,2050)
 print(Conso_TS_air_con_df)
 print(Conso_TS_air_con_df["Conso_TS_air_con"].sum())
+
+# ECS
+Profil_ECS_df=pd.read_csv(InputFolder+'Profil_ECS_futur.csv',sep=';',decimal=',').set_index(["Jour","Heure"])
+Projections_ECS_df=pd.read_csv(InputFolder+'Projections_ECS.csv',sep=';',decimal=',').set_index(["Annee"])
+
+Conso_ECS_df=Conso_ECS(Temp_2019_df,Profil_ECS_df,Projections_ECS_df,2050)
+print(Conso_ECS_df)
+print(Conso_ECS_df["Conso_ECS"].sum())
+
 
 
 
