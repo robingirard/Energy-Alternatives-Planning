@@ -22,6 +22,7 @@ reindus=True
 bati_hyp='ref'# Alternative SNBC
 T0=15# Temperature when heating starts
 
+# Non thermosensitive profile
 NTS_profil_df=pd.read_csv(InputFolder+'Conso_NTS_2019.csv',sep=';',decimal='.',parse_dates=['Date']).set_index(['Date'])
 Thermosensitivity_df=pd.read_csv(InputFolder+'Thermosensitivity_2019.csv',sep=';',decimal='.').set_index(["Heure"])
 Projections_df=pd.read_csv(InputFolder+'Projections_NTS.csv',sep=';',decimal=',').set_index(['Annee'])
@@ -36,7 +37,6 @@ Energy_houses_df=pd.read_csv(InputFolder+'Bati/Energie_TWh_maisons_type_de_chauf
 Energy_apartments_df=pd.read_csv(InputFolder+'Bati/Energie_TWh_appartements_type_de_chauffage_'+bati_hyp+'.csv',sep=';',decimal='.').set_index("Année")
 Energy_offices_df=pd.read_csv(InputFolder+'Bati/Energie_tertiaire_type_de_chauffage.csv',sep=';',decimal='.').set_index("Année")
 Part_PAC_RCU_df=pd.read_csv(InputFolder+'Bati/Part_PAC_reseaux_chaleur.csv',sep=';',decimal=',').set_index("Annee")
-#print(Energy_houses_df.head())
 
 Temp_df=pd.read_csv(InputFolder+'Temp_FR_2017_2022.csv',sep=';',decimal='.',parse_dates=['Date']).set_index(["Date"])
 
@@ -62,6 +62,17 @@ Conso_ECS_df=Conso_ECS(Temp_2019_df,Profil_ECS_df,Projections_ECS_df,2050)
 print(Conso_ECS_df)
 print(Conso_ECS_df["Conso_ECS"].sum())
 
-
+# VE
+N_VP_df=pd.read_csv(InputFolder+'Vehicles/Motorisations_vp.csv',sep=';',decimal='.').set_index(["Année"])
+N_VUL_df=pd.read_csv(InputFolder+'Vehicles/Motorisations_vul.csv',sep=';',decimal='.').set_index(["Année"])
+N_PL_df=pd.read_csv(InputFolder+'Vehicles/Motorisations_pl.csv',sep=';',decimal='.').set_index(["Année"])
+N_bus_df=pd.read_csv(InputFolder+'Vehicles/Motorisations_bus.csv',sep=';',decimal='.').set_index(["Année"])
+N_car_df=pd.read_csv(InputFolder+'Vehicles/Motorisations_car.csv',sep=';',decimal='.').set_index(["Année"])
+Profil_VE_df=pd.read_csv(InputFolder+'Vehicles/Profil_VE.csv',sep=';',decimal=',').set_index(["Jour","Heure"])
+Params_VE_df=pd.read_csv(InputFolder+'Vehicles/Params_VE.csv',sep=';',decimal=',').set_index(["Vehicule"])
+Conso_VE_df,E_H2=ConsoVE(Temp_2019_df,N_VP_df,N_VUL_df,N_PL_df,N_bus_df,N_car_df,
+                         Profil_VE_df,Params_VE_df,2050)
+print(Conso_VE_df)
+print(E_H2)
 
 

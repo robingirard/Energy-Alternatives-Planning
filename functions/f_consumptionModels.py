@@ -588,6 +588,96 @@ def Conso_ECS(Temperature_df,Profil_ECS_df,Projections_ECS_df,year,T2=20,TimeNam
     Temperature_new_df=Temperature_new_df.reset_index().set_index(TimeName).sort_index()
     return Temperature_new_df[["Conso_ECS"]]
 
+def ConsoVE(Temperature_df,N_VP_df,N_VUL_df,N_PL_df,N_bus_df,N_car_df,Profil_VE_df,Params_VE_df,year,
+            T0=15,T1=20,TemperatureName="Temperature",TimeName="Date",VLloadName="Puissance VL",
+            PLloadName="Puissance PL",BusloadName="Puissance bus et car",VLThermoName="Thermosensibilite VL",
+            PLThermoName="Thermosensibilite PL",BusThermoName="Thermosensibilite bus et car",
+            ElName="Electrique",HybridName="Hybride rechargeable",H2Name="Hydrogène",
+            ConsoElName="Consommation electrique (kWh/km)",ConsoHybridName="Consommation hybride rechargeable (kWh/km)",
+            ConsoH2Name="Consommation hydrogene (kWh/km)",ProgressElName="Progres annuel electrique",
+            ProgressHybridName="Progres annuel hybride rechargeable",ProgressH2Name="Progres annuel hydrogene",
+            DistName="Kilometrage annuel",VPName="VP",VULName="VUL",PLName="PL",BusName="Bus",CarName="Car",
+            year_ref=2020,year_end_progress=2050):
+
+    Temperature_new_df = Temperature_df.assign(
+        Jour=Temperature_df.index.get_level_values(TimeName).to_series().dt.weekday,
+        Heure=Temperature_df.index.get_level_values(TimeName).to_series().dt.hour,
+        Delta_T_thermo=0)
+
+    Temperature_new_df["Delta_T_thermo"]=Temperature_new_df[TemperatureName].apply(lambda T: T - T0 if T <= T0 else 0) \
+        - Temperature_new_df[TemperatureName].apply(lambda T: T - T1 if T >= T1 else 0)
+
+    L_week = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+
+    Temperature_new_df['Jour'] = Temperature_new_df['Jour']. \
+        apply(lambda x: L_week[x])
+    Temperature_new_df = Temperature_new_df.reset_index().set_index(["Jour", "Heure"])
+
+    Profil_VE_new_df = Profil_VE_df.reset_index().set_index(["Jour", "Heure"])
+    Temperature_new_df = Temperature_new_df.join(Profil_VE_new_df, how="right")
+
+    L_years = list(N_VP_df.index)
+    if year <= L_years[0]:
+        year_ret=L_years[0]
+    elif year >= L_years[-1]:
+        year_ret=L_years[-1]
+    else:
+        year_ret=year
+
+    L_elec=[(1-Params_VE_df.loc[VPName,ProgressElName]*(min(year_ret,year_end_progress)-year_ref))\
+            *Params_VE_df.loc[VPName,ConsoElName]*Params_VE_df.loc[VPName,DistName]*N_VP_df.loc[year_ret,ElName]\
+            +(1-Params_VE_df.loc[VULName,ProgressElName]*(min(year_ret,year_end_progress)-year_ref))\
+            *Params_VE_df.loc[VULName,ConsoElName]*Params_VE_df.loc[VULName,DistName]*N_VUL_df.loc[year_ret,ElName],
+            (1 - Params_VE_df.loc[PLName, ProgressElName] * (min(year_ret, year_end_progress) - year_ref))\
+            * Params_VE_df.loc[PLName, ConsoElName] * Params_VE_df.loc[PLName, DistName] * N_PL_df.loc[year_ret,ElName],
+            (1 - Params_VE_df.loc[BusName, ProgressElName] * (min(year_ret, year_end_progress) - year_ref))\
+            * Params_VE_df.loc[BusName, ConsoElName] * Params_VE_df.loc[BusName, DistName] * N_bus_df.loc[year_ret, ElName]\
+            +(1 - Params_VE_df.loc[CarName, ProgressElName] * (min(year_ret, year_end_progress) - year_ref))\
+            * Params_VE_df.loc[CarName, ConsoElName] * Params_VE_df.loc[CarName, DistName] * N_car_df.loc[year_ret, ElName]]
+    # in kWh
+
+    L_hybrid=[(1-Params_VE_df.loc[VPName,ProgressHybridName]*(min(year_ret,year_end_progress)-year_ref))\
+            *Params_VE_df.loc[VPName,ConsoHybridName]*Params_VE_df.loc[VPName,DistName]*N_VP_df.loc[year_ret,HybridName]\
+            +(1-Params_VE_df.loc[VULName,ProgressHybridName]*(min(year_ret,year_end_progress)-year_ref))\
+            *Params_VE_df.loc[VULName,ConsoHybridName]*Params_VE_df.loc[VULName,DistName]*N_VUL_df.loc[year_ret,HybridName],
+            (1 - Params_VE_df.loc[PLName, ProgressHybridName] * (min(year_ret, year_end_progress) - year_ref))\
+            * Params_VE_df.loc[PLName, ConsoHybridName] * Params_VE_df.loc[PLName, DistName] * N_PL_df.loc[year_ret,HybridName],
+            (1 - Params_VE_df.loc[BusName, ProgressHybridName] * (min(year_ret, year_end_progress) - year_ref))\
+            * Params_VE_df.loc[BusName, ConsoHybridName] * Params_VE_df.loc[BusName, DistName] * N_bus_df.loc[year_ret, HybridName]\
+            +(1 - Params_VE_df.loc[CarName, ProgressHybridName] * (min(year_ret, year_end_progress) - year_ref))\
+            * Params_VE_df.loc[CarName, ConsoHybridName] * Params_VE_df.loc[CarName, DistName] * N_car_df.loc[year_ret, HybridName]]
+    # in kWh
+
+    E_H2=((1-Params_VE_df.loc[VPName,ProgressH2Name]*(min(year_ret,year_end_progress)-year_ref))\
+            *Params_VE_df.loc[VPName,ConsoH2Name]*Params_VE_df.loc[VPName,DistName]*N_VP_df.loc[year_ret,H2Name]\
+            +(1-Params_VE_df.loc[VULName,ProgressH2Name]*(min(year_ret,year_end_progress)-year_ref))\
+            *Params_VE_df.loc[VULName,ConsoH2Name]*Params_VE_df.loc[VULName,DistName]*N_VUL_df.loc[year_ret,H2Name]\
+            +(1 - Params_VE_df.loc[PLName, ProgressH2Name] * (min(year_ret, year_end_progress) - year_ref))\
+            * Params_VE_df.loc[PLName, ConsoH2Name] * Params_VE_df.loc[PLName, DistName] * N_PL_df.loc[year_ret,H2Name]\
+            +(1 - Params_VE_df.loc[BusName, ProgressH2Name] * (min(year_ret, year_end_progress) - year_ref))\
+            * Params_VE_df.loc[BusName, ConsoH2Name] * Params_VE_df.loc[BusName, DistName] * N_bus_df.loc[year_ret, H2Name]\
+            +(1 - Params_VE_df.loc[CarName, ProgressH2Name] * (min(year_ret, year_end_progress) - year_ref))\
+            * Params_VE_df.loc[CarName, ConsoH2Name] * Params_VE_df.loc[CarName, DistName] * N_car_df.loc[year_ret, H2Name])/1e3
+    # in MWh
+
+    Temperature_new_df[VLloadName]+=Temperature_new_df["Delta_T_thermo"]*Temperature_new_df[VLThermoName]
+    Temperature_new_df[PLloadName] += Temperature_new_df["Delta_T_thermo"] * Temperature_new_df[PLThermoName]
+    Temperature_new_df[BusloadName] += Temperature_new_df["Delta_T_thermo"] * Temperature_new_df[BusThermoName]
+
+    S_VL_load=Temperature_new_df[VLloadName].sum()
+    S_PL_load=Temperature_new_df[PLloadName].sum()
+    S_bus_car_load=Temperature_new_df[BusloadName].sum()
+
+    Temperature_new_df[VLloadName]=Temperature_new_df[VLloadName]*(L_elec[0]+L_hybrid[0])/(S_VL_load*1e3)
+    Temperature_new_df[PLloadName]=Temperature_new_df[PLloadName]*(L_elec[1]+L_hybrid[1])/(S_PL_load*1e3)
+    Temperature_new_df[BusloadName] = Temperature_new_df[BusloadName] * (L_elec[2] + L_hybrid[2]) / (S_bus_car_load * 1e3)
+
+    Temperature_new_df.assign(Conso_VE=0)
+    Temperature_new_df["Conso_VE"]=Temperature_new_df[VLloadName]+Temperature_new_df[PLloadName]+Temperature_new_df[BusloadName]
+
+    Temperature_new_df = Temperature_new_df.reset_index().set_index(TimeName).sort_index()
+    return Temperature_new_df[["Conso_VE"]],E_H2
+
 def CleanProfile(df,Nature,type,Usages,UsagesGroupe):
     df=df.assign(Nature=df.loc[:,"Branche Nom"]).replace({"Nature": Nature})
     df=df.assign(type=df.loc[:,"Branche Nom"]).replace({"type": type}).drop(columns=['Branche Nom'])
