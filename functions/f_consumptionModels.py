@@ -259,7 +259,7 @@ def ComplexProfile2Consumption_2(Profile_df,
     ConsoSepareeNew_df = ConsoSepareeNew_df.assign(
         Jour=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.weekday,
         Mois=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.month,
-        Heure=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.hour);
+        Heure=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.hour)
 
     L_week = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
 
@@ -598,7 +598,47 @@ def ConsoVE(Temperature_df,N_VP_df,N_VUL_df,N_PL_df,N_bus_df,N_car_df,Profil_VE_
             ProgressHybridName="Progres annuel hybride rechargeable",ProgressH2Name="Progres annuel hydrogene",
             DistName="Kilometrage annuel",VPName="VP",VULName="VUL",PLName="PL",BusName="Bus",CarName="Car",
             year_ref=2020,year_end_progress=2050):
+    '''
+    Computes the consumption of electric vehicles (light and heavy) including hydrogen.
 
+    :param Temperature_df:
+    :param N_VP_df:
+    :param N_VUL_df:
+    :param N_PL_df:
+    :param N_bus_df:
+    :param N_car_df:
+    :param Profil_VE_df:
+    :param Params_VE_df:
+    :param year:
+    :param T0:
+    :param T1:
+    :param TemperatureName:
+    :param TimeName:
+    :param VLloadName:
+    :param PLloadName:
+    :param BusloadName:
+    :param VLThermoName:
+    :param PLThermoName:
+    :param BusThermoName:
+    :param ElName:
+    :param HybridName:
+    :param H2Name:
+    :param ConsoElName:
+    :param ConsoHybridName:
+    :param ConsoH2Name:
+    :param ProgressElName:
+    :param ProgressHybridName:
+    :param ProgressH2Name:
+    :param DistName:
+    :param VPName:
+    :param VULName:
+    :param PLName:
+    :param BusName:
+    :param CarName:
+    :param year_ref:
+    :param year_end_progress:
+    :return: E_H2 in MWh, electric vehicle load Conso_VE in MW
+    '''
     Temperature_new_df = Temperature_df.assign(
         Jour=Temperature_df.index.get_level_values(TimeName).to_series().dt.weekday,
         Heure=Temperature_df.index.get_level_values(TimeName).to_series().dt.hour,
@@ -677,6 +717,54 @@ def ConsoVE(Temperature_df,N_VP_df,N_VUL_df,N_PL_df,N_bus_df,N_car_df,Profil_VE_
 
     Temperature_new_df = Temperature_new_df.reset_index().set_index(TimeName).sort_index()
     return Temperature_new_df[["Conso_VE"]],E_H2
+
+def ConsoH2(Conso_H2_df,year,reindus=True,
+            refName='Reference',reindusName='Reindustrialisation'):
+    '''
+    Returns hydrogen consumption, vehicles not included.
+
+    :param Conso_H2_df:
+    :param year:
+    :param reindus:
+    :param refName:
+    :param reindusName:
+    :return: Result in MWh
+    '''
+    if reindus:
+        name=reindusName
+    else:
+        name=refName
+
+    L_years = list(Conso_H2_df.index)
+    if year <= L_years[0]:
+        E_H2=Conso_H2_df.loc[L_years[0], name]*1e6
+    elif year >= L_years[-1]:
+        E_H2=Conso_H2_df.loc[L_years[-1], name]*1e6
+    else:
+        i = 0
+        while i < len(L_years) and year >= L_years[i]:
+            i += 1
+        E_H2 = (Conso_H2_df.loc[L_years[i-1], name]+(year-L_years[i-1])/(L_years[i]-L_years[i-1])* \
+                (Conso_H2_df.loc[L_years[i], name]-Conso_H2_df.loc[L_years[i-1], name]))*1e6
+    return E_H2
+
+def Losses(Temperature_df,T_ref=20,taux_pertes=0.06927,rho_pertes=-1.2e-3,
+           TemperatureName="Temperature"):
+    '''
+    Computes the losses (thermosensitive).
+
+    :param Temperature_df:
+    :param T_ref:
+    :param taux_pertes:
+    :param rho_pertes:
+    :param TemperatureName:
+    :return: Dataframe of losses in percent of the consumption.
+    '''
+
+    Temperature_new_df=Temperature_df.assign(Taux_pertes=taux_pertes)
+    Temperature_new_df["Taux_pertes"]+=rho_pertes*(Temperature_new_df[TemperatureName]-T_ref)
+
+    return Temperature_new_df[["Taux_pertes"]]
 
 def CleanProfile(df,Nature,type,Usages,UsagesGroupe):
     df=df.assign(Nature=df.loc[:,"Branche Nom"]).replace({"Nature": Nature})

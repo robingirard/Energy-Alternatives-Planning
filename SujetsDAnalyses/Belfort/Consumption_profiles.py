@@ -32,6 +32,7 @@ Temp_df=pd.read_csv(InputFolder+'Temp_FR_2017_2022.csv',sep=';',decimal='.',pars
 
 index2019=(Temp_df.index.to_series().dt.minute==0)&(Temp_df.index.to_series().dt.year==2019)
 Temp_2019_df=Temp_df[index2019]
+Temp_2019_df= Temp_2019_df[~Temp_2019_df.index.duplicated(keep='first')]# There are duplicates : 'Temp_FR_2017_2022.csv' is shitty data...
 
 #Temp_df=pd.read_csv(InputFolder+'Temp_FR_1980_2022.csv',sep=',',decimal='.',parse_dates=['Date'])
 #delta=timedelta(hours=6)
