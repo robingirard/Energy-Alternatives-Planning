@@ -31,9 +31,8 @@ Conso_df=pd.read_csv(InputFolder+'areaConsumption2019_FR.csv',sep=';',parse_date
 Temp_df=pd.read_csv(InputFolder+'Temp_FR_2017_2022.csv',sep=';',decimal='.',parse_dates=['Date']).set_index(["Date"])
 
 index2019=(Temp_df.index.to_series().dt.minute==0)&(Temp_df.index.to_series().dt.year==2019)
-Temp_2019_df=Temp_df[index2019]
-Temp_2019_df= Temp_2019_df[~Temp_2019_df.index.duplicated(keep='first')]# There are duplicates : 'Temp_FR_2017_2022.csv' is shitty data...
-
+Temp_2019_df=Temp_df[index2019].reset_index().set_index("Date").sort_index()
+Temp_2019_df= CleanCETIndex(Temp_2019_df)# Traitement heure d'été et heure d'hiver
 #Temp_df=pd.read_csv(InputFolder+'Temp_FR_1980_2022.csv',sep=',',decimal='.',parse_dates=['Date'])
 #delta=timedelta(hours=6)
 #Temp_df["Date"]=Temp_df["Date"].apply(lambda x: pd.Timestamp(x.to_pydatetime()+delta))

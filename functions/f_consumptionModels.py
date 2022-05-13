@@ -9,6 +9,7 @@ from sklearn import linear_model
 from datetime import time
 from datetime import datetime
 from datetime import date
+from datetime import timedelta
 
 #data_df=areaConsumption.join(ConsoTempe_df)[['areaConsumption','Temperature']]
 def Decomposeconso(data_df, TemperatureThreshold=14, TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='Date') :
@@ -339,12 +340,12 @@ def ProjectionConsoNTS(Conso_profile_df,Projections_df,year,reindus=True,
 
 def COP_air_eau(T,year,COP_coeffs_air_eau=[4.8e-4,7e-2,2.26],
                 efficiency_gain=0.01):
-    return (1-min(0.3,efficiency_gain*(year-2018)))*(T**2*COP_coeffs_air_eau[0]+T*COP_coeffs_air_eau[1]\
+    return (1+min(0.3,efficiency_gain*(year-2018)))*(T**2*COP_coeffs_air_eau[0]+T*COP_coeffs_air_eau[1]\
                                                      +COP_coeffs_air_eau[2])
 
 def COP_air_air(T,year,COP_coeffs_air_air=[0.05,1.85],
                 efficiency_gain=0.01):
-    return (1-min(0.3,efficiency_gain*(year-2018)))*(T*COP_coeffs_air_air[0]+COP_coeffs_air_air[1])
+    return (1+min(0.3,efficiency_gain*(year-2018)))*(T*COP_coeffs_air_air[0]+COP_coeffs_air_air[1])
 
 def Factor_joule(T,T0=15):
     if T>T0:
@@ -378,7 +379,7 @@ def Factor_hybrid(T,year,COP_coeffs_air_eau=[4.8e-4,7e-2,2.26],
 def ConsoHeat(Temperature_df,Thermosensitivity_df,
               Energy_houses_df,Energy_apartments_df,Energy_offices_df,Part_PAC_df,year,
               bati_hyp="ref",T0=15,T_hybrid0=3,T_hybrid1=5,
-              COP_coeffs_air_eau=[4.8e-4,7e-2,2.26],COP_coeffs_air_air=[0.05,0.85],
+              COP_coeffs_air_eau=[4.8e-4,7e-2,2.26],COP_coeffs_air_air=[0.05,1.85],
               efficiency_gain=0.01,efficiency_rc=0.826,part_heat_rc=0.885,
               TemperatureName="Temperature",CUName="Chauffage urbain",
               JouleName="Chauffage électrique",PACaeName="Pompes à chaleur air-eau",
@@ -765,6 +766,30 @@ def Losses(Temperature_df,T_ref=20,taux_pertes=0.06927,rho_pertes=-1.2e-3,
     Temperature_new_df["Taux_pertes"]+=rho_pertes*(Temperature_new_df[TemperatureName]-T_ref)
 
     return Temperature_new_df[["Taux_pertes"]]
+
+def CleanCETIndex(Temp_df,TimeName="Date"):
+    '''
+    To clean winter and summer hour index in Temperature (or other) dataframe.
+
+    :param Temp_df:
+    :param TimeName:
+    :return:
+    '''
+    Temp_df_new=Temp_df.reset_index()
+    Temp_df_new["Date"]=Temp_df_new["Date"].apply(lambda x: x.to_pydatetime())
+    d1h=timedelta(hours=1)
+    for i in Temp_df_new.index:
+        if i>0 and Temp_df_new.loc[i,"Date"]-Temp_df_new.loc[i-1,"Date"]>d1h:
+            i_start=i
+        if i>0 and Temp_df_new.loc[i,"Date"]==Temp_df_new.loc[i-1,"Date"]:
+            i_end=i
+    for i in range(i_start,i_end):
+        Temp_df_new.loc[i, "Date"]=Temp_df_new.loc[i, "Date"]-d1h
+    Temp_df_new["Date"]=Temp_df_new["Date"].apply(lambda x: pd.Timestamp(x))
+    Temp_df_new=Temp_df_new.set_index("Date")
+    return Temp_df_new
+
+
 
 def CleanProfile(df,Nature,type,Usages,UsagesGroupe):
     df=df.assign(Nature=df.loc[:,"Branche Nom"]).replace({"Nature": Nature})
