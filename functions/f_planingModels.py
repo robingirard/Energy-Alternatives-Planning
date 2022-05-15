@@ -52,8 +52,6 @@ def GetElectricSystemModel_Planing(Parameters,Vars=None,EQs = {},verbose=False):
     return model ;
 
 
-
-
 def Model_SingleNode_online_flex(areaConsumption, availabilityFactor, to_flexible_consumption,
                              ConsoParameters, TechParameters, StorageParameters, solverpath=-1,
                                                          isAbstract=False,
