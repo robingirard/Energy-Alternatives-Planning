@@ -176,7 +176,8 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFacto
 
     # energyCosts definition Constraint
     def powerCostsDef_rule(model,tech):
-        return sum(model.powerCost[tech] * model.power_Dvar[t, tech]+model.margvarCost[tech] * model.power_Dvar[t, tech]**2 for t in model.TIME) == model.powerCosts_Pvar[
+        return sum(model.powerCost[tech] * model.power_Dvar[t, tech]#+model.margvarCost[tech] * model.power_Dvar[t, tech]**2\
+                   for t in model.TIME) == model.powerCosts_Pvar[
             tech]
 
     model.powerCostsCtr = Constraint(model.TECHNOLOGIES, rule=powerCostsDef_rule)
