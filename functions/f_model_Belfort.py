@@ -4,14 +4,15 @@ from pyomo.core import *
 from functions.f_tools import *
 from datetime import *
 
-def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFactor,
+def GetElectricSystemModel_Belfort_SingleNode(areaConsumption,lossesRate,availabilityFactor,
                                               TechParameters, StorageParameters,
                                               to_flex_consumption,FlexParameters,labour_ratio,
                                               TimeName='Date',TechName='TECHNOLOGIES',
                                               StockTechName='STOCK_TECHNO',FlexName='FLEX_CONSUM',
                                               FlexConsumptionName='Consumption',
                                               areaConsumptionName='areaConsumption',
-                                              availabilityFactorName='availabilityFactor'):
+                                              availabilityFactorName='availabilityFactor',
+                                              LaborRatioName='labour_ratio',lossesRateName='Taux_pertes'):
     ## Generic variables
     d1h = timedelta(hours=1)
 
@@ -36,6 +37,7 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFacto
     TIME_df['night_ev']=TIME_df[TimeName].apply(lambda x: 1 if 18<=x.hour or x.hour<=7 else 0)# night
     TIME_df['ctr_ev'] = TIME_df[TimeName].apply(lambda x: 1 if 7<=x.hour<=8 or 12<=x.hour<=18 else 0)# flex constrained time for electric vehicles
     TIME_df['week']=TIME_df[TimeName].apply(lambda x: x.isocalendar().week)
+    TIME_df=TIME_df.set_index(TimeName)
     #TIME_df['hour']=TIME_df[TimeName].apply(lambda x: x.hour)
 
     DAY = set(TIME_df['day'].unique())
@@ -73,19 +75,24 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFacto
 
     model.areaConsumption = Param(model.TIME, default=0,
                                   initialize=areaConsumption.loc[:, areaConsumptionName].squeeze().to_dict(), domain=Any)
+    model.lossesRate=Param(model.TIME, default=0,
+                                  initialize=lossesRate.loc[:, lossesRateName].squeeze().to_dict(), domain=PercentFraction)
     model.availabilityFactor = Param(model.TIME_TECHNOLOGIES, domain=PercentFraction, default=1,
                                      initialize=availabilityFactor.loc[:, availabilityFactorName].squeeze().to_dict())
-    model.to_flex_consumption = Param(model.TIME_FLEX_CONSUM, default=0,
+    model.to_flex_consumption = Param(model.TIME,model.FLEX_CONSUM, default=0,
                                   initialize=to_flex_consumption.loc[:, FlexConsumptionName].squeeze().to_dict(),
                                   domain=Any)
     model.max_power=Param(model.FLEX_CONSUM,default=0,
                           initialize=to_flex_consumption[FlexConsumptionName].groupby(FlexName).max().to_dict(),
                           domain=Any)
-    if "Conso_VE" in FLEX_CONSUM:
-        model.max_power_night_EV=Param(initialize=model.max_power["Conso_VE"],domain=Any)
-        model.max_power_aft_EV=Param(initialize=(to_flex_consumption.loc[(slice(None),"Conso_VE"),FlexConsumptionName]*TIME_df['aft_ev']).max(),
+    model.labour_ratio=Param(model.TIME_FLEX_CONSUM,default=0,
+                          initialize=labour_ratio.loc[:,LaborRatioName].squeeze().to_dict(),
+                          domain=Any)
+    if "EV" in FLEX_CONSUM:
+        model.max_power_night_EV=Param(initialize=model.max_power["EV"],domain=Any)
+        model.max_power_aft_EV=Param(initialize=(to_flex_consumption.loc[(slice(None),"EV"),FlexConsumptionName]*TIME_df['aft_ev']).max(),
                                                  domain=Any)
-        model.max_power_morn_EV = Param(initialize=(to_flex_consumption.loc[(slice(None), "Conso_VE"), FlexConsumptionName] * TIME_df['morn_ev']).max(),
+        model.max_power_morn_EV = Param(initialize=(to_flex_consumption.loc[(slice(None), "EV"), FlexConsumptionName] * TIME_df['morn_ev']).max(),
                                        domain=Any)
     # with test of existing columns on TechParameters
     for COLNAME in TechParameters:
@@ -112,6 +119,7 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFacto
     ### Operation variables
     model.power_Dvar = Var(model.TIME, model.TECHNOLOGIES,
                                domain=NonNegativeReals)  ### Power of a conversion mean at time t
+    model.energy_Pvar =Var(model.TIME, domain=NonNegativeReals) ### Total power produced at time t
     model.powerCosts_Pvar = Var(
             model.TECHNOLOGIES)  ### Marginal cost for a conversion mean, explicitely defined by definition powerCostsDef
 
@@ -150,7 +158,7 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFacto
 
     model.flex_Dvar = Var(model.TIME, model.FLEX_CONSUM, domain=Reals)#Flexibility variable
 
-    model.increased_max_power_Dvar=Var(model.TIME, model.FLEX_CONSUM, domain=NonNegativeReals)
+    model.increased_max_power_Dvar=Var(model.FLEX_CONSUM, domain=NonNegativeReals)
 
     ### Other variables
     model.dual = Suffix(direction=Suffix.IMPORT)
@@ -176,7 +184,7 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFacto
 
     # energyCosts definition Constraint
     def powerCostsDef_rule(model,tech):
-        return sum(model.powerCost[tech] * model.power_Dvar[t, tech]#+model.margvarCost[tech] * model.power_Dvar[t, tech]**2\
+        return sum(model.energyCost[tech] * model.power_Dvar[t, tech]#+model.margvarCost[tech] * model.power_Dvar[t, tech]**2\
                    for t in model.TIME) == model.powerCosts_Pvar[
             tech]
 
@@ -198,7 +206,7 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFacto
 
     # Felxibility cost definition
     def consumption_flex_costDef_rule(model, conso_type):
-        return model.flexCosts_Pvar[conso_type] == model.LoadCost[conso_type] * model.increased_max_power[
+        return model.flexCosts_Pvar[conso_type] == model.LoadCost[conso_type] * model.increased_max_power_Dvar[
             conso_type] + sum(model.labour_ratio[t, conso_type] * model.labourcost[conso_type] * (
                 model.a_plus_Pvar[t, conso_type] + model.a_minus_Pvar[t, conso_type]) for t in model.TIME)
 
@@ -221,7 +229,7 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFacto
         if model.p_max_out_eq_p_max_in[s_tech]=='yes':
             return model.Pmax_in_Dvar[s_tech]==model.Pmax_out_Dvar[s_tech]
         else:
-            Constraint.Skip
+            return Constraint.Skip
 
     model.storagePowerInOutCtr = Constraint(model.STOCK_TECHNO, rule=storagePower_in_out_rule)
 
@@ -252,7 +260,7 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFacto
                    + model.storageIn_Pvar[t, s_tech] * model.efficiency_in[s_tech] - model.storageOut_Pvar[t, s_tech]/model.efficiency_out[s_tech]
         else:
             return model.stockLevel_Pvar[t, s_tech] == model.storageIn_Pvar[t, s_tech] * model.efficiency_in[
-                res, s_tech] - model.storageOut_Pvar[t, s_tech]/model.efficiency_out[s_tech]\
+                s_tech] - model.storageOut_Pvar[t, s_tech]/model.efficiency_out[s_tech]\
                    + model.stockLevel_ini_Dvar[s_tech]*(1-model.dissipation[s_tech])
 
     model.StockLevelCtr = Constraint(model.TIME, model.STOCK_TECHNO, rule=StockLevel_rule)
@@ -281,7 +289,7 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFacto
                sum(model.storageOut_Pvar[t, s_tech] - model.storageIn_Pvar[t, s_tech] for s_tech in STOCK_TECHNO)\
                == model.energy_Pvar[t]
 
-    model.ProductionCtr = Constraint(model.TIME, model.RESOURCES, rule=Production_rule)
+    model.ProductionCtr = Constraint(model.TIME, rule=Production_rule)
 
     # contrainte d'equilibre offre demande
     def energyCtr_rule(model, t):  # INEQ forall t
@@ -359,8 +367,8 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFacto
 
     # Total consumtion rule
     def total_consumption_rule(model, t):
-        return model.total_consumption_Pvar[t] == model.areaConsumption[t] + sum(
-            model.flex_consumption_Pvar[t, name] for name in model.FLEX_CONSUM)
+        return model.total_consumption_Pvar[t] == (model.areaConsumption[t] + sum(
+            model.flex_consumption_Pvar[t, name] for name in model.FLEX_CONSUM))*(1+model.lossesRate[t])
 
     model.total_consumptionCtr = Constraint(model.TIME, rule=total_consumption_rule)
 
@@ -369,19 +377,19 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFacto
         if model.flex_type[conso_type] != 'day_ev':
             return model.max_power[conso_type] + model.increased_max_power_Dvar[conso_type] >= model.flex_consumption_Pvar[t, conso_type]
         else:
-            if TIME_df['morn_ev']==1:
+            if TIME_df.loc[t,'morn_ev']==1:
                 return model.max_power_morn_EV + model.increased_max_power_Dvar[conso_type]>=model.flex_consumption_Pvar[t, conso_type]
-            if TIME_df['aft_ev'] == 1:
+            if TIME_df.loc[t,'aft_ev'] == 1:
                 return model.max_power_aft_EV >= model.flex_consumption_Pvar[t, conso_type]
             else:
                 return model.max_power_night_EV >= model.flex_consumption_Pvar[t, conso_type]
 
-    model.max_powerCtr = Constraint(model.AREAS,model.FLEX_CONSUM, model.Date, rule=max_power_rule)
+    model.max_powerCtr = Constraint(model.FLEX_CONSUM, model.TIME, rule=max_power_rule)
 
     # Day constraint
     def consum_eq_day(model, t_day, conso_type):
         if model.flex_type[conso_type] == 'day':
-            t_range = TIME_df[TIME_df.day == t_day][TimeName]
+            t_range = TIME_df[TIME_df.day == t_day].index.get_level_values(TimeName)
             return sum(model.flex_consumption[t, conso_type] for t in t_range) == sum(
                 model.to_flex_consumption[t, conso_type] for t in t_range)
         else:
@@ -392,7 +400,7 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFacto
     # Morning and night constraint electric vehicle
     def consum_eq_night_morn_ev(model, t_day, conso_type):
         if model.flex_type[conso_type] == 'day_ev':
-            t_range = TIME_df[(TIME_df.day_ev == t_day)&((TIME_df.morn_ev==1)|(TIME_df.night_ev==1))][TimeName]
+            t_range = TIME_df[(TIME_df.day_ev == t_day)&((TIME_df.morn_ev==1)|(TIME_df.night_ev==1))].index.get_level_values(TimeName)
             return sum(model.flex_consumption_Pvar[t, conso_type] for t in t_range) == sum(
                 model.to_flex_consumption[t, conso_type] for t in t_range)
         else:
@@ -403,7 +411,7 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFacto
     # Afternoon constraint electric vehicle
     def consum_eq_aft_ev(model, t_day, conso_type):
         if model.flex_type[conso_type] == 'day_ev':
-            t_range = TIME_df[(TIME_df.day == t_day)&(TIME_df.aft_ev==1)][TimeName]
+            t_range = TIME_df[(TIME_df.day == t_day)&(TIME_df.aft_ev==1)].index.get_level_values(TimeName)
             return sum(model.flex_consumption_Pvar[t, conso_type] for t in t_range) == sum(
                 model.to_flex_consumption[t, conso_type] for t in t_range)
         else:
@@ -414,7 +422,7 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption, availabilityFacto
     # Week constraint
     def consum_eq_week(model, t_week, conso_type):
         if model.flex_type[conso_type] == 'week':
-            t_range = TIME_df[TIME_df.week == t_week][TimeName]
+            t_range = TIME_df[TIME_df.week == t_week].index.get_level_values(TimeName)
             return sum(model.flex_consumption_Pvar[t, conso_type] for t in t_range) == sum(
                 model.to_flex_consumption[t, conso_type] for t in t_range)
         else:
