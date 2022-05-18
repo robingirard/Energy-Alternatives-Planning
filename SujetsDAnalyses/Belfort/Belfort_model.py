@@ -126,9 +126,7 @@ def run_model(year,bati_hyp='ref',reindus=True,nuc='plus'):
     print("Results were saved in: {} s".format(t5 - t4))
 
     print("Total timing: {} s".format(t5 - t1))
-    print(Variables)
-
-
+    #print(Variables)
 
 run_model(2050,bati_hyp='ref',reindus=True,nuc='plus')
 

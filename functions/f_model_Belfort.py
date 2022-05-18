@@ -185,8 +185,7 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption,lossesRate,availab
     # energyCosts definition Constraint
     def powerCostsDef_rule(model,tech):
         return sum(model.energyCost[tech] * model.power_Dvar[t, tech]#+model.margvarCost[tech] * model.power_Dvar[t, tech]**2\
-                   for t in model.TIME) == model.powerCosts_Pvar[
-            tech]
+                   for t in model.TIME) == model.powerCosts_Pvar[tech]
 
     model.powerCostsCtr = Constraint(model.TECHNOLOGIES, rule=powerCostsDef_rule)
 
@@ -208,7 +207,7 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption,lossesRate,availab
     def consumption_flex_costDef_rule(model, conso_type):
         return model.flexCosts_Pvar[conso_type] == model.LoadCost[conso_type] * model.increased_max_power_Dvar[
             conso_type] + sum(model.labour_ratio[t, conso_type] * model.labourcost[conso_type] * (
-                model.a_plus_Pvar[t, conso_type] + model.a_minus_Pvar[t, conso_type]) for t in model.TIME)
+                model.a_plus_Pvar[t, conso_type] - model.a_minus_Pvar[t, conso_type]) for t in model.TIME)
 
     model.consumption_flex_costCtr = Constraint(model.FLEX_CONSUM, rule=consumption_flex_costDef_rule)
 
@@ -294,6 +293,9 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption,lossesRate,availab
     # contrainte d'equilibre offre demande
     def energyCtr_rule(model, t):  # INEQ forall t
         return model.energy_Pvar[t] >= model.total_consumption_Pvar[t]
+        #return sum(model.power_Dvar[t, tech] for tech in model.TECHNOLOGIES) + \
+               #sum(model.storageOut_Pvar[t, s_tech] - model.storageIn_Pvar[t, s_tech] for s_tech in STOCK_TECHNO)\
+               #>= model.total_consumption_Pvar[t]
 
     model.energyCtr = Constraint(model.TIME, rule=energyCtr_rule)
 
