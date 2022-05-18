@@ -118,10 +118,16 @@ def run_model(year,bati_hyp='ref',reindus=True,nuc='plus'):
     t4=time()
     print("Model solved in: {} s".format(t4 - t3))
 
-    ##
+    ## Saving model
+    print("Saving results")
+    with open('SujetsDAnalyses/Belfort/Results_'+tech_suffix+'_'+bati_hyp+'_'+d_reindus[reindus]+'.pickle', 'wb') as f:
+        pickle.dump(Variables, f, protocol=pickle.HIGHEST_PROTOCOL)
+    t5=time()
+    print("Results were saved in: {} s".format(t5 - t4))
 
-    print("Total timing: {} s".format(t4 - t1))
+    print("Total timing: {} s".format(t5 - t1))
     print(Variables)
+
 
 
 run_model(2050,bati_hyp='ref',reindus=True,nuc='plus')
