@@ -1,4 +1,4 @@
-STOCK_TECHNO;storageCost_power_in;storageCost_power_out;storageCost_energy;p_max_in;p_max_out;p_max_out_eq_p_max_in;h_max;efficiency_in;dissipation;efficiency_out
-Battery;19748,48153;0;26982,8489;100000;100000;yes;4;0,95;0;0,95
-HydroStorage;96549,92877;0;0;5023;5023;yes;20;0,9;0;0,9
-PowertoH2toPower;170750,4668;105166,451;1,912117291;0;0;no;0;0,7;0;0,5
+STOCK_TECHNO;storageCost_power_in;storageCost_power_out;storageCost_energy;p_max_in;p_max_out;efficiency_in;dissipation;efficiency_out;p_max_out_eq_p_max_in;h_max
+Battery;19748,48152531407;0,0;26982,84889596184;100000;100000;0,95;0,0;0,95;yes;4
+HydroStorage;96549,928774817;0,0;0,0;5049;5049;0,9;0,0;0,9;yes;20
+PowertoH2toPower;170750,4668277058;105166,4510067573;15,0;100000;100000;0,65;1,20274e-05;0,5;no;0

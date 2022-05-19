@@ -21,7 +21,7 @@ InputFolder='Data/input/Conso_model/'
 # Main scenario hypothesis
 T0=15# Temperature when heating starts
 DeltaT_warming_year=0.01# To simulate global warming
-eta_electrolysis=0.7# Efficiency electrolysis
+eta_electrolysis=0.7
 
 # Non thermosensitive profile
 NTS_profil_df=pd.read_csv(InputFolder+'Conso_NTS_2019.csv',sep=';',decimal='.',parse_dates=['Date']).set_index(['Date'])
@@ -134,7 +134,7 @@ for year in [2030,2040,2050,2060]:
                 +Conso_TS_air_con_df["Conso_TS_air_con"]+Conso_ECS_df["Conso_ECS"]
             #Conso_projected_df.assign(Conso_VE=0,Conso_H2=0,Taux_pertes=0)
             Conso_projected_df["Conso_VE"]=Conso_VE_df["Conso_VE"]
-            Conso_projected_df["Conso_H2"]=E_H2/(eta_electrolysis*8760)
+            Conso_projected_df["Conso_H2"]=E_H2/8760
             Conso_projected_df["Taux_pertes"]=Losses_df["Taux_pertes"]
 
             if year==2050:
@@ -142,7 +142,7 @@ for year in [2030,2040,2050,2060]:
                 plotly.offline.plot(fig, filename=InputFolder+'Loads/Conso_plot_2050_'+d_reindus[reindus]+'_'+bati_hyp+'.html')
 
             Conso_projected_df.to_csv(InputFolder+"Loads/Conso_"+str(year)+"_"+d_reindus[reindus]+"_"+bati_hyp+".csv", sep=";", decimal=".")
-            Conso_projected_df["Conso_Total"] =(1+Conso_projected_df["Taux_pertes"])*(Conso_projected_df["Consommation hors metallurgie"]+Conso_projected_df["Metallurgie"]+Conso_projected_df["Conso_VE"]+Conso_projected_df["Conso_H2"])
+            Conso_projected_df["Conso_Total"] =(1+Conso_projected_df["Taux_pertes"])*(Conso_projected_df["Consommation hors metallurgie"]+Conso_projected_df["Metallurgie"]+Conso_projected_df["Conso_VE"]+Conso_projected_df["Conso_H2"]/eta_electrolysis)
             print(bati_hyp+" "+d_reindus[reindus])
             print("Energy consumption (TWh): {}".format(Conso_projected_df["Conso_Total"].sum()/1E6))
             print("Peak demand (GW): {}".format(Conso_projected_df["Conso_Total"].max()/1E3))

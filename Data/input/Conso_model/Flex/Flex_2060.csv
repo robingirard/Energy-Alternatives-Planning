@@ -1,4 +1,3 @@
 FLEX_CONSUM;LoadCost;flex_ratio;max_ratio;flex_type;labourcost
-Steel;279284,2904;0,9;1;week;78
-EV;52446,75155;0,5;1;day_ev;0
-H2;88601,34641;1;1;year;0
+Steel;279284,290372441;0,9;1;week;78
+EV;52446,75154616521;0,5;1;day_ev;0

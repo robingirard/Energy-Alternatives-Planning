@@ -128,5 +128,95 @@ def run_model(year,bati_hyp='ref',reindus=True,nuc='plus'):
     print("Total timing: {} s".format(t5 - t1))
     #print(Variables)
 
-run_model(2050,bati_hyp='ref',reindus=True,nuc='plus')
+def run_model_H2(year,bati_hyp='ref',reindus=True,mix='nuclear_plus'):
+    t1=time()
+    tech_suffix=str(year)+'_'+mix
+
+    TechParameters=pd.read_csv(Input_folder+"Prod_model/Technos_"+tech_suffix+".csv",decimal=',',sep=';').set_index(["TECHNOLOGIES"])
+    StorageParameters=pd.read_csv(Input_folder+"Prod_model/Stock_technos_"+str(year)+".csv",decimal=',',sep=';').set_index(["STOCK_TECHNO"])
+
+    ## Availability
+    NucAvailability=pd.read_csv(Input_folder+"Prod_model/availability_nuclear_"+tech_suffix+".csv",decimal='.',sep=';',parse_dates=['Date']).set_index('Date')
+
+    WindSolarAvailability=pd.read_csv(Input_folder+"Prod_model/availabilityWindSolar.csv",decimal=',',sep=';',parse_dates=['Date']).set_index('Date')
+    availabilityFactor=NucAvailability.join(WindSolarAvailability)
+    HydroRiverAvailability=pd.read_csv(Input_folder+"Prod_model/availability_hydro_river.csv",decimal='.',sep=';',parse_dates=['Date']).set_index('Date')
+    availabilityFactor = availabilityFactor.join(HydroRiverAvailability)
+
+    availabilityFactor=availabilityFactor.rename(columns={'New nuke':'NewNuke','Old nuke':'OldNuke','availability':'HydroRiver'})
+    availabilityFactor['NewHydroRiver']=availabilityFactor['HydroRiver']
+
+    for col in TechParameters.index:
+        if col not in availabilityFactor.columns:
+            availabilityFactor[col]=1
+
+    availabilityFactor=availabilityFactor.reset_index().melt(id_vars=['Date'],var_name="TECHNOLOGIES",value_name='availabilityFactor').set_index(['Date','TECHNOLOGIES'])
+
+    ## Consumption
+    d_reindus={True:'reindus',False:'no_reindus'}
+    conso_suffix=str(year)+'_'+d_reindus[reindus]+'_'+bati_hyp
+    try:
+        areaConsumption=pd.read_csv(Input_folder+"Conso_model/Loads/Conso_"+conso_suffix+".csv",decimal='.',sep=';',parse_dates=['Date']).set_index('Date')
+    except:
+        raise ValueError("Variable bati_hyp should be 'ref' or 'SNBC'.")
+
+    lossesRate=areaConsumption[['Taux_pertes']]
+
+    ## Flexibility and H2
+    to_flex_consumption=areaConsumption[['Metallurgie','Conso_VE']].rename(columns={'Metallurgie':'Steel','Conso_VE':'EV'})
+    to_flex_consumption=to_flex_consumption.reset_index().melt(id_vars=['Date'],var_name="FLEX_CONSUM",value_name='Consumption').set_index(['Date','FLEX_CONSUM'])
+
+    H2_consumption=areaConsumption[['Conso_H2']].rename(columns={'Conso_H2':'H2'})
+
+    areaConsumption=areaConsumption[['Consommation hors metallurgie']].rename(columns={'Consommation hors metallurgie':'areaConsumption'})
+
+    FlexParameters=pd.read_csv(Input_folder+"Conso_model/Flex/Flex_"+str(year)+".csv",decimal=',',sep=';').set_index('FLEX_CONSUM')
+
+    #H2Parameters=pd.read_csv(Input_folder+"Conso_model/H2/H2_technos_"+str(year)+".csv",decimal=',',sep=';').set_index('H2_TECHNO')
+
+    ## Labor ratio
+    labour_ratio = pd.DataFrame()
+    labour_ratio["Date"] = areaConsumption.index.get_level_values('Date')
+    labour_ratio["FLEX_CONSUM"] = "Steel"
+    labour_ratio["labour_ratio"] = labour_ratio["Date"].apply(labour_ratio_cost)
+
+    for flex_consum in ["EV"]:
+        u = pd.DataFrame()
+        u["Date"] = areaConsumption.index.get_level_values('Date')
+        u["FLEX_CONSUM"] = flex_consum
+        u["labour_ratio"] = np.array(len(u["Date"]) * [1])
+        labour_ratio = pd.concat([labour_ratio, u], ignore_index=True)
+
+    labour_ratio=labour_ratio.set_index(["Date", "FLEX_CONSUM"])
+    t2=time()
+    print("Parameters loaded in: {} s".format(t2-t1))
+    ## Model definition
+    print("Defining model")
+    model=GetElectricSystemModel_Belfort_SingleNode_H2(areaConsumption, lossesRate, availabilityFactor,
+                                                    TechParameters, StorageParameters,
+                                                    to_flex_consumption, FlexParameters, labour_ratio,
+                                                    H2_consumption)
+    t3=time()
+    print("Model defined in: {} s".format(t3-t2))
+
+    ## Solving model
+    print("Solving model")
+    solver='mosek'
+    opt = SolverFactory(solver)
+    results = opt.solve(model)
+    Variables = getVariables_panda_indexed(model)
+    t4=time()
+    print("Model solved in: {} s".format(t4 - t3))
+
+    ## Saving model
+    print("Saving results")
+    with open('SujetsDAnalyses/Belfort/Results_'+tech_suffix+'_'+bati_hyp+'_'+d_reindus[reindus]+'.pickle', 'wb') as f:
+        pickle.dump(Variables, f, protocol=pickle.HIGHEST_PROTOCOL)
+    t5=time()
+    print("Results were saved in: {} s".format(t5 - t4))
+
+    print("Total timing: {} s".format(t5 - t1))
+    #print(Variables)
+
+run_model_H2(2050,bati_hyp='ref',reindus=True,mix='nuclear_plus')
 
