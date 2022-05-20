@@ -25,12 +25,10 @@ from time import time
 
 
 def labour_ratio_cost(df):  # higher labour costs at night
-    if df.hour in range(7, 17):
+    if df.hour in range(6, 22):
         return 1
-    elif df.hour in range(17, 23):
-        return 1.5
     else:
-        return 2
+        return 1.3
 
 def run_model(year,bati_hyp='ref',reindus=True,nuc='plus'):
     t1=time()
@@ -218,5 +216,11 @@ def run_model_H2(year,bati_hyp='ref',reindus=True,mix='nuclear_plus'):
     print("Total timing: {} s".format(t5 - t1))
     #print(Variables)
 
-run_model_H2(2050,bati_hyp='ref',reindus=True,mix='nuclear_plus')
-
+#run_model_H2(2050,bati_hyp='ref',reindus=True,mix='nuclear_plus')
+for year in [2030,2040,2050,2060]:
+    for bati_hyp in ['ref','SNBC']:
+        for reindus in [True,False]:
+            for mix in ['nuclear_plus','nuclear_minus','100_enr']:
+                if year!=2030 or mix=='nuclear_plus':
+                    print("\nRun scenario year={} bati_hyp={} reindus={} and mix={}".format(year,bati_hyp,reindus,mix))
+                    run_model_H2(year, bati_hyp, reindus, mix)
