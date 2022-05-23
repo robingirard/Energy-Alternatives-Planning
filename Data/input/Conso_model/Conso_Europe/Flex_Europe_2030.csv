@@ -1,0 +1,15 @@
+AREAS;FLEX_CONSUM;LoadCost;flex_ratio;max_ratio;flex_type;labourcost
+FR;Steel;279284,2904;0,9;1;week;53
+FR;EV;56472,21915;0,5;1;day_ev;0
+BE;Steel;279284,2904;0,9;1;week;53
+BE;EV;56472,21915;0,5;1;day_ev;0
+CH;Steel;279284,2904;0,9;1;week;53
+CH;EV;56472,21915;0,5;1;day_ev;0
+DE;Steel;279284,2904;0,9;1;week;53
+DE;EV;56472,21915;0,5;1;day_ev;0
+ES;Steel;279284,2904;0,9;1;week;53
+ES;EV;56472,21915;0,5;1;day_ev;0
+GB;Steel;279284,2904;0,9;1;week;53
+GB;EV;56472,21915;0,5;1;day_ev;0
+IT;Steel;279284,2904;0,9;1;week;53
+IT;EV;56472,21915;0,5;1;day_ev;0

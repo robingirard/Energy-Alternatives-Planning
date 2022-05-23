@@ -946,7 +946,7 @@ def GetElectricSystemModel_Belfort_MultiNode(areaConsumption, lossesRate, availa
                                                  availabilityFactorName='availabilityFactor',
                                                  LaborRatioName='labour_ratio', lossesRateName='Taux_pertes',
                                                  H2ConsumptionName='H2',
-                                                 AreaName='Area'):
+                                                 AreaName='AREAS',ExchangeName='Exchange'):
     ## Generic variables
     d1h = timedelta(hours=1)
 
@@ -1211,7 +1211,7 @@ def GetElectricSystemModel_Belfort_MultiNode(areaConsumption, lossesRate, availa
     model.StockLevelCtr = Constraint(model.AREAS, model.TIME, model.STOCK_TECHNO, rule=StockLevel_rule)
 
     def StockLevel_ini_rule(model, area, s_tech):
-        return model.stockLevel_Pvar[TIME_list[-1], area, s_tech] >= model.stockLevel_ini_Dvar[area, s_tech]
+        return model.stockLevel_Pvar[area, TIME_list[-1], s_tech] >= model.stockLevel_ini_Dvar[area, s_tech]
 
     model.StockLevelIniCtr = Constraint(model.AREAS,model.STOCK_TECHNO, rule=StockLevel_ini_rule)
 
@@ -1233,7 +1233,7 @@ def GetElectricSystemModel_Belfort_MultiNode(areaConsumption, lossesRate, availa
         return sum(model.power_Dvar[area, t, tech] for tech in model.TECHNOLOGIES) \
                + sum(model.storageOut_Pvar[area, t, s_tech] - model.storageIn_Pvar[area, t, s_tech] for s_tech in STOCK_TECHNO) \
                + sum(model.exchange_Pvar[b, area, t] for b in model.AREAS)\
-               == model.total_consumption_Pvar[t]
+               == model.total_consumption_Pvar[area,t]
 
     model.ProductionCtr = Constraint(model.AREAS, model.TIME, rule=Production_rule)
 
@@ -1397,7 +1397,7 @@ def GetElectricSystemModel_Belfort_MultiNode(areaConsumption, lossesRate, availa
     model.flex_variation_sup_Ctr = Constraint(model.AREAS, model.TIME, model.FLEX_CONSUM, rule=flex_variation_sup_rule)
 
     def flex_variation_inf_rule(model, area, t, conso_type):
-        if model.flex_type[area, conso_type] != 'day_ev' or TIME_df.loc[area, t, 'ctr_ev'] == 1:
+        if model.flex_type[area, conso_type] != 'day_ev' or TIME_df.loc[t, 'ctr_ev'] == 1:
             return model.flex_Dvar[area, t, conso_type] >= -model.flex_ratio[area, conso_type]
         else:
             return Constraint.Skip
