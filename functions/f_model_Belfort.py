@@ -1011,7 +1011,7 @@ def GetElectricSystemModel_Belfort_MultiNode(areaConsumption, lossesRate, availa
                                   domain=Any)
     model.lossesRate = Param(model.AREAS, model.TIME, default=0,
                              initialize=lossesRate.loc[:, lossesRateName].squeeze().to_dict(), domain=PercentFraction)
-    model.availabilityFactor = Param(model.AREAS, model.TIME, model.TECHNOLOGIES, domain=PercentFraction, default=1,
+    model.availabilityFactor = Param(model.AREAS, model.TIME, model.TECHNOLOGIES, domain=NonNegativeReals, default=1,
                                      initialize=availabilityFactor.loc[:, availabilityFactorName].squeeze().to_dict())
     model.to_flex_consumption = Param(model.AREAS, model.TIME, model.FLEX_CONSUM, default=0,
                                       initialize=to_flex_consumption.loc[:, FlexConsumptionName].squeeze().to_dict(),
@@ -1022,7 +1022,10 @@ def GetElectricSystemModel_Belfort_MultiNode(areaConsumption, lossesRate, availa
     model.labour_ratio = Param(model.AREAS,model.TIME,model.FLEX_CONSUM, default=0,
                                initialize=labour_ratio.loc[:, LaborRatioName].squeeze().to_dict(),
                                domain=Any)
-    model.H2_consumption = Param(model.AREAS,model.TIME, default=0, initialize=H2_consumption.loc[:, H2ConsumptionName])
+    model.H2_consumption = Param(model.AREAS,model.TIME, default=0, initialize=H2_consumption.loc[:, H2ConsumptionName].squeeze().to_dict(),
+                               domain=NonNegativeReals)
+    model.exchange_max = Param(model.AREAS,model.AREAS,default=0, initialize=ExchangeParameters.loc[:,ExchangeName].squeeze().to_dict(),
+                               domain=NonNegativeReals)
 
     # with test of existing columns on TechParameters
     for COLNAME in TechParameters:
@@ -1233,6 +1236,18 @@ def GetElectricSystemModel_Belfort_MultiNode(areaConsumption, lossesRate, availa
                == model.total_consumption_Pvar[t]
 
     model.ProductionCtr = Constraint(model.AREAS, model.TIME, rule=Production_rule)
+
+    # exchange max constraint
+    def Exchange_max_rule(model, area1, area2, t):
+        return model.exchange_Pvar[area1,area2,t]<=model.exchange_max[area1,area2]
+
+    model.ExchangeMaxCtr = Constraint(model.AREAS, model.AREAS, model.TIME, rule=Exchange_max_rule)
+
+    # exchange equilibrium constraint
+    def Exchange_eq_rule(model, area1, area2,t):
+        return model.exchange_Pvar[area1,area2,t]==model.exchange_Pvar[area2,area1,t]
+
+    model.ExchangeEqCtr = Constraint(model.AREAS, model.AREAS, model.TIME, rule=Exchange_eq_rule)
 
     if "maxCapacity" in TechParameters:
         def maxCapacity_rule(model, area, tech):  # INEQ forall t, tech
