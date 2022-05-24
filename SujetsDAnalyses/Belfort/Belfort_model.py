@@ -397,7 +397,7 @@ def run_model_multinode(year,bati_hyp='ref',reindus=True,mix='nuclear_plus',
 
     print("Total timing: {} s".format(t5 - t1))
     print(model.capacity_Dvar.extract_values())
-    print(Variables)
+    #print(Variables)
 
 run_model_multinode(2050,bati_hyp='ref',reindus=True,mix='nuclear_plus')
 

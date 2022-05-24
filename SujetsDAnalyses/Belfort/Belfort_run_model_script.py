@@ -1,7 +1,7 @@
 from Belfort_model import *
 
 for year in [2030,2040,2050,2060]:
-    for bati_hyp in ['ref','SNBC']:
+    for bati_hyp in ['ref']:
         for reindus in [True,False]:
             for mix in ['nuclear_plus','nuclear_minus','100_enr']:
                 if year!=2030 or mix=='nuclear_plus':
