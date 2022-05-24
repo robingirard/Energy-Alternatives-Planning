@@ -56,7 +56,7 @@ def conso_model_europe(year,L_areas=['BE','CH','DE','ES','GB','IT'],Conso_areas_
         print("Conso "+area+"= {} TWh".format(((dict_conso_areas[area]['Consommation hors metallurgie']\
                                               +dict_conso_areas[area]['Metallurgie']\
                                               +dict_conso_areas[area]['Conso_VE']\
-                                              +dict_conso_areas[area]['Conso_H2'])\
+                                              +dict_conso_areas[area]['Conso_H2']/0.7)\
                                               *(1+dict_conso_areas[area]['Taux_pertes'])).sum()/1e6))
     df_ret=df_ret.reset_index().set_index(['AREAS','Date'])
 
