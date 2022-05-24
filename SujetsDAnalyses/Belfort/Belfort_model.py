@@ -216,13 +216,13 @@ def run_model_H2(year,bati_hyp='ref',reindus=True,mix='nuclear_plus'):
     print("Total timing: {} s".format(t5 - t1))
 
 #run_model_H2(2050,bati_hyp='ref',reindus=True,mix='nuclear_plus')
-for year in [2030,2040,2050,2060]:
-    for bati_hyp in ['ref','SNBC']:
-        for reindus in [True,False]:
-            for mix in ['nuclear_plus','nuclear_minus','100_enr']:
-                if year!=2030 or mix=='nuclear_plus':
-                    print("\nRun scenario year={} bati_hyp={} reindus={} and mix={}".format(year,bati_hyp,reindus,mix))
-                    run_model_H2(year, bati_hyp, reindus, mix)
+#for year in [2030,2040,2050,2060]:
+    #for bati_hyp in ['ref','SNBC']:
+        #for reindus in [True,False]:
+            #for mix in ['nuclear_plus','nuclear_minus','100_enr']:
+                #if year!=2030 or mix=='nuclear_plus':
+                    #print("\nRun scenario year={} bati_hyp={} reindus={} and mix={}".format(year,bati_hyp,reindus,mix))
+                    #run_model_H2(year, bati_hyp, reindus, mix)
 
 
 def run_model_multinode(year,bati_hyp='ref',reindus=True,mix='nuclear_plus',
@@ -283,9 +283,9 @@ def run_model_multinode(year,bati_hyp='ref',reindus=True,mix='nuclear_plus',
         ['AREAS','Date', 'TECHNOLOGIES'])
 
     ####### Test zone
-    availabilityFactor.reset_index(inplace=True)
-    availabilityFactor=availabilityFactor[availabilityFactor['Date'].apply(lambda x: x.month)<=2].set_index(
-        ['AREAS','Date', 'TECHNOLOGIES'])
+    #availabilityFactor.reset_index(inplace=True)
+    #availabilityFactor=availabilityFactor[availabilityFactor['Date'].apply(lambda x: x.month)==1].set_index(
+        #['AREAS','Date', 'TECHNOLOGIES'])
     #availabilityFactor['availabilityFactor']=2*availabilityFactor['availabilityFactor']
     ########
 
@@ -315,18 +315,18 @@ def run_model_multinode(year,bati_hyp='ref',reindus=True,mix='nuclear_plus',
         columns={'Consommation hors metallurgie': 'areaConsumption'})
 
     ####### Test zone
-    lossesRate.reset_index(inplace=True)
-    lossesRate = lossesRate[lossesRate['Date'].apply(lambda x: x.month)<=2].set_index(
-        ['AREAS', 'Date'])
-    to_flex_consumption.reset_index(inplace=True)
-    to_flex_consumption = to_flex_consumption[to_flex_consumption['Date'].apply(lambda x: x.month)<=2].set_index(
-        ['AREAS', 'Date', 'FLEX_CONSUM'])
-    H2_consumption.reset_index(inplace=True)
-    H2_consumption = H2_consumption[H2_consumption['Date'].apply(lambda x: x.month)<=2].set_index(
-        ['AREAS', 'Date'])
-    areaConsumption.reset_index(inplace=True)
-    areaConsumption = areaConsumption[areaConsumption['Date'].apply(lambda x: x.month)<=2].set_index(
-        ['AREAS', 'Date'])
+    #lossesRate.reset_index(inplace=True)
+    #lossesRate = lossesRate[lossesRate['Date'].apply(lambda x: x.month)==1].set_index(
+        #['AREAS', 'Date'])
+    #to_flex_consumption.reset_index(inplace=True)
+    #to_flex_consumption = to_flex_consumption[to_flex_consumption['Date'].apply(lambda x: x.month)==1].set_index(
+        #['AREAS', 'Date', 'FLEX_CONSUM'])
+    #H2_consumption.reset_index(inplace=True)
+    #H2_consumption = H2_consumption[H2_consumption['Date'].apply(lambda x: x.month)==1].set_index(
+        #['AREAS', 'Date'])
+    #areaConsumption.reset_index(inplace=True)
+    #areaConsumption = areaConsumption[areaConsumption['Date'].apply(lambda x: x.month)==1].set_index(
+        #['AREAS', 'Date'])
     #######
 
     ## Flex parameters
@@ -357,9 +357,9 @@ def run_model_multinode(year,bati_hyp='ref',reindus=True,mix='nuclear_plus',
     labour_ratio = labour_ratio.set_index(["AREAS","Date", "FLEX_CONSUM"])
 
     ####### Test zone
-    labour_ratio.reset_index(inplace=True)
-    labour_ratio = labour_ratio[labour_ratio['Date'].apply(lambda x: x.month)<=2].set_index(
-        ['AREAS', 'Date', 'FLEX_CONSUM'])
+    #labour_ratio.reset_index(inplace=True)
+    #labour_ratio = labour_ratio[labour_ratio['Date'].apply(lambda x: x.month)==1].set_index(
+        #['AREAS', 'Date', 'FLEX_CONSUM'])
     #######
 
     ## Last but not least... exchange parameters
@@ -383,21 +383,21 @@ def run_model_multinode(year,bati_hyp='ref',reindus=True,mix='nuclear_plus',
     solver = 'mosek'
     opt = SolverFactory(solver)
     results = opt.solve(model)
-    #Variables = getVariables_panda_indexed(model)
+    Variables = getVariables_panda_indexed(model, Belfort=True)
     t4 = time()
     print("Model solved in: {} s".format(t4 - t3))
 
     ## Saving model
     print("Saving results")
-    #with open('SujetsDAnalyses/Belfort/Results_multinode_' + tech_suffix + '_' + bati_hyp + '_' + d_reindus[reindus] + '.pickle',
-              #'wb') as f:
-        #pickle.dump(Variables, f, protocol=pickle.HIGHEST_PROTOCOL)
+    with open('SujetsDAnalyses/Belfort/Results_multinode_' + tech_suffix + '_' + bati_hyp + '_' + d_reindus[reindus] + '.pickle',
+              'wb') as f:
+        pickle.dump(Variables, f, protocol=pickle.HIGHEST_PROTOCOL)
     t5 = time()
     print("Results were saved in: {} s".format(t5 - t4))
 
     print("Total timing: {} s".format(t5 - t1))
     print(model.capacity_Dvar.extract_values())
-    #print(Variables)
+    print(Variables)
 
-#run_model_multinode(2050,bati_hyp='ref',reindus=True,mix='nuclear_plus')
+run_model_multinode(2050,bati_hyp='ref',reindus=True,mix='nuclear_plus')
 

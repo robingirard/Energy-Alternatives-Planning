@@ -195,7 +195,7 @@ def getVariables_panda(model):
     return Variables;
 
 
-def getVariables_panda_indexed(model):
+def getVariables_panda_indexed(model,Belfort=False):
     """
     This function takes variables and return values in panda form
     :param model: pyomo model
@@ -213,21 +213,23 @@ def getVariables_panda_indexed(model):
             DIM = pd.DataFrame(VAL.index.tolist()).rename(columns=getSetNames(model,varobject.index_set())).reset_index(drop=True)
             VAL.reset_index(drop=True, inplace=True)
             Variables[str(v)]= pd.concat([DIM,VAL],axis=1,sort=False)
-            if ('exchange' in Variables[str(v)].columns)  :
-                Variables[str(v)].columns=['AREAS', 'AREAS1', 'TIMESTAMP', 'exchange']
-                Variables[str(v)].set_index(['AREAS', 'AREAS1', 'TIMESTAMP'])
-            else:
-                Variables[str(v)].set_index(DIM.columns.tolist())
+            if not Belfort:
+                if ('exchange' in Variables[str(v)].columns)  :
+                    Variables[str(v)].columns=['AREAS', 'AREAS1', 'TIMESTAMP', 'exchange']
+                    Variables[str(v)].set_index(['AREAS', 'AREAS1', 'TIMESTAMP'])
+                else:
+                    Variables[str(v)].set_index(DIM.columns.tolist())
         else:
             DIM= pd.DataFrame(VAL.index.tolist()).rename(columns=getSetNames(model,varobject.index_set())).reset_index(drop=True)
             VAL.reset_index(drop=True, inplace=True)
             Variables[str(v)]= pd.concat([DIM,VAL],axis=1,sort=False)
             Variables[str(v)]=Variables[str(v)].rename(columns={0:str(varobject.index_set())})
-            if ('exchange' in Variables[str(v)].columns):
-                Variables[str(v)].columns = ['AREAS', 'AREAS1', 'TIMESTAMP', 'exchange']
-                Variables[str(v)].set_index(['AREAS', 'AREAS1', 'TIMESTAMP'])
-            else:
-                Variables[str(v)].set_index(DIM.columns.tolist())
+            if not Belfort:
+                if ('exchange' in Variables[str(v)].columns):
+                    Variables[str(v)].columns = ['AREAS', 'AREAS1', 'TIMESTAMP', 'exchange']
+                    Variables[str(v)].set_index(['AREAS', 'AREAS1', 'TIMESTAMP'])
+                else:
+                    Variables[str(v)].set_index(DIM.columns.tolist())
     return Variables;
 
 

@@ -1143,7 +1143,7 @@ def GetElectricSystemModel_Belfort_MultiNode(areaConsumption, lossesRate, availa
 
     ### Storage constraints
 
-    # Storage max power constraint
+    # Storage max power capacity constraint
     def storagePower_in_rule(model, area, s_tech):  # INEQ forall s_tech
         return model.Pmax_in_Dvar[area, s_tech] <= model.p_max_in[area, s_tech]
 
@@ -1162,7 +1162,18 @@ def GetElectricSystemModel_Belfort_MultiNode(areaConsumption, lossesRate, availa
 
     model.storagePowerInOutCtr = Constraint(model.AREAS, model.STOCK_TECHNO, rule=storagePower_in_out_rule)
 
-    # Storage max capacity constraint
+    # Storage min power capcity constraint
+    def storagePower_in_min_rule(model, area, s_tech):  # INEQ forall s_tech
+        return model.Pmax_in_Dvar[area, s_tech] >= model.p_min_in[area, s_tech]
+
+    model.storagePowerInMinCtr = Constraint(model.AREAS, model.STOCK_TECHNO, rule=storagePower_in_min_rule)
+
+    def storagePower_out_min_rule(model, area, s_tech):  # INEQ forall s_tech
+        return model.Pmax_out_Dvar[area, s_tech] >= model.p_min_out[area, s_tech]
+
+    model.storagePowerOutMinCtr = Constraint(model.AREAS, model.STOCK_TECHNO, rule=storagePower_out_min_rule)
+
+    # Storage max energy capacity constraint
     def storageCapacity_rule(model, area, s_tech):  # INEQ forall s_tech
         if model.h_max[area, s_tech] > 0:
             return model.Cmax_Pvar[area, s_tech] <= model.h_max[area, s_tech] * model.Pmax_in_Dvar[area, s_tech] * model.efficiency_in[
