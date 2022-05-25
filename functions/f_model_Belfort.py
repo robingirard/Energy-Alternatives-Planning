@@ -1256,7 +1256,7 @@ def GetElectricSystemModel_Belfort_MultiNode(areaConsumption, lossesRate, availa
 
     # exchange equilibrium constraint
     def Exchange_eq_rule(model, area1, area2,t):
-        return model.exchange_Pvar[area1,area2,t]==model.exchange_Pvar[area2,area1,t]
+        return model.exchange_Pvar[area1,area2,t]==-model.exchange_Pvar[area2,area1,t]
 
     model.ExchangeEqCtr = Constraint(model.AREAS, model.AREAS, model.TIME, rule=Exchange_eq_rule)
 
