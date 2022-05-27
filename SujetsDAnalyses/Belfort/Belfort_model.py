@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 import warnings
-warnings.filterwarnings("ignore")
+#warnings.filterwarnings("ignore")
 
 import pandas as pd
 import pickle
@@ -30,7 +30,7 @@ def labour_ratio_cost(df):  # higher labour costs at night
     else:
         return 1.3
 
-def run_model(year,bati_hyp='ref',reindus=True,nuc='plus'):
+def run_model(year,bati_hyp='ref',reindus='reindus',nuc='plus'):
     t1=time()
     print("Loading parameters")
     if year==2030:
@@ -65,8 +65,8 @@ def run_model(year,bati_hyp='ref',reindus=True,nuc='plus'):
     availabilityFactor=availabilityFactor.reset_index().melt(id_vars=['Date'],var_name="TECHNOLOGIES",value_name='availabilityFactor').set_index(['Date','TECHNOLOGIES'])
 
     ## Consumption
-    d_reindus={True:'reindus',False:'no_reindus'}
-    conso_suffix=str(year)+'_'+d_reindus[reindus]+'_'+bati_hyp
+    #d_reindus={True:'reindus',False:'no_reindus'}
+    conso_suffix=str(year)+'_'+reindus+'_'+bati_hyp
     try:
         areaConsumption=pd.read_csv(Input_folder+"Conso_model/Loads/Conso_"+conso_suffix+".csv",decimal='.',sep=';',parse_dates=['Date']).set_index('Date')
     except:
@@ -118,7 +118,7 @@ def run_model(year,bati_hyp='ref',reindus=True,nuc='plus'):
 
     ## Saving model
     print("Saving results")
-    with open('SujetsDAnalyses/Belfort/Results_'+tech_suffix+'_'+bati_hyp+'_'+d_reindus[reindus]+'.pickle', 'wb') as f:
+    with open('SujetsDAnalyses/Belfort/Results_'+tech_suffix+'_'+bati_hyp+'_'+reindus+'.pickle', 'wb') as f:
         pickle.dump(Variables, f, protocol=pickle.HIGHEST_PROTOCOL)
     t5=time()
     print("Results were saved in: {} s".format(t5 - t4))
@@ -126,7 +126,7 @@ def run_model(year,bati_hyp='ref',reindus=True,nuc='plus'):
     print("Total timing: {} s".format(t5 - t1))
     #print(Variables)
 
-def run_model_H2(year,bati_hyp='ref',reindus=True,mix='nuclear_plus'):
+def run_model_H2(year,bati_hyp='ref',reindus='reindus',mix='nuclear_plus'):
     t1=time()
     tech_suffix=str(year)+'_'+mix
 
@@ -151,8 +151,8 @@ def run_model_H2(year,bati_hyp='ref',reindus=True,mix='nuclear_plus'):
     availabilityFactor=availabilityFactor.reset_index().melt(id_vars=['Date'],var_name="TECHNOLOGIES",value_name='availabilityFactor').set_index(['Date','TECHNOLOGIES'])
 
     ## Consumption
-    d_reindus={True:'reindus',False:'no_reindus'}
-    conso_suffix=str(year)+'_'+d_reindus[reindus]+'_'+bati_hyp
+    #d_reindus={True:'reindus',False:'no_reindus'}
+    conso_suffix=str(year)+'_'+reindus+'_'+bati_hyp
     try:
         areaConsumption=pd.read_csv(Input_folder+"Conso_model/Loads/Conso_"+conso_suffix+".csv",decimal='.',sep=';',parse_dates=['Date']).set_index('Date')
     except:
@@ -208,7 +208,7 @@ def run_model_H2(year,bati_hyp='ref',reindus=True,mix='nuclear_plus'):
 
     ## Saving model
     print("Saving results")
-    with open('SujetsDAnalyses/Belfort/Results_'+tech_suffix+'_'+bati_hyp+'_'+d_reindus[reindus]+'.pickle', 'wb') as f:
+    with open('SujetsDAnalyses/Belfort/Results_'+tech_suffix+'_'+bati_hyp+'_'+reindus+'.pickle', 'wb') as f:
         pickle.dump(Variables, f, protocol=pickle.HIGHEST_PROTOCOL)
     t5=time()
     print("Results were saved in: {} s".format(t5 - t4))
@@ -225,7 +225,7 @@ def run_model_H2(year,bati_hyp='ref',reindus=True,mix='nuclear_plus'):
                     #run_model_H2(year, bati_hyp, reindus, mix)
 
 
-def run_model_multinode(year,bati_hyp='ref',reindus=True,mix='nuclear_plus',
+def run_model_multinode(year,bati_hyp='ref',reindus='reindus',mix='nuclear_plus',
                         L_areas=['BE','CH','DE','ES','GB','IT']):
     t1=time()
     tech_suffix = str(year) + '_' + mix
@@ -286,12 +286,12 @@ def run_model_multinode(year,bati_hyp='ref',reindus=True,mix='nuclear_plus',
     #availabilityFactor.reset_index(inplace=True)
     #availabilityFactor=availabilityFactor[availabilityFactor['Date'].apply(lambda x: x.month)==1].set_index(
         #['AREAS','Date', 'TECHNOLOGIES'])
-    #availabilityFactor['availabilityFactor']=2*availabilityFactor['availabilityFactor']
+    #availabilityFactor['availabilityFactor']=availabilityFactor['availabilityFactor']
     ########
 
     ## Consumption
-    d_reindus = {True: 'reindus', False: 'no_reindus'}
-    conso_suffix = str(year) + '_' + d_reindus[reindus] + '_' + bati_hyp
+    #d_reindus = {True: 'reindus', False: 'no_reindus'}
+    conso_suffix = str(year) + '_' + reindus + '_' + bati_hyp
     areaConsumption_FR = pd.read_csv(Input_folder + "Conso_model/Loads/Conso_" + conso_suffix + ".csv", decimal='.',
                                       sep=';', parse_dates=['Date'])
     areaConsumption_FR['AREAS']='FR'
@@ -389,7 +389,7 @@ def run_model_multinode(year,bati_hyp='ref',reindus=True,mix='nuclear_plus',
 
     ## Saving model
     print("Saving results")
-    with open('SujetsDAnalyses/Belfort/Results_multinode_' + tech_suffix + '_' + bati_hyp + '_' + d_reindus[reindus] + '.pickle',
+    with open('SujetsDAnalyses/Belfort/Results_multinode_' + tech_suffix + '_' + bati_hyp + '_' + reindus + '.pickle',
               'wb') as f:
         pickle.dump(Variables, f, protocol=pickle.HIGHEST_PROTOCOL)
     t5 = time()
@@ -399,5 +399,5 @@ def run_model_multinode(year,bati_hyp='ref',reindus=True,mix='nuclear_plus',
     #print(model.capacity_Dvar.extract_values())
     #print(Variables)
 
-run_model_multinode(2050,bati_hyp='ref',reindus=True,mix='nuclear_plus')
+run_model_multinode(2050,bati_hyp='ref',reindus='UNIDEN',mix='nuclear_plus')
 

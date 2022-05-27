@@ -290,16 +290,15 @@ def ComplexProfile2Consumption_2(Profile_df,
         pivot(index=TimeName, columns=GroupName, values=ConsumptionName)
     # cte=(TemperatureThreshold-TemperatureMinimum)
 
-def colReindus(col,reindus=False,industryName='Industrie hors metallurgie',steelName='Metallurgie',
-                       reindusName='reindustrialisation'):
-    if reindus and col in [industryName,steelName]:
-        return col+' '+reindusName
+d_reindus={'reindus':' reindustrialisation','no_reindus':'','UNIDEN':' UNIDEN'}
+def colReindus(col,reindus='reindus',industryName='Industrie hors metallurgie',steelName='Metallurgie'):
+    if col in [industryName,steelName]:
+        return col+d_reindus[reindus]
     else:
         return col
 
-def ProjectionConsoNTS(Conso_profile_df,Projections_df,year,reindus=True,
-                       industryName='Industrie hors metallurgie',steelName='Metallurgie',
-                       reindusName='reindustrialisation'):
+def ProjectionConsoNTS(Conso_profile_df,Projections_df,year,reindus='reindus',
+                       industryName='Industrie hors metallurgie',steelName='Metallurgie'):
     '''
     Projette la consommation sectorisée.avec des coefficients pour les années futures.
 
@@ -317,18 +316,18 @@ def ProjectionConsoNTS(Conso_profile_df,Projections_df,year,reindus=True,
     L_years=list(Projections_df.index)
     if year<=L_years[0]:
         for col in L_cols:
-            col_proj=colReindus(col,reindus,industryName,steelName,reindusName)
+            col_proj=colReindus(col,reindus,industryName,steelName)
             Conso_profile_new_df[col]=Projections_df.loc[L_years[0],col_proj]*Conso_profile_new_df[col]
     elif year>=L_years[-1]:
         for col in L_cols:
-            col_proj = colReindus(col, reindus, industryName, steelName, reindusName)
+            col_proj = colReindus(col, reindus, industryName, steelName)
             Conso_profile_new_df[col] = Projections_df.loc[L_years[-1], col_proj] * Conso_profile_new_df[col]
     else:
         i=0
         while i<len(L_years) and year>=L_years[i]:
             i+=1
         for col in L_cols:
-            col_proj = colReindus(col, reindus, industryName, steelName, reindusName)
+            col_proj = colReindus(col, reindus, industryName, steelName)
             Conso_profile_new_df[col] = (Projections_df.loc[L_years[i-1], col_proj]+(year-L_years[i-1])/(L_years[i]-L_years[i-1])*(Projections_df.loc[L_years[i], col_proj]-Projections_df.loc[L_years[i-1], col_proj])) * Conso_profile_new_df[col]
 
     Conso_profile_new_df=Conso_profile_new_df.assign(Total=0)
@@ -336,7 +335,7 @@ def ProjectionConsoNTS(Conso_profile_df,Projections_df,year,reindus=True,
         if col!=steelName:
             Conso_profile_new_df["Total"]+=Conso_profile_new_df[col]
     Conso_profile_new_df=Conso_profile_new_df.rename(columns={"Total":"Consommation hors metallurgie"})
-    return Conso_profile_new_df[["Consommation hors metallurgie",steelName]]
+    return Conso_profile_new_df[["Consommation hors metallurgie",steelName]],Conso_profile_new_df[L_cols]
 
 def COP_air_eau(T,year,COP_coeffs_air_eau=[4.8e-4,7e-2,2.26],
                 efficiency_gain=0.01):
@@ -719,8 +718,8 @@ def ConsoVE(Temperature_df,N_VP_df,N_VUL_df,N_PL_df,N_bus_df,N_car_df,Profil_VE_
     Temperature_new_df = Temperature_new_df.reset_index().set_index(TimeName).sort_index()
     return Temperature_new_df[["Conso_VE"]],E_H2
 
-def ConsoH2(Conso_H2_df,year,reindus=True,
-            refName='Reference',reindusName='Reindustrialisation'):
+def ConsoH2(Conso_H2_df,year,reindus='reindus',
+            refName='Reference',reindusName='Reindustrialisation',UNIDENName='UNIDEN'):
     '''
     Returns hydrogen consumption, vehicles not included.
 
@@ -731,10 +730,12 @@ def ConsoH2(Conso_H2_df,year,reindus=True,
     :param reindusName:
     :return: Result in MWh
     '''
-    if reindus:
+    if reindus=='reindus':
         name=reindusName
-    else:
+    elif reindus=='no_reindus':
         name=refName
+    else:
+        name=UNIDENName
 
     L_years = list(Conso_H2_df.index)
     if year <= L_years[0]:
