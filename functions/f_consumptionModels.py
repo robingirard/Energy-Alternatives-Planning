@@ -43,7 +43,7 @@ def Decomposeconso2(data_df,T0=15,T1=20,TemperatureName='Temperature',
                     ConsumptionName='Consumption',TimeName='Date'):
     '''
     Function decomposing the consumption into thermosensitive and non-thermosensitive part
-    taking into account air condition in summer.
+    taking into account air condition in summer. Computes the thermosensitivity hourly.
 
     Parameters
     ----------
@@ -90,6 +90,39 @@ def Decomposeconso2(data_df,T0=15,T1=20,TemperatureName='Temperature',
         ConsoSeparee_df.loc[indexesSummerHour,'NTS_C']=dataSummerHour_df.loc[:, ConsumptionName]-ConsoSeparee_df.TSS_C.loc[indexesSummerHour]
 
     return (ConsoSeparee_df[['NTS_C','TSW_C','TSS_C']], Thermosensitivity_winter,Thermosensitivity_summer)
+
+def Decomposeconso3(Temp_df,Conso_df,T0=15,T1=20,TemperatureName='Temperature',
+                    ConsumptionName='Consommation',TimeName='Date'):
+    '''
+    Function decomposing the consumption into thermosensitive and non-thermosensitive part
+    taking into account air condition in summer. Computes the thermosensitivity on average (not hourly).
+
+    Parameters
+    ----------
+    Temp_df : Temperature dataframe.
+    Conso_df : Consumption dataframe.
+    T0 : float, optional
+        Threshold temperature for heating in winter. The default is 15.
+    T1 : TYPE, optional
+        Threshold temperature for air condition in summer. The default is 20.
+    TemperatureName : str, optional
+        The default is 'Temperature'.
+    ConsumptionName : str, optional
+        The default is 'Consumption'.
+    TimeName : str, optional
+        The default is 'Date'.
+
+    Returns
+    -------
+    Thermosensitivity in winter and in summer.
+    '''
+    indexWinter=(Temp_df[TemperatureName]<=T0)
+    indexSummer=(Temp_df[TemperatureName]>=T1)
+    lrw=linear_model.LinearRegression().fit(Temp_df[indexWinter][[TemperatureName]],
+                                            Conso_df.loc[indexWinter,ConsumptionName])
+    lrs = linear_model.LinearRegression().fit(Temp_df[indexSummer][[TemperatureName]],
+                                              Conso_df.loc[indexSummer, ConsumptionName])
+    return lrw.coef_[0], lrs.coef_[0]
 
 #ConsoSeparee_df=ConsoTempeYear_decomposed_df
 def Recompose(ConsoSeparee_df,Thermosensibilite,Newdata_df=-1, TemperatureThreshold=14,TemperatureName='Temperature',ConsumptionName='Consumption',TimeName='Date'):

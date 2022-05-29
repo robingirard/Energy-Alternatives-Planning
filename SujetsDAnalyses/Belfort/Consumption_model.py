@@ -148,6 +148,7 @@ for year in [2030,2040,2050,2060]:
             if year==2050:
                 fig = MyStackedPlotly(y_df=Conso_projected_df)
                 plotly.offline.plot(fig, filename=InputFolder+'Loads/Conso_plot_2050_'+reindus+'_'+bati_hyp+'.html')
+            if year==2050 or reindus=='reindus':
                 Conso_detailed_df.to_csv(InputFolder+"Loads/Conso_detailed_"+str(year)+"_"+reindus+"_"+bati_hyp+".csv", sep=";", decimal=".")
 
             Conso_projected_df.to_csv(InputFolder+"Loads/Conso_"+str(year)+"_"+reindus+"_"+bati_hyp+".csv", sep=";", decimal=".")
