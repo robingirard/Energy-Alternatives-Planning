@@ -40,7 +40,7 @@ def set_Planing_cost_OBJ(model):
             # multiple area and storage
             def ObjectiveFunction_rule(model):  # OBJ
                 return sum( model.energy[area, t, tech] * model.energyCost[area, tech] +\
-                            #+ model.margvarCost[area, tech] * model.energy[area, t, tech] ** 2 +\
+                            # + model.margvarCost[area, tech] * model.energy[area, t, tech] ** 2 +\
                     model.capacityCosts[area, tech] for tech in model.TECHNOLOGIES for area in model.AREAS for t in model.Date) + \
                        sum( model.storageCosts[area, s_tech] for s_tech in model.STOCK_TECHNO for area in model.AREAS) + \
                        sum(model.consumption_power_cost[area,name] for name in model.FLEX_CONSUM for area in model.AREAS)+ \
@@ -50,8 +50,9 @@ def set_Planing_cost_OBJ(model):
         case[*my_set_names] if  allin(["FLEX_CONSUM", 'STOCK_TECHNO'], my_set_names):
             # single area with storage and Flex consumption
             def ObjectiveFunction_rule(model):  # OBJ
-                return sum(model.energy[t, tech] * model.energyCost[tech] + model.margvarCost[tech] * model.energy[
-                        t, tech] ** 2 + model.capacityCosts[tech] for tech in model.TECHNOLOGIES for t in model.Date) + sum(
+                return sum(model.energy[t, tech] * model.energyCost[tech] +\
+                           # model.margvarCost[tech] * model.energy[t, tech] ** 2 +\
+                           model.capacityCosts[tech] for tech in model.TECHNOLOGIES for t in model.Date) + sum(
                     model.storageCosts[s_tech] for s_tech in model.STOCK_TECHNO) + sum(model.consumption_power_cost[name] + \
                                                                                  sum(model.lab_cost[t, name] for t in
                                                                                      model.Date) \

@@ -104,15 +104,15 @@ Conso_H2_df=pd.read_csv(InputFolder+'Conso_H2.csv',sep=';',decimal=',').set_inde
 #plotly.offline.plot(fig, filename='Conso_2050.html')
 
 ## Generation of all scenario files
-#d_reindus={True:'reindus',False:'no_reindus'}
+d_reindus={True:'reindus',False:'no_reindus'}
 
 for year in [2030,2040,2050,2060]:
     Temp_df=Temp_2019_df.loc[:,["Temperature"]]+(year-2019)*DeltaT_warming_year
     Losses_df=Losses(Temp_df)
     print("\nModel consumption "+str(year))
     for bati_hyp in ['ref','SNBC']:
-        for reindus in ['no_reindus','reindus','UNIDEN']:
-            Conso_projected_df, Conso_detailed_df = ProjectionConsoNTS(NTS_profil_df, Projections_df,year, reindus)
+        for reindus in [True,False]:
+            Conso_projected_df = ProjectionConsoNTS(NTS_profil_df, Projections_df,year, reindus)
             if bati_hyp=='ref':
                 Conso_TS_heat_df = ConsoHeat(Temp_df, Thermosensitivity_df,
                                          Energy_houses_df, Energy_apartments_df, Energy_offices_df, Part_PAC_RCU_df,
@@ -137,23 +137,13 @@ for year in [2030,2040,2050,2060]:
             Conso_projected_df["Conso_H2"]=E_H2/8760
             Conso_projected_df["Taux_pertes"]=Losses_df["Taux_pertes"]
 
-            Conso_detailed_df["Conso_TS_heat"]=Conso_TS_heat_df["Conso_TS_heat"]
-            Conso_detailed_df["Conso_TS_air_con"] = Conso_TS_air_con_df["Conso_TS_air_con"]
-            Conso_detailed_df["Conso_ECS"]=Conso_ECS_df["Conso_ECS"]
-            Conso_detailed_df["Conso_ECS"] = Conso_VE_df["Conso_VE"]
-            Conso_detailed_df["Conso_H2"] = E_H2 / 8760
-            Conso_detailed_df["Taux_pertes"] = Losses_df["Taux_pertes"]
-
-
             if year==2050:
                 fig = MyStackedPlotly(y_df=Conso_projected_df)
-                plotly.offline.plot(fig, filename=InputFolder+'Loads/Conso_plot_2050_'+reindus+'_'+bati_hyp+'.html')
-            if year==2050 or reindus=='reindus':
-                Conso_detailed_df.to_csv(InputFolder+"Loads/Conso_detailed_"+str(year)+"_"+reindus+"_"+bati_hyp+".csv", sep=";", decimal=".")
+                plotly.offline.plot(fig, filename=InputFolder+'Loads/Conso_plot_2050_'+d_reindus[reindus]+'_'+bati_hyp+'.html')
 
-            Conso_projected_df.to_csv(InputFolder+"Loads/Conso_"+str(year)+"_"+reindus+"_"+bati_hyp+".csv", sep=";", decimal=".")
+            Conso_projected_df.to_csv(InputFolder+"Loads/Conso_"+str(year)+"_"+d_reindus[reindus]+"_"+bati_hyp+".csv", sep=";", decimal=".")
             Conso_projected_df["Conso_Total"] =(1+Conso_projected_df["Taux_pertes"])*(Conso_projected_df["Consommation hors metallurgie"]+Conso_projected_df["Metallurgie"]+Conso_projected_df["Conso_VE"]+Conso_projected_df["Conso_H2"]/eta_electrolysis)
-            print(bati_hyp+" "+reindus)
+            print(bati_hyp+" "+d_reindus[reindus])
             print("Energy consumption (TWh): {}".format(Conso_projected_df["Conso_Total"].sum()/1E6))
             print("Peak demand (GW): {}".format(Conso_projected_df["Conso_Total"].max()/1E3))
 
