@@ -225,7 +225,7 @@ def run_model_H2(year,bati_hyp='ref',reindus='reindus',mix='nuclear_plus'):
                     #run_model_H2(year, bati_hyp, reindus, mix)
 
 
-def run_model_multinode(year,bati_hyp='ref',reindus='reindus',mix='nuclear_plus',
+def run_model_multinode(year,bati_hyp='ref',reindus='reindus',mix='nuclear_plus',ev_hyp='',no_stock_fr=False,no_new_intercos=False,
                         L_areas=['BE','CH','DE','ES','GB','IT']):
     t1=time()
     tech_suffix = str(year) + '_' + mix
@@ -240,7 +240,12 @@ def run_model_multinode(year,bati_hyp='ref',reindus='reindus',mix='nuclear_plus'
     TechParameters=pd.concat([TechParameters_FR,TechParameters_E])
 
     ## Storage parameters
-    StorageParameters = pd.read_csv(Input_folder + "Prod_model/Prod_Europe/Stock_technos_Europe_" + str(year) + ".csv", decimal=',',
+    if no_stock_fr:
+        StorageParameters = pd.read_csv(
+            Input_folder + "Prod_model/Prod_Europe/Stock_technos_Europe_no_stock_fr_" + str(year) + ".csv", decimal=',',
+            sep=';').set_index(["AREAS", "STOCK_TECHNO"])
+    else:
+        StorageParameters = pd.read_csv(Input_folder + "Prod_model/Prod_Europe/Stock_technos_Europe_" + str(year) + ".csv", decimal=',',
                                     sep=';').set_index(["AREAS","STOCK_TECHNO"])
 
     ## Availability
@@ -291,7 +296,7 @@ def run_model_multinode(year,bati_hyp='ref',reindus='reindus',mix='nuclear_plus'
 
     ## Consumption
     #d_reindus = {True: 'reindus', False: 'no_reindus'}
-    conso_suffix = str(year) + '_' + reindus + '_' + bati_hyp
+    conso_suffix = str(year) + '_' + reindus + '_' + bati_hyp + ev_hyp
     areaConsumption_FR = pd.read_csv(Input_folder + "Conso_model/Loads/Conso_" + conso_suffix + ".csv", decimal='.',
                                       sep=';', parse_dates=['Date'])
     areaConsumption_FR['AREAS']='FR'
@@ -363,8 +368,12 @@ def run_model_multinode(year,bati_hyp='ref',reindus='reindus',mix='nuclear_plus'
     #######
 
     ## Last but not least... exchange parameters
-
-    ExchangeParameters= pd.read_csv(Input_folder + "Prod_model/Prod_Europe/Interconnexions.csv", decimal=',',
+    if no_new_intercos:
+        ExchangeParameters = pd.read_csv(Input_folder + "Prod_model/Prod_Europe/Interconnexions.csv", decimal=',',
+                                         sep=';').set_index(['AREA_from', 'AREA_to'])[['2022']].rename(
+            columns={'2022': 'Exchange'})
+    else:
+        ExchangeParameters= pd.read_csv(Input_folder + "Prod_model/Prod_Europe/Interconnexions.csv", decimal=',',
                                  sep=';').set_index(['AREA_from','AREA_to'])[[str(year)]].rename(columns={str(year):'Exchange'})
 
     t2 = time()
@@ -388,8 +397,10 @@ def run_model_multinode(year,bati_hyp='ref',reindus='reindus',mix='nuclear_plus'
     print("Model solved in: {} s".format(t4 - t3))
 
     ## Saving model
+    d_no_stock_fr={True:'_no_stock_fr',False:''}
+    d_no_new_intercos={True:'_no_new_intercos',False:''}
     print("Saving results")
-    with open('SujetsDAnalyses/Belfort/Results_multinode_' + tech_suffix + '_' + bati_hyp + '_' + reindus + '.pickle',
+    with open('SujetsDAnalyses/Belfort/Results_multinode_' + tech_suffix + '_' + bati_hyp + '_' + reindus + d_no_stock_fr[no_stock_fr]+ev_hyp+d_no_new_intercos[no_new_intercos]+'.pickle',
               'wb') as f:
         pickle.dump(Variables, f, protocol=pickle.HIGHEST_PROTOCOL)
     t5 = time()
@@ -399,7 +410,5 @@ def run_model_multinode(year,bati_hyp='ref',reindus='reindus',mix='nuclear_plus'
     #print(model.capacity_Dvar.extract_values())
     #print(Variables)
 
-run_model_multinode(2030,bati_hyp='SNBC',reindus='reindus',mix='nuclear_plus')
-run_model_multinode(2040,bati_hyp='SNBC',reindus='reindus',mix='nuclear_plus')
-run_model_multinode(2050,bati_hyp='SNBC',reindus='reindus',mix='nuclear_plus')
-run_model_multinode(2060,bati_hyp='SNBC',reindus='reindus',mix='nuclear_plus')
+run_model_H2(2060,bati_hyp='ref',reindus='reindus',mix='nuclear_plus_plus')
+run_model_multinode(2060,bati_hyp='ref',reindus='reindus',mix='nuclear_plus_plus',ev_hyp='',no_new_intercos=True)

@@ -73,6 +73,8 @@ N_VUL_df=pd.read_csv(InputFolder+'Vehicles/Motorisations_vul.csv',sep=';',decima
 N_PL_df=pd.read_csv(InputFolder+'Vehicles/Motorisations_pl.csv',sep=';',decimal='.').set_index(["Année"])
 N_bus_df=pd.read_csv(InputFolder+'Vehicles/Motorisations_bus.csv',sep=';',decimal='.').set_index(["Année"])
 N_car_df=pd.read_csv(InputFolder+'Vehicles/Motorisations_car.csv',sep=';',decimal='.').set_index(["Année"])
+N_VP_fit55_df=pd.read_csv(InputFolder+'Vehicles/Motorisations_vp_fit55.csv',sep=';',decimal='.').set_index(["Année"])
+N_VUL_fit55_df=pd.read_csv(InputFolder+'Vehicles/Motorisations_vul_fit55.csv',sep=';',decimal='.').set_index(["Année"])
 Profil_VE_df=pd.read_csv(InputFolder+'Vehicles/Profil_VE.csv',sep=';',decimal=',').set_index(["Jour","Heure"])
 Params_VE_df=pd.read_csv(InputFolder+'Vehicles/Params_VE.csv',sep=';',decimal=',').set_index(["Vehicule"])
 #Conso_VE_df,E_H2=ConsoVE(Temp_2019_df,N_VP_df,N_VUL_df,N_PL_df,N_bus_df,N_car_df,
@@ -112,50 +114,57 @@ for year in [2030,2040,2050,2060]:
     print("\nModel consumption "+str(year))
     for bati_hyp in ['ref','SNBC']:
         for reindus in ['no_reindus','reindus','UNIDEN']:
-            Conso_projected_df, Conso_detailed_df = ProjectionConsoNTS(NTS_profil_df, Projections_df,year, reindus)
-            if bati_hyp=='ref':
-                Conso_TS_heat_df = ConsoHeat(Temp_df, Thermosensitivity_df,
+            for ev_hyp in ['','_fit55']:
+                if ev_hyp=='_fit55' and (bati_hyp!='ref' or reindus!='reindus'):
+                    pass
+                else:
+                    Conso_projected_df, Conso_detailed_df = ProjectionConsoNTS(NTS_profil_df, Projections_df,year, reindus)
+                    if bati_hyp=='ref':
+                        Conso_TS_heat_df = ConsoHeat(Temp_df, Thermosensitivity_df,
                                          Energy_houses_df, Energy_apartments_df, Energy_offices_df, Part_PAC_RCU_df,
                                          year,'ref', T0)
-                Conso_TS_air_con_df = ConsoAirCon(Temp_df, Thermosensitivity_df, Energy_houses_df,
+                        Conso_TS_air_con_df = ConsoAirCon(Temp_df, Thermosensitivity_df, Energy_houses_df,
                                                   Energy_apartments_df, Energy_offices_df, year)
-            else:
-                Conso_TS_heat_df = ConsoHeat(Temp_df, Thermosensitivity_df,
+                    else:
+                        Conso_TS_heat_df = ConsoHeat(Temp_df, Thermosensitivity_df,
                                              Energy_houses_SNBC_df, Energy_apartments_SNBC_df, Energy_offices_df, Part_PAC_RCU_df,
                                              year,'SNBC', T0)
-                Conso_TS_air_con_df = ConsoAirCon(Temp_df, Thermosensitivity_df, Energy_houses_SNBC_df,
+                        Conso_TS_air_con_df = ConsoAirCon(Temp_df, Thermosensitivity_df, Energy_houses_SNBC_df,
                                                   Energy_apartments_SNBC_df, Energy_offices_df, year)
 
-            Conso_ECS_df = Conso_ECS(Temp_df, Profil_ECS_df, Projections_ECS_df,year)
-            Conso_VE_df,E_H2=ConsoVE(Temp_df,N_VP_df,N_VUL_df,N_PL_df,N_bus_df,N_car_df,
+                    Conso_ECS_df = Conso_ECS(Temp_df, Profil_ECS_df, Projections_ECS_df,year)
+                    if ev_hyp=='':
+                        Conso_VE_df,E_H2=ConsoVE(Temp_df,N_VP_df,N_VUL_df,N_PL_df,N_bus_df,N_car_df,
                                      Profil_VE_df,Params_VE_df,year)
-            E_H2 += ConsoH2(Conso_H2_df,year, reindus)
-            Conso_projected_df["Consommation hors metallurgie"]+=Conso_TS_heat_df["Conso_TS_heat"]\
-                +Conso_TS_air_con_df["Conso_TS_air_con"]+Conso_ECS_df["Conso_ECS"]
-            #Conso_projected_df.assign(Conso_VE=0,Conso_H2=0,Taux_pertes=0)
-            Conso_projected_df["Conso_VE"]=Conso_VE_df["Conso_VE"]
-            Conso_projected_df["Conso_H2"]=E_H2/8760
-            Conso_projected_df["Taux_pertes"]=Losses_df["Taux_pertes"]
+                    else:
+                        Conso_VE_df, E_H2 = ConsoVE(Temp_df, N_VP_fit55_df, N_VUL_fit55_df, N_PL_df, N_bus_df, N_car_df,
+                                                    Profil_VE_df, Params_VE_df, year)
+                    E_H2 += ConsoH2(Conso_H2_df,year, reindus)
+                    Conso_projected_df["Consommation hors metallurgie"]+=Conso_TS_heat_df["Conso_TS_heat"]\
+                        +Conso_TS_air_con_df["Conso_TS_air_con"]+Conso_ECS_df["Conso_ECS"]
+                    #Conso_projected_df.assign(Conso_VE=0,Conso_H2=0,Taux_pertes=0)
+                    Conso_projected_df["Conso_VE"]=Conso_VE_df["Conso_VE"]
+                    Conso_projected_df["Conso_H2"]=E_H2/8760
+                    Conso_projected_df["Taux_pertes"]=Losses_df["Taux_pertes"]
 
-            Conso_detailed_df["Conso_TS_heat"]=Conso_TS_heat_df["Conso_TS_heat"]
-            Conso_detailed_df["Conso_TS_air_con"] = Conso_TS_air_con_df["Conso_TS_air_con"]
-            Conso_detailed_df["Conso_ECS"]=Conso_ECS_df["Conso_ECS"]
-            Conso_detailed_df["Conso_ECS"] = Conso_VE_df["Conso_VE"]
-            Conso_detailed_df["Conso_H2"] = E_H2 / 8760
-            Conso_detailed_df["Taux_pertes"] = Losses_df["Taux_pertes"]
+                    Conso_detailed_df["Conso_TS_heat"]=Conso_TS_heat_df["Conso_TS_heat"]
+                    Conso_detailed_df["Conso_TS_air_con"] = Conso_TS_air_con_df["Conso_TS_air_con"]
+                    Conso_detailed_df["Conso_ECS"]=Conso_ECS_df["Conso_ECS"]
+                    Conso_detailed_df["Conso_VE"] = Conso_VE_df["Conso_VE"]
+                    Conso_detailed_df["Conso_H2"] = E_H2 / 8760
+                    Conso_detailed_df["Taux_pertes"] = Losses_df["Taux_pertes"]
 
 
-            if year==2050:
-                fig = MyStackedPlotly(y_df=Conso_projected_df)
-                plotly.offline.plot(fig, filename=InputFolder+'Loads/Conso_plot_2050_'+reindus+'_'+bati_hyp+'.html')
-            if year==2050 or reindus=='reindus':
-                Conso_detailed_df.to_csv(InputFolder+"Loads/Conso_detailed_"+str(year)+"_"+reindus+"_"+bati_hyp+".csv", sep=";", decimal=".")
+                    #if year==2050:
+                        #fig = MyStackedPlotly(y_df=Conso_projected_df)
+                        #plotly.offline.plot(fig, filename=InputFolder+'Loads/Conso_plot_2050_'+reindus+'_'+bati_hyp+'.html')
+                    Conso_detailed_df.to_csv(InputFolder+"Loads/Conso_detailed_"+str(year)+"_"+reindus+"_"+bati_hyp+ev_hyp+".csv", sep=";", decimal=".")
 
-            Conso_projected_df.to_csv(InputFolder+"Loads/Conso_"+str(year)+"_"+reindus+"_"+bati_hyp+".csv", sep=";", decimal=".")
-            Conso_projected_df["Conso_Total"] =(1+Conso_projected_df["Taux_pertes"])*(Conso_projected_df["Consommation hors metallurgie"]+Conso_projected_df["Metallurgie"]+Conso_projected_df["Conso_VE"]+Conso_projected_df["Conso_H2"]/eta_electrolysis)
-            print(bati_hyp+" "+reindus)
-            print("Energy consumption (TWh): {}".format(Conso_projected_df["Conso_Total"].sum()/1E6))
-            print("Peak demand (GW): {}".format(Conso_projected_df["Conso_Total"].max()/1E3))
+                    Conso_projected_df.to_csv(InputFolder+"Loads/Conso_"+str(year)+"_"+reindus+"_"+bati_hyp+ev_hyp+".csv", sep=";", decimal=".")
+                    Conso_projected_df["Conso_Total"] =(1+Conso_projected_df["Taux_pertes"])*(Conso_projected_df["Consommation hors metallurgie"]+Conso_projected_df["Metallurgie"]+Conso_projected_df["Conso_VE"]+Conso_projected_df["Conso_H2"]/eta_electrolysis)
+                    print(bati_hyp+" "+reindus+" "+ev_hyp)
+                    print("Energy consumption (TWh): {}".format(Conso_projected_df["Conso_Total"].sum()/1E6))
+                    print("Peak demand (GW): {}".format(Conso_projected_df["Conso_Total"].max()/1E3))
 
 
 
