@@ -76,9 +76,19 @@ def bisextile(year):
         return 8760
 
 
-def main_future(year,weather_year,RE_ambition="scenarios",number_of_sub_techs=1,error_deactivation=False,fr_flexibility=False,fr_flex_consum={'conso':{"nbVE":0,"steel_twh":0,"H2_twh":0},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":0}}):
+def main_future(year,weather_year,RE_ambition="scenarios",no_coal_mini=False,forced_reach=False,ctaxrise=0,gas_price_rise=1,coal_price_rise=1,number_of_sub_techs=1,error_deactivation=False,fr_flexibility=False,fr_flex_consum={'conso':{"nbVE":0,"steel_twh":0,"H2_twh":0},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":0}}):
     start_time = datetime.now()
-    print("Simulation for "+str(year)+" with weather for "+str(weather_year)+" and RE ambition at "+RE_ambition)
+    noc=""
+    if no_coal_mini:
+        noc=" with no coal mini"
+
+    if forced_reach:
+        print("Simulation for "+str(year)+" with weather for "+str(
+            weather_year)+", RE (forced) ambition at "+RE_ambition+noc+", carbon taxe rise of "+str(ctaxrise)+"% and gas and coal price rise coefs of "+str(gas_price_rise)+" and "+str(coal_price_rise) )
+    else:
+        print("Simulation for " + str(year) + " with weather for " + str(
+            weather_year) + ", RE ambition at " + RE_ambition +noc+ " and carbon taxe rise of " + str(ctaxrise) + "% and gas and coal price rise coefs of "+str(gas_price_rise)+" and "+str(coal_price_rise))
+
     if year in [2030]:
         # region Solver and data location definition
         InputFolder = 'Data/input/Europe 7 noeuds/'+str(year)+"/"
@@ -124,6 +134,7 @@ def main_future(year,weather_year,RE_ambition="scenarios",number_of_sub_techs=1,
     else:
         print("Wrong RE_ambition parameter (select between low, high, medium and scenarios (scenarios considers min-max capacities given by countries' scenarios for every technology, not only RE")
         return 0
+
     # print(TechParameters)
     #Readjustment of ramps
     # TechParameters.loc[TechParameters["TECHNOLOGIES"].isin(["OldNuke","NewNuke"]),"RampConstraintPlus"]=0.25
@@ -137,9 +148,29 @@ def main_future(year,weather_year,RE_ambition="scenarios",number_of_sub_techs=1,
     TechParameters.loc[TechParameters.TECHNOLOGIES == "curtailment", "maxCapacity"] = 5000
     TechParameters.loc[TechParameters.TECHNOLOGIES == "curtailment", "EnergyNbhourCap"] = 20
 
+    #Marginal cost adjustment
+    ctax_ini={2030:30,2040:55,2050:90}
+    tech_emissions={"CCG":0.364,"TAC":0.502,"Coal":0.740,"Lignite":0.889}
+    fossil_factor={"CCG":gas_price_rise,"TAC":gas_price_rise,"Coal":coal_price_rise,"Lignite":1}
+    ratio=(ctaxrise)/100
+    # print(TechParameters.loc[TechParameters.TECHNOLOGIES == "CCG", "energyCost"])
+    for tech in tech_emissions.keys():
+        TechParameters.loc[TechParameters.TECHNOLOGIES==tech,"energyCost"]=(TechParameters.loc[TechParameters.TECHNOLOGIES==tech,"energyCost"].astype(float)-ctax_ini[year]*tech_emissions[tech])*fossil_factor[tech]+\
+            ctax_ini[year]*tech_emissions[tech]*(1+ratio)
+    # print(TechParameters.loc[TechParameters.TECHNOLOGIES == "CCG", "energyCost"])
     techs=TechParameters.TECHNOLOGIES.unique()
     areas=TechParameters.AREAS.unique()
-    TechParameters.set_index(["AREAS","TECHNOLOGIES"],inplace=True)
+
+    #If RE ambitions are forced minCapacity=maxCapacity for Solar and Wind
+    if forced_reach:
+        for tech in ["Solar","WindOnShore","WindOffShore"]:
+            TechParameters.loc[TechParameters.TECHNOLOGIES==tech,"minCapacity"]=TechParameters.loc[TechParameters.TECHNOLOGIES==tech,"maxCapacity"]
+
+    #If no coal as min capacity
+    if no_coal_mini:
+        TechParameters.loc[TechParameters.TECHNOLOGIES=="Coal",'minCapacity']=0
+        TechParameters.loc[TechParameters.TECHNOLOGIES == "Lignite", 'minCapacity'] = 0
+    TechParameters.set_index(["AREAS", "TECHNOLOGIES"], inplace=True)
 
     ##
     areaConsumption = pd.read_csv(InputFolder+str(year)+'_MultiNodeAreaConsumption_'+str(weather_year)+'_data_FR_no_H2_EV_Steel.csv',
@@ -318,13 +349,28 @@ def main_future(year,weather_year,RE_ambition="scenarios",number_of_sub_techs=1,
     print('\t Solved at {}'.format(end_time - start_time))
     Variables = getVariables_panda_indexed(model)
     # print(Variables)
+    fr = ""
+    if forced_reach:
+        fr = "forced"
+
+    coal = ""
+    if no_coal_mini:
+        coal = "_nocoal"
+
+    g_pr = ""
+    if gas_price_rise > 1:
+        g_pr = "_" + str(gas_price_rise) + "gpr"
+
+    c_pr = ""
+    if coal_price_rise > 1:
+        c_pr = "_" + str(coal_price_rise) + "cpr"
 
     if fr_flexibility:
-        with open('SujetsDAnalyses/Temp_results/'+str(year)+'_multinode_'+str(weather_year)+'_weather_'+RE_ambition+'RE_'+str(number_of_sub_techs)+'_sub_flex_'+str(fr_flex_consum['ratio']['VE_ratio'])+'_'+\
+        with open('SujetsDAnalyses/Temp_results/'+str(year)+'_multinode_'+str(weather_year)+'_weather_'+RE_ambition+'RE'+fr+'_ctaxrise'+str(ctaxrise)+g_pr+c_pr+coal+'_'+str(number_of_sub_techs)+'_sub_flex_'+str(fr_flex_consum['ratio']['VE_ratio'])+'_'+\
                   str(fr_flex_consum['ratio']['steel_ratio'])+'_'+str(fr_flex_consum['ratio']['H2_ratio'])+'.pickle', 'wb') as f:
             pickle.dump(Variables, f,protocol=pickle.HIGHEST_PROTOCOL)
     else:
-        with open('SujetsDAnalyses/Temp_results/' + str(year) + '_multinode_' + str(weather_year) + '_weather_' +RE_ambition+'RE_'+ str(number_of_sub_techs) + '_sub.pickle', 'wb') as f:
+        with open('SujetsDAnalyses/Temp_results/' + str(year) + '_multinode_' + str(weather_year) + '_weather_' +RE_ambition+'RE'+fr+'_ctaxrise'+str(ctaxrise)+g_pr+c_pr+coal+'_'+ str(number_of_sub_techs) + '_sub.pickle', 'wb') as f:
             pickle.dump(Variables, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     end_time = datetime.now()
@@ -338,21 +384,80 @@ import time
 # main_future(year=2030,weather_year=2018,RE_ambition='scenarios',number_of_sub_techs=7,error_deactivation=False,fr_flexibility=True,fr_flex_consum={'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":1}})
 # time.sleep(15)
 # main_future(year=2030,weather_year=2018,number_of_sub_techs=7,error_deactivation=False,fr_flexibility=True,fr_flex_consum={'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0.15,"steel_ratio":0,"H2_ratio":0}})
-fr_flex_list=[{'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":0}},
-              {'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":1}},
-              {'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0.15,"steel_ratio":0,"H2_ratio":0}},
-              {'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0.15,"steel_ratio":0,"H2_ratio":1}}]
+fr_flex_list=[{'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":0}}]#,
+              # {'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":1}},
+              # {'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0.15,"steel_ratio":0,"H2_ratio":0}},
+              # {'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0.15,"steel_ratio":0,"H2_ratio":1}}]
+
+
+
+# for year in [2030]:
+#     for fr_flex_consum in fr_flex_list:
+#         for weather_year in [2017,2018,2019]:
+#             for forced_reach in [False, True]:
+#                 for no_coal_mini in [True, False]:
+#                     for ctax in [0, 100, 200,300]:
+#                         for gas_price_rise in [1,2,3,4]:
+#                             for coal_price_rise in [1,2,3]:
+#                                 for RE_ambition in ['scenarios','low','medium','high']:
+#                                     if RE_ambition=="scenarios":
+#                                         if forced_reach or no_coal_mini:
+#                                             pass
+#                                     fr=""
+#                                     if forced_reach:
+#                                         # print("forced")
+#                                         fr="forced"
+#                                     coal = ""
+#                                     if no_coal_mini:
+#                                         # print("no_coal")
+#                                         coal = "_nocoal"
+#                                     g_pr=""
+#                                     if gas_price_rise>1:
+#                                         g_pr="_"+str(gas_price_rise)+"gpr"
+#                                     c_pr = ""
+#                                     if coal_price_rise > 1:
+#                                         c_pr = "_" + str(coal_price_rise) + "cpr"
+#                                     if str(year)+'_multinode_'+str(weather_year)+'_weather_'+RE_ambition+'RE'+fr+'_ctaxrise'+str(ctax)+g_pr+coal+'_'+str(7)+'_sub_flex_'+str(fr_flex_consum['ratio']['VE_ratio'])+'_'+\
+#                                       str(fr_flex_consum['ratio']['steel_ratio'])+'_'+str(fr_flex_consum['ratio']['H2_ratio'])+'.pickle' in os.listdir('SujetsDAnalyses/Temp_results/'):
+#                                         print("Passed")
+#                                         pass
+#                                     else:
+#                                         main_future(year=year,weather_year=weather_year,RE_ambition=RE_ambition,forced_reach=forced_reach,gas_price_rise=gas_price_rise,coal_price_rise=coal_price_rise,no_coal_mini=no_coal_mini ,ctaxrise=ctax,
+#                                             number_of_sub_techs=7,error_deactivation=False,fr_flexibility=True,fr_flex_consum=fr_flex_consum)
+
 
 for year in [2030]:
     for fr_flex_consum in fr_flex_list:
-        for weather_year in [2017,2018,2019]:
-            for RE_ambition in ['low','medium','high','scenarios']:
-                if str(year)+'_multinode_'+str(weather_year)+'_weather_'+RE_ambition+'RE_'+str(7)+'_sub_flex_'+str(fr_flex_consum['ratio']['VE_ratio'])+'_'+\
-                  str(fr_flex_consum['ratio']['steel_ratio'])+'_'+str(fr_flex_consum['ratio']['H2_ratio'])+'.pickle' in os.listdir('SujetsDAnalyses/Temp_results/'):
-                    pass
-                else:
-                    main_future(year=year,weather_year=weather_year,RE_ambition=RE_ambition,
-                            number_of_sub_techs=7,error_deactivation=False,fr_flexibility=True,fr_flex_consum=fr_flex_consum)
+        for weather_year in [2017]:
+            for forced_reach in [False]:
+                for no_coal_mini in [True]:
+                    for ctax in [0, 100, 200,300]:
+                        for gas_price_rise in [3]:
+                            for coal_price_rise in [3]:
+                                for RE_ambition in ['scenarios','low']:
+                                    if RE_ambition=="scenarios":
+                                        if forced_reach or no_coal_mini:
+                                            pass
+                                    fr=""
+                                    if forced_reach:
+                                        # print("forced")
+                                        fr="forced"
+                                    coal = ""
+                                    if no_coal_mini:
+                                        # print("no_coal")
+                                        coal = "_nocoal"
+                                    g_pr=""
+                                    if gas_price_rise>1:
+                                        g_pr="_"+str(gas_price_rise)+"gpr"
+                                    c_pr = ""
+                                    if coal_price_rise > 1:
+                                        c_pr = "_" + str(coal_price_rise) + "cpr"
+                                    if str(year)+'_multinode_'+str(weather_year)+'_weather_'+RE_ambition+'RE'+fr+'_ctaxrise'+str(ctax)+g_pr+c_pr+coal+'_'+str(7)+'_sub_flex_'+str(fr_flex_consum['ratio']['VE_ratio'])+'_'+\
+                                      str(fr_flex_consum['ratio']['steel_ratio'])+'_'+str(fr_flex_consum['ratio']['H2_ratio'])+'.pickle' in os.listdir('SujetsDAnalyses/Temp_results/'):
+                                        print("Passed")
+                                        pass
+                                    else:
+                                        main_future(year=year,weather_year=weather_year,RE_ambition=RE_ambition,forced_reach=forced_reach,gas_price_rise=gas_price_rise,coal_price_rise=coal_price_rise,no_coal_mini=no_coal_mini ,ctaxrise=ctax,
+                                            number_of_sub_techs=7,error_deactivation=False,fr_flexibility=True,fr_flex_consum=fr_flex_consum)
 
 
-# main(2019)

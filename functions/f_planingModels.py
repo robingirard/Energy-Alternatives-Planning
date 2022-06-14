@@ -22,6 +22,7 @@ def GetElectricSystemModel_Planing(Parameters,Vars=None,EQs = {},verbose=False):
     # print(-1)
     model   =   Create_pyomo_model_sets_parameters(Parameters)# areaConsumption, availabilityFactor, TechParameters)
     # print(0)
+    Vars=None #todo j'ai rajouté ça ici pour voir si ça bug tj lorsqu'on lance plusieurs fois d'affiler
     if Vars == None:
         model = set_Operation_variables(model, verbose=verbose)
         model = set_Planing_variables(model, verbose=verbose)
@@ -30,6 +31,8 @@ def GetElectricSystemModel_Planing(Parameters,Vars=None,EQs = {},verbose=False):
     # print(1)
     #cost function
     model   =   set_Planing_base_cost_function(model)
+
+    EQs = {} #todo same
 
     if len(EQs)==0:
         model   =   set_Operation_Constraints_energyCapacityexchange(EQs,model)
