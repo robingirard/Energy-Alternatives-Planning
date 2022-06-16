@@ -5,6 +5,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import pandas as pd
+import psutil
 
 
 import pickle
@@ -75,7 +76,7 @@ def bisextile(year):
         return 8760
 
 
-def main(year,with_external_nodes=True,error_deactivation=False,fr_flexibility=False,fr_flex_consum={'conso':{"nbVE":0,"steel_twh":0,"H2_twh":0},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":0}}):
+def main(year,with_external_nodes=True,number_of_sub_techs=1,error_deactivation=False,fr_flexibility=False,fr_flex_consum={'conso':{"nbVE":0,"steel_twh":0,"H2_twh":0},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":0}}):
     start_time = datetime.now()
     print("Simulation for "+str(year))
     if year in range(2017,2020):
@@ -95,19 +96,27 @@ def main(year,with_external_nodes=True,error_deactivation=False,fr_flexibility=F
     else:
         myhost = ""
 
-    solver = 'mosek'  ## no need for solverpath with mosek.
-
-
+    solver = 'mosek' #'mosek'  ## no need for solverpath with mosek.
+    tee_value=True
+    # solver_path="ampl.mswin64/"+solver #when other solvers were tested
+    # print("Solver is "+solver)
+    solver_native_list=["mosek","glpk"]
     # endregion
 
 
 
     #### reading areaConsumption availabilityFactor and TechParameters CSV files
-    TechParameters = pd.read_csv(InputFolder+str(year)+'_Planing_MultiNode_TECHNOLOGIES_AREAS.csv',
-                                 decimal='.',comment="#")
+    TechParameters = pd.read_csv(InputFolder+str(year)+'_Planing_MultiNode_TECHNOLOGIES_AREAS.csv',decimal='.',comment="#")
+
     #Readjustment of ramps
     # TechParameters.loc[TechParameters["TECHNOLOGIES"].isin(["OldNuke","NewNuke"]),"RampConstraintPlus"]=0.25
     # TechParameters.loc[TechParameters["TECHNOLOGIES"].isin(["Coal","Biomass"]),"RampConstraintPlus"]=0.5
+
+    #Power capacity readjustment
+
+
+    techs=TechParameters.TECHNOLOGIES.unique()
+    areas=TechParameters.AREAS.unique()
     TechParameters.set_index(["AREAS","TECHNOLOGIES"],inplace=True)
     ##
     areaConsumption = pd.read_csv(InputFolder+str(year)+'_MultiNodeAreaConsumption.csv',
@@ -145,8 +154,33 @@ def main(year,with_external_nodes=True,error_deactivation=False,fr_flexibility=F
                                     decimal='.',comment="#",skiprows=0).set_index(["AREAS","STOCK_TECHNO"])
 
     #Marginal Cost at power=0 adjustment
-    TechParameters["energyCost"]=TechParameters["energyCost"]-TechParameters["margvarCost"]*TechParameters["minCapacity"]/2
+    # TechParameters["energyCost"]=TechParameters["energyCost"]-TechParameters["margvarCost"]*TechParameters["minCapacity"]/2
+    number_of_sub_techs= number_of_sub_techs#must be odd (impair)
+    n=(number_of_sub_techs-1)*2
+    step=1/(number_of_sub_techs+1)
+    n_list=np.arange(step,1,step).tolist()
+    for tech in techs:
+        for area in areas:
+            # print(TechParameters[TechParameters.index==(area,tech)])
+            if tech in ["OldNuke","NewNuke","Solar",'WindOnShore','WindOffShore','HydroRiver','HydroReservoir','curtailment']:
+                break
+            u=TechParameters[TechParameters.index==(area,tech)]
+            TechParameters.loc[(area, tech),"minCapacity"]=TechParameters.loc[(area, tech),"minCapacity"]/2
+            TechParameters.loc[(area, tech), "maxCapacity"] = TechParameters.loc[(area, tech), "maxCapacity"] / 2
 
+            for sub in n_list:
+                if sub!=0.5:
+                    v=u.reset_index().copy()
+                    # print(u25)
+                    v["TECHNOLOGIES"]=tech+str(sub)[2:]
+                    v["energyCost"]=v["energyCost"]+v["margvarCost"]*v["minCapacity"]*(sub-0.5)*2
+                    v["minCapacity"]=v["minCapacity"]/n
+                    v["maxCapacity"] = v["maxCapacity"] / n
+                    v.set_index(["AREAS","TECHNOLOGIES"],inplace=True)
+                    TechParameters=pd.concat([TechParameters,v])
+    # TechParameters.to_csv('test.csv')
+    # print(TechParameters)
+    # return 0
     #Add RampCtr2 to Nuke
     # TechParameters.reset_index(inplace=True)
     # TechParameters.loc[TechParameters.TECHNOLOGIES=="OldNuke","RampConstraintPlus2"] = 0.003
@@ -177,7 +211,7 @@ def main(year,with_external_nodes=True,error_deactivation=False,fr_flexibility=F
         ev_consumption.reset_index(inplace=True)
         ev_consumption.set_index("Date", inplace=True)
 
-        h2_Energy = fr_flex_consum["conso"]["H2_twh"] * 1000  ## H2 volume in GWh/year
+        h2_Energy = fr_flex_consum["conso"]["H2_twh"] * 1000000  ## H2 volume in MWh/year
         h2_Energy_flat_consumption = ev_consumption.Consumption * 0 + h2_Energy /  bisextile(year)
         to_flex_consumption = pd.concat([pd.DataFrame(
             {'to_flex_consumption': steel_consumption.Conso, 'FLEX_CONSUM': 'Steel',
@@ -221,6 +255,7 @@ def main(year,with_external_nodes=True,error_deactivation=False,fr_flexibility=F
         labour_ratio.set_index(["AREAS", "Date", "FLEX_CONSUM"], inplace=True)
     end_time = datetime.now()
     print('\t Model creation at {}'.format(end_time - start_time))
+
     if fr_flexibility:
         # print(to_flex_consumption.reset_index().FLEX_CONSUM.unique())
         # print(ConsoParameters_.reset_index().FLEX_CONSUM.unique())
@@ -245,11 +280,18 @@ def main(year,with_external_nodes=True,error_deactivation=False,fr_flexibility=F
     end_time = datetime.now()
     print('\t Start solving at {}'.format(end_time - start_time))
 
-    opt = SolverFactory(solver)
+
     # opt.options["InfUnbdInfo "] = 1
     # opt.options["ScaleFlag"] = -0.5
 
     # model.task.optimize()
+    if solver in solver_native_list:
+        opt = SolverFactory(solver)
+    else:
+        opt = SolverFactory(solver,executable=solver_path,tee=tee_value)#'C:/Program Files/Artelys/Knitro 13.0.1/knitroampl/knitroampl')
+    #To improve performances
+    # opt.options['Threads'] = int((psutil.cpu_count(logical=True) +
+    #                                  psutil.cpu_count(logical=False)) / 2)
     results=opt.solve(model)#,tee=True,options={"dparam.intpnt_tol_step_size":1.0e-10,"dparam.intpnt_tol_rel_gap": 1.0e-10,
                                                # "dparam.mio_tol_rel_gap": 1.0e-10})
 
@@ -258,10 +300,10 @@ def main(year,with_external_nodes=True,error_deactivation=False,fr_flexibility=F
     Variables = getVariables_panda_indexed(model)
     # print(Variables)
     if with_external_nodes:
-        with open('SujetsDAnalyses/'+str(year)+'_multinode_results_external.pickle', 'wb') as f:
+        with open('SujetsDAnalyses/'+str(year)+'_multinode_results_external_'+solver+'_'+str(number_of_sub_techs)+'_sub.pickle', 'wb') as f:
             pickle.dump(Variables, f,protocol=pickle.HIGHEST_PROTOCOL)
     else:
-        with open('SujetsDAnalyses/'+str(year)+'_multinode_results_no_external.pickle', 'wb') as f:
+        with open('SujetsDAnalyses/'+str(year)+'_multinode_results_no_external_'+solver+'_'+str(number_of_sub_techs)+'_sub.pickle', 'wb') as f:
             pickle.dump(Variables, f,protocol=pickle.HIGHEST_PROTOCOL)
 
     end_time = datetime.now()
@@ -269,7 +311,8 @@ def main(year,with_external_nodes=True,error_deactivation=False,fr_flexibility=F
 
 
 # main(2017)
-main(2018,with_external_nodes=True,error_deactivation=False,fr_flexibility=True,fr_flex_consum={'conso':{"nbVE":30,"steel_twh":0,"H2_twh":0},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":0}})
+# main(2018,with_external_nodes=True,number_of_sub_techs=7,error_deactivation=False,fr_flexibility=False,fr_flex_consum={'conso':{"nbVE":0,"steel_twh":0,"H2_twh":0},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":0}})
+main(2018,with_external_nodes=False,number_of_sub_techs=7,error_deactivation=False,fr_flexibility=False,fr_flex_consum={'conso':{"nbVE":0,"steel_twh":0,"H2_twh":0},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":0}})
 
 
 # main(2019)
