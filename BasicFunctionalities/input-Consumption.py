@@ -42,6 +42,8 @@ fig=MyStackedPlotly(y_df=ConsoTempeYear_decomposed_df[["NTS_C","TS_C"]],
 fig=fig.update_layout(title_text="Consommation (MWh)", xaxis_title="Date")
 plotly.offline.plot(fig, filename='file.html') ## offline
 #fig.show()
+#part thermosensible :
+ConsoTempeYear_decomposed_df.TS_C.sum()/ConsoTempeYear_df.sum()
 #endregion
 
 #region Thermal sensitivity model to change meteo
