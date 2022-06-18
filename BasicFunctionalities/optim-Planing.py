@@ -28,9 +28,9 @@ from functions.f_model_definition import *
 #endregion
 
 #region Solver and data location definition
-InputFolder='../Data/input/'
+InputFolder='Data/input/'
 solver= 'mosek' ## no need for solverpath with mosek.
-BaseSolverPath='../ampl_mswin64'#'/Users/robin.girard/Documents/Code/Packages/solvers/ampl_macosx64'
+BaseSolverPath='/Users/robin.girard/Documents/Code/Packages/solvers/ampl_macosx64'
 sys.path.append(BaseSolverPath)
 
 solvers= ['gurobi','knitro','cbc'] # 'glpk' is too slow 'cplex' and 'xpress' do not work
@@ -39,7 +39,7 @@ for solver in solvers : solverpath[solver]=BaseSolverPath+'/'+solver
 cplexPATH='/Applications/CPLEX_Studio1210/cplex/bin/x86-64_osx'
 sys.path.append(cplexPATH)
 solverpath['cplex']=cplexPATH+"/"+"cplex"
-solver = 'knitro'#'mosek'
+solver = 'mosek'
 #endregion
 
 #region I - Simple single area : loading parameters
