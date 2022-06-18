@@ -410,5 +410,5 @@ def run_model_multinode(year,bati_hyp='ref',reindus='reindus',mix='nuclear_plus'
     #print(model.capacity_Dvar.extract_values())
     #print(Variables)
 
-run_model_H2(2060,bati_hyp='ref',reindus='reindus',mix='nuclear_plus_plus')
-#run_model_multinode(2060,bati_hyp='ref',reindus='reindus',mix='nuclear_plus_plus',ev_hyp='',no_new_intercos=True)
+#run_model_H2(2060,bati_hyp='ref',reindus='reindus',mix='nuclear_plus_plus')
+run_model_multinode(2060,bati_hyp='ref',reindus='reindus',mix='nuclear_plus_plus',ev_hyp='',no_new_intercos=True)
