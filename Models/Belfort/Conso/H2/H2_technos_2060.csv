@@ -1,0 +1,4 @@
+H2_TECHNO;capacityCostH2;energyCostH2;efficiencyH2
+Electrolysis;101185,46182382565;0;0,7
+CCH2;105166,4510067573;0;0,58
+Storage;0,0;15;0,999987973
