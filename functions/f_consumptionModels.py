@@ -777,17 +777,17 @@ def CleanCETIndex(Temp_df,TimeName="Date"):
     :return:
     '''
     Temp_df_new=Temp_df.reset_index()
-    Temp_df_new["Date"]=Temp_df_new["Date"].apply(lambda x: x.to_pydatetime())
+    Temp_df_new[TimeName]=Temp_df_new[TimeName].apply(lambda x: x.to_pydatetime())
     d1h=timedelta(hours=1)
     for i in Temp_df_new.index:
-        if i>0 and Temp_df_new.loc[i,"Date"]-Temp_df_new.loc[i-1,"Date"]>d1h:
+        if i>0 and Temp_df_new.loc[i,TimeName]-Temp_df_new.loc[i-1,TimeName]>d1h:
             i_start=i
-        if i>0 and Temp_df_new.loc[i,"Date"]==Temp_df_new.loc[i-1,"Date"]:
+        if i>0 and Temp_df_new.loc[i,TimeName]==Temp_df_new.loc[i-1,TimeName]:
             i_end=i
     for i in range(i_start,i_end):
-        Temp_df_new.loc[i, "Date"]=Temp_df_new.loc[i, "Date"]-d1h
-    Temp_df_new["Date"]=Temp_df_new["Date"].apply(lambda x: pd.Timestamp(x))
-    Temp_df_new=Temp_df_new.set_index("Date")
+        Temp_df_new.loc[i, TimeName]=Temp_df_new.loc[i, TimeName]-d1h
+    Temp_df_new[TimeName]=Temp_df_new[TimeName].apply(lambda x: pd.Timestamp(x))
+    Temp_df_new=Temp_df_new.set_index(TimeName)
     return Temp_df_new
 
 

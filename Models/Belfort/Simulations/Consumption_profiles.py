@@ -15,6 +15,7 @@ if os.path.basename(os.getcwd())=="Simulations":
 InputFolder='Models/Belfort/Conso/'
 
 from functions.f_consumptionModels import *
+from Models.Belfort.Simulations.f_consumptionBelfort import *
 from functions.f_graphicalTools import *
 
 Conso_df=pd.read_csv(InputFolder+'areaConsumption2019_FR.csv',sep=';',parse_dates=['Date']).set_index(["Date"])
