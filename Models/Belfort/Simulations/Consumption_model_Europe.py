@@ -7,12 +7,13 @@ import copy
 from functions.f_consumptionModels import *
 
 import os
-if os.path.basename(os.getcwd())=="Belfort":
+if os.path.basename(os.getcwd())=="Simulations":
     os.chdir('..')
-    os.chdir('..') ## to work at project root  like in any IDE
+    os.chdir('..')
+    os.chdir('..')## to work at project root  like in any IDE
 
-InputFolder='Data/input/Conso_model/'
-InputFolder_Europe='Data/input/Conso_model/Conso_Europe/'
+InputFolder='Models/Belfort/Conso/'
+InputFolder_Europe='Models/Belfort/Conso/Conso_Europe/'
 
 Conso_areas_df = pd.read_csv(InputFolder_Europe + 'Conso_Europe.csv', delimiter=';', decimal='.',
                              parse_dates=['Date']).set_index('Date')
