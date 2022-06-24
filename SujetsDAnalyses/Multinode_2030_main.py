@@ -1,25 +1,15 @@
 # region importation of modules
 import os
-from datetime import datetime
 import warnings
 warnings.filterwarnings("ignore")
-
-import pandas as pd
-import psutil
-
 
 import pickle
 if os.path.basename(os.getcwd()) == "SujetsDAnalyses":
     os.chdir('..')  ## to work at project root  like in any IDE
 
-import sys
-
-from functions.f_graphicalTools import *
-from functions.f_planingModels import *
+from Models.Basic_France_models.Planing_optimisation.f_planingModels import *
 #from functions.f_optimization import *
-from functions.f_graphicalTools import *
 from functions.f_consumptionModels import *
-from pyomo.core import *
 from pyomo.opt import SolverFactory
 
 # endregion
@@ -378,7 +368,6 @@ def main_future(year,weather_year,RE_ambition="scenarios",no_coal_mini=False,for
     return None
 
 # main_future(year=2030,weather_year=2017,number_of_sub_techs=7,error_deactivation=False,fr_flexibility=True,fr_flex_consum={'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":0}})
-import time
 # main_future(year=2030,weather_year=2018,number_of_sub_techs=7,error_deactivation=False,fr_flexibility=True,fr_flex_consum={'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0.15,"steel_ratio":0,"H2_ratio":1}})
 # time.sleep(15)
 # main_future(year=2030,weather_year=2018,RE_ambition='scenarios',number_of_sub_techs=7,error_deactivation=False,fr_flexibility=True,fr_flex_consum={'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":1}})

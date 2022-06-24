@@ -4,7 +4,6 @@ from functions.f_tools import *
 
 #region general constraints
 
-
 def set_Operation_Constraints_energyCapacityexchange(EQs,model):
     Set_names = get_allSetsnames(model)
     match list(Set_names):
@@ -57,9 +56,9 @@ def set_Operation_Constraints_energyCapacityexchange(EQs,model):
     return model
 
 
-
 def set_Operation_Constraints_stockCtr(model):
     """
+    limit on the stock over a year
     [if "EnergyNbhourCap"] EnergyNbhourCap *capacity >= sum energy
 
     :param model:
@@ -162,7 +161,7 @@ def set_Operation_Constraints_flex(model):
     if 'FLEX_CONSUM' in Set_names:
         model   =   set_Operation_Constraints_total_consumptionCtr(model)# total_consumption = areaConsumption+sum(flex_consumption)
         model   =   set_Operation_Constraints_max_powerCtr(model)
-        model = set_Operation_Constraints_consum_eq_day_Ctr(model)
+        model   =   set_Operation_Constraints_consum_eq_day_Ctr(model)
         model   =   set_Operation_Constraints_consum_eq_week_Ctr(model)
         model   =   set_Operation_Constraints_consum_eq_year_Ctr(model)
         model   =   set_Operation_Constraints_consum_flex_Ctr(model)

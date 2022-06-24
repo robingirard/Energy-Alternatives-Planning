@@ -18,8 +18,8 @@ def set_Planing_Constraints_maxminCapacityCtr(model):
 
 def set_Planing_Constraints_maxCapacityCtr(model):
     """
-    maxCapacity>=capacity
-
+     if "maxCapacity" exists --> maxCapacity>=capacity
+    works with and without area
     :param model:
     :return:
     """
@@ -33,7 +33,6 @@ def set_Planing_Constraints_maxCapacityCtr(model):
                 else:
                     return Constraint.Skip
             model.maxCapacityCtr = Constraint(model.AREAS, model.TECHNOLOGIES, rule=maxCapacity_rule)
-
         else:
             def maxCapacity_rule(model, tech):  # INEQ forall t, tech
                 if model.maxCapacity[tech] >= 0: #todo j'ai rajouté le = car sinon une technologie à 0MW en paramètre peut se retrouver avec de la puissance installée
@@ -46,8 +45,9 @@ def set_Planing_Constraints_maxCapacityCtr(model):
 
 def set_Planing_Constraints_minCapacityCtr(model):
     """
-    minCapacity<=capacity
+    if "maxCapacity" exists -->minCapacity<=capacity
 
+    works with and without area
     :param model:
     :return:
     """

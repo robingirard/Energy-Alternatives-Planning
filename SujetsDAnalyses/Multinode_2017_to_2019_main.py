@@ -1,25 +1,15 @@
 # region importation of modules
 import os
-from datetime import datetime
 import warnings
 warnings.filterwarnings("ignore")
-
-import pandas as pd
-import psutil
-
 
 import pickle
 if os.path.basename(os.getcwd()) == "SujetsDAnalyses":
     os.chdir('..')  ## to work at project root  like in any IDE
 
-import sys
-
-from functions.f_graphicalTools import *
-from functions.f_planingModels import *
+from Models.Basic_France_models.Planing_optimisation.f_planingModels import *
 #from functions.f_optimization import *
-from functions.f_graphicalTools import *
 from functions.f_consumptionModels import *
-from pyomo.core import *
 from pyomo.opt import SolverFactory
 
 # endregion
