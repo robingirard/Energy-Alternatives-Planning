@@ -1,68 +1,48 @@
 # Etude_TP_CapaExpPlaning-Python
 
 This project contains code and data to model the electric system.
-It relies mainly on a combined use of
- - two well known python packages (panda and pyomo)
+It relies mainly on a combined use of two well known python packages (panda and pyomo)
 for linear programming adapted for the specific use of electric system modeling.
- - a package of my own [dynprogstorage](https://github.com/robingirard/dynprogstorage) for efficient storage optimisation (with ad-hoc ) that can be installed with pip
 
 The installation relies on the use of a conda environment. Instruction is below
+#TODO : add links to illustrative exemples here. 
 
 ### Table of content
 
 * [1. Installation](#installations)
-* [2. CSV folder](#CSV)
-* [3. Repertoire CasDEtude](#CasDEtude)
-* [4. Repertoire functions](#functions)
-* [5. Sujet d'analyse](#Analyse)
+* [2. Models Folder](#CasDEtude)
+* [3. Repertoire functions](#functions)
+* [4. other folder](#CSV)
 
 
 
 ## 1 - Installations  <a class="anchor" id="installations"></a>
 
-    conda env create robin.girard/energyalternatives
+Once you have downloaded the Energy-Alternatives-Planing folder, in the terminal, you need to create the conda environment thanks to the conda.yml file:
+
+    conda env create conda.yml
     conda activate energyalternatives
-
-Or just to update the environment
-
-    conda env update --file conda.yml
 
 If you're using PyCharm you should fix the environement in settings by choosing the right "python interpreter"
 
 I strongly recommend to use the keyboard shortcut "crtl+enter" for action "Execute selection". This can be set in PyCharm Settings -> keymap
+This project also contains Jupyter Notebook. 
 
-## 2 -  Data folder <a class="anchor" id="CSV"></a>
-Contains CSV files for the project projet (Wind/PV power instantaneous load factor,
-availability time series of french nuke, consumption,
-economic data for operation and planing),
-These files are loaded in the different examples given in the next section (see in particular [Economic Assumptions](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/input-Economic.ipynb) in file input-Economic.ipynb
-, [Availability/load factor Assumptions](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/input-Availability.ipynb) in file input-Availability.ipynb
-[Model consumption](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/BasicFunctionalities/input-Consumption.ipynb)  in file input-Consumption.ipynb
-).
+## 2- Models Folder <a class="anchor" id="CasDEtude"></a>
+Contains folders with Models. Each folder in Models Folder contains a set of Models and associated data and case studies. 
+See the corresponding [README](Models/README.md). You can add your own Models folder to contribute, or by creating a case study in an existing Models Folder.
 
-New data and associated documentation are welcome here to allow modeling of more different asses.
+If you want to learn how to use the tool, you can jump directly into the one node [Basic_France_models](Models/Basic_France_models/README.md) or the multinode [Basic_France_Germany_models](Models/Basic_France_Germany_models/README.md). 
+There you will find tutorials on how to use the simulation/modelisation tool, how to use pyomo and you will find a mathematical description of the models. 
 
-## 3- Repertoire BasicFunctionalities <a class="anchor" id="CasDEtude"></a>
-Contains python files exposing basic functionalities.
-For each .py file there is an associated Jupyter Notebook that explains the content with text and math formulae
-Hence, if you want to learn how to use the exposed tools, you can star having a look at how to
-
- - [Economic Assumptions](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/exportToHTML/input-Economic.html) in file input-Economic.ipynb
- - [Availability/load factor Assumptions](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/exportToHTML/input-Availability.html) in file input-Availability.ipynb
- - [Model consumption](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/exportToHTML/input-Consumption.html)  in file input-Consumption.ipynb
- - [optimisation of operation ](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/exportToHTML/optim-Operation.html) in file optim-Operation.ipynb
- - [optimisation of storage operation](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/exportToHTML/optim-Storage.html) in file optim-Storage.ipynb
- - [optimisation of planing](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/exportToHTML/optim-Planing.html) in file optim-Planing.ipynb
- - [Advanced optimisation of operation ](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/exportToHTML/optim-Operation-Advanced.html) in file optim-Operation-Advanced.ipynb
- - [Advanced optimisation of planing](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/exportToHTML/optim-Planing-Advanced.html) in file optim-Planing-Advanced.ipynb
+## 3- functions folder <a class="anchor" id="functions"></a>
+Contains:  
+ - [tools](functions/f_tools.py) that can be used to facilitate the interface between pyomo optimisation models results and parameters and panda. 
+ - a set of predefined [planing](functions/f_model_planing_constraints.py) and [operation](functions/f_model_operation_constraints.py) constraints to model the electric system, 
+ - demand modeling tools in ([f_consumptionModels.py](functions/f_consumptionModels.py)) 
+ - [graphical tools](functions/f_graphicalTools.py). 
+ - tools that are under developpement for a more "automatic" construction of models : [f_model_cost_functions.py](functions/f_model_cost_functions.py) and [f_model_definition.py](functions/f_model_definition.py)
 
 
-
-## 4- Repertoire functions <a class="anchor" id="functions"></a>
-Contains used function for planing and operation of electric system, for demand modeling, together with graphical tools. n de la thermosensibilité
-
-## 5 -  Sujet d'analyse  <a class="anchor" id="Analyse"></a>
-This folder contains subjects for analysis and a practical work
-
- - [Pracical work for the course](https://github.com/robingirard/Etude_TP_CapaExpPlaning-Python/blob/master/SujetsDAnalyses/TP_questions.ipynb)
- - [Sujet 1 Thermosensibilité]()
+## 4 other folder  <a class="anchor" id="CSV"></a>
+Other Folder (Data, SujetsDAnalyse)  should disappear soon. 
