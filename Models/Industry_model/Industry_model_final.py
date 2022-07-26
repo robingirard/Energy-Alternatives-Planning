@@ -59,6 +59,23 @@ def main(Resources_Technologies,Production_Technologies,Available_Technologies,P
     ###Preparation for P_resource_prod and P_production_error_margin parameters
     production_dict = Production["Production"].squeeze().to_dict()
     production_dict.pop('blank', None)
+
+    products_output_list=list(production_dict.keys())
+    u=products_output_list.copy()
+    ##add forgotten products to the production list (if chosen technologies have other outputs [e.g for ethylene production, naphtha cracking produces also propylene and other chemicals])
+    for resource in resource_list:
+        for tech in production_tech_list:
+            for product in u:
+                flow_given_product_val=Technologies_Parameters.loc[product,tech]
+                flow_val=Technologies_Parameters.loc[resource,tech]
+                if flow_val<0 and flow_given_product_val<0:
+                    products_output_list.append(resource)
+    products_output_list=list(dict.fromkeys(products_output_list))
+    products_output_state_dict={}
+    for product in products_output_list:
+        products_output_state_dict[product]=1
+
+    ###Error margin for fixed production
     error_margin_dict = Production["Margin"].squeeze().to_dict()
     error_margin_dict.pop('blank', None)
     ###Preparation for P_tech_resource_flow_coef parameter
@@ -112,6 +129,7 @@ def main(Resources_Technologies,Production_Technologies,Available_Technologies,P
         "CRF", Technologies_Parameters_other.columns[3:]].to_frame().squeeze().to_dict(), domain=NonNegativeReals)
     model.P_carbon_tax=carbon_tax
 
+    model.P_products_boolean=Param(model.RESOURCES,default=0,initialize=products_output_state_dict)
 
     model.P_resource_prod=Param(model.RESOURCES,default=0,initialize=production_dict, within=Any)
 
@@ -196,11 +214,15 @@ def main(Resources_Technologies,Production_Technologies,Available_Technologies,P
 
 
     def Resource_flow_equilibrium_rule(model,resource):
-        if model.P_resource_prod[resource] == 0:
+        if model.P_products_boolean[resource] == 0:
             return model.V_resource_flow[resource]==0
         else:
             return Constraint.Skip
     model.Resource_flow_equilibriumCtr=Constraint(model.RESOURCES,rule=Resource_flow_equilibrium_rule)
+
+    def Primary_resources_prod_limit_rule(model,resource):
+        return model.V_resource_inflow[resource]>=sum(model.V_resource_tech_outflow[tech,resource] for tech in model.PRIMARY_RESOURCE_TECHS)
+    model.Primary_resource_prod_limit_rule=Constraint(model.PRIMARY_RESOURCES,rule=Primary_resources_prod_limit_rule)
 
 
 
@@ -254,6 +276,6 @@ def main(Resources_Technologies,Production_Technologies,Available_Technologies,P
 # input_path = "Input/Steel/Data/v2/"
 # Resources_Technologies=pd.read_excel(input_path+"Resources_Technologies.xlsx").fillna(0)
 # Production_Technologies = pd.read_excel(input_path + "Steel_Technologies.xlsx").fillna(0)
-# Available_Technologies = pd.read_excel(input_path + "Steel_available_techs_opti_test.xlsx").fillna(0)
+# Available_Technologies = pd.read_excel(input_path + "Steel_available_techs_2015.xlsx").fillna(0)
 # Production = pd.read_excel(input_path + "Steel_production_2015.xlsx").fillna(0)
-# main(Resources_Technologies,Production_Technologies,Available_Technologies,Production,opti2mini="emissions",carbon_tax=0)
+# main(Resources_Technologies,Production_Technologies,Available_Technologies,Production,opti2mini="cost",carbon_tax=0)
