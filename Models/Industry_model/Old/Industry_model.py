@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-input_path = "Input/Steel/Data/"
+input_path = "/../Input/Steel/Data/Old/"
 Resources_characteristics=pd.read_excel(input_path+"Resources_characteristics.xlsx").set_index("Resource")
 Technologies_Parameters = pd.read_excel(input_path + "Steel_Technologies.xlsx").fillna(0)
 Available_Technologies = pd.read_excel(input_path + "Steel_available_techs_2015.xlsx").fillna(0)

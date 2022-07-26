@@ -9,7 +9,7 @@ colors = ["#004776","#b8e1ff","#72c5fe","#2baaff","#f8b740","#005f9e","#000000",
           "#e7e7e7","#fef3e8","#e8f1ff","#ebf5ff","#c69131","#2087cb"]# Set your custom color palette
 customPalette = sns.set_palette(sns.color_palette(colors))
 
-input_path = "Input/Steel/Data/v2/"
+input_path = "Input/Steel/Data/"
 Resources_Technologies=pd.read_excel(input_path+"Resources_Technologies.xlsx").fillna(0)
 Production_Technologies = pd.read_excel(input_path + "Steel_Technologies.xlsx").fillna(0)
 Available_Technologies = pd.read_excel(input_path + "Steel_available_techs_2015.xlsx").fillna(0)

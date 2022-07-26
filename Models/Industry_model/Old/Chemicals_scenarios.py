@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 #TODO: add biogas (as a percentage of the gas resource? that would diminish the emissions of gas consuming processes ==> how do I address that?)
 
 def Chemicals_Scenario(year=2018,version=1,opti2mini="production"):
-    input_path = "Input/Chemistry/Data/"
+    input_path = "../Input/Chemistry/Data/Old/"
     Resources_characteristics=pd.read_excel(input_path+"Resources_characteristics.xlsx").set_index("Resource")
     Technologies_Parameters = pd.read_excel(input_path + "Chemistry_Technologies.xlsx").fillna(0)
     Available_Technologies = pd.read_excel(input_path + "Chemistry_available_techs_"+str(year)+"_v"+str(version)+".xlsx").fillna(0)

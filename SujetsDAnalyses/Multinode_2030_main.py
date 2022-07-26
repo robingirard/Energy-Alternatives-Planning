@@ -373,10 +373,10 @@ def main_future(year,weather_year,RE_ambition="scenarios",no_coal_mini=False,for
 # main_future(year=2030,weather_year=2018,RE_ambition='scenarios',number_of_sub_techs=7,error_deactivation=False,fr_flexibility=True,fr_flex_consum={'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":1}})
 # time.sleep(15)
 # main_future(year=2030,weather_year=2018,number_of_sub_techs=7,error_deactivation=False,fr_flexibility=True,fr_flex_consum={'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0.15,"steel_ratio":0,"H2_ratio":0}})
-fr_flex_list=[{'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":0}}]#,
-              # {'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":1}},
-              # {'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0.15,"steel_ratio":0,"H2_ratio":0}},
-              # {'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0.15,"steel_ratio":0,"H2_ratio":1}}]
+fr_flex_list=[{'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":0}},
+              #{'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0.15,"steel_ratio":0.75*0.5,"H2_ratio":1}},
+              # {'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0.07,"steel_ratio":0.75*0.25,"H2_ratio":0.5}}
+                ]
 
 
 
@@ -389,9 +389,7 @@ fr_flex_list=[{'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":
 #                         for gas_price_rise in [1,2,3,4]:
 #                             for coal_price_rise in [1,2,3]:
 #                                 for RE_ambition in ['scenarios','low','medium','high']:
-#                                     if RE_ambition=="scenarios":
-#                                         if forced_reach or no_coal_mini:
-#                                             pass
+
 #                                     fr=""
 #                                     if forced_reach:
 #                                         # print("forced")
@@ -417,16 +415,13 @@ fr_flex_list=[{'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":
 
 for year in [2030]:
     for fr_flex_consum in fr_flex_list:
-        for weather_year in [2017]:
-            for forced_reach in [False]:
+        for weather_year in [2018]:
+            for forced_reach in [True,False]:
                 for no_coal_mini in [True]:
-                    for ctax in [0, 100, 200,300]:
-                        for gas_price_rise in [3]:
-                            for coal_price_rise in [3]:
-                                for RE_ambition in ['scenarios','low']:
-                                    if RE_ambition=="scenarios":
-                                        if forced_reach or no_coal_mini:
-                                            pass
+                    for ctax in [0]:
+                        for (gas_price_rise,coal_price_rise) in [(1,1)]:
+                                for RE_ambition in ['high',"medium","low"]:
+
                                     fr=""
                                     if forced_reach:
                                         # print("forced")
@@ -441,11 +436,13 @@ for year in [2030]:
                                     c_pr = ""
                                     if coal_price_rise > 1:
                                         c_pr = "_" + str(coal_price_rise) + "cpr"
-                                    if str(year)+'_multinode_'+str(weather_year)+'_weather_'+RE_ambition+'RE'+fr+'_ctaxrise'+str(ctax)+g_pr+c_pr+coal+'_'+str(7)+'_sub_flex_'+str(fr_flex_consum['ratio']['VE_ratio'])+'_'+\
-                                      str(fr_flex_consum['ratio']['steel_ratio'])+'_'+str(fr_flex_consum['ratio']['H2_ratio'])+'.pickle' in os.listdir('SujetsDAnalyses/Temp_results/'):
-                                        print("Passed")
-                                        pass
-                                    else:
+
+                                    # if str(year)+'_multinode_'+str(weather_year)+'_weather_'+RE_ambition+'RE'+fr+'_ctaxrise'+str(ctax)+g_pr+c_pr+coal+'_'+str(7)+'_sub_flex_'+str(fr_flex_consum['ratio']['VE_ratio'])+'_'+\
+                                    #   str(fr_flex_consum['ratio']['steel_ratio'])+'_'+str(fr_flex_consum['ratio']['H2_ratio'])+'.pickle' in os.listdir('SujetsDAnalyses/Temp_results/'):
+                                    #     print("Passed")
+                                    #     pass
+                                    # else:
+                                    if True:
                                         main_future(year=year,weather_year=weather_year,RE_ambition=RE_ambition,forced_reach=forced_reach,gas_price_rise=gas_price_rise,coal_price_rise=coal_price_rise,no_coal_mini=no_coal_mini ,ctaxrise=ctax,
                                             number_of_sub_techs=7,error_deactivation=False,fr_flexibility=True,fr_flex_consum=fr_flex_consum)
 
