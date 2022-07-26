@@ -148,6 +148,8 @@ def main(Resources_Technologies,Production_Technologies,Available_Technologies,P
     ################
     model.V_cost = Var(domain=NonNegativeReals)
     model.V_emissions = Var(domain=Reals)
+    model.V_emissions_plus=Var(domain=PositiveReals)
+    model.V_emissions_minus=Var(domain=NegativeReals)
     model.V_resource_flow = Var(model.RESOURCES, domain=NegativeReals)
     model.V_resource_inflow = Var(model.RESOURCES, domain=PositiveReals)
     model.V_resource_outflow = Var(model.RESOURCES, domain=PositiveReals)
@@ -174,20 +176,24 @@ def main(Resources_Technologies,Production_Technologies,Available_Technologies,P
     #################
     # Constraints   #
     #################
-    def Cost_rule(model):
+    def Cost_definition_rule(model):
         return model.V_cost == sum(
             model.P_flow_cost[tech] * model.V_technology_use_coef[tech] for tech in model.TECHNOLOGIES) + \
                sum(model.P_capex[tech] * model.P_CRF[tech] * model.V_technology_use_coef[tech] for tech in
                    model.TECHNOLOGIES) + \
-               model.P_carbon_tax * model.V_emissions
+               model.P_carbon_tax * model.V_emissions_plus
 
-    model.CostCtr = Constraint(rule=Cost_rule)
+    model.Cost_definitionCtr = Constraint(rule=Cost_definition_rule)
 
-    def Emissions_rule(model):
+    def Emissions_definition_rule(model):
         return model.V_emissions == sum(
             model.P_emissions[tech] * model.V_technology_use_coef[tech] for tech in model.TECHNOLOGIES)
 
-    model.EmissionsCtr = Constraint(rule=Emissions_rule)
+    model.Emissions_definitionCtr = Constraint(rule=Emissions_definition_rule)
+
+    def Emissions_definition_2nd_rule(model):
+        return model.V_emissions==model.V_emissions_plus+model.V_emissions_minus
+    model.Emissions_definition_2ndCtr=Constraint(rule=Emissions_definition_2nd_rule)
 
     def Resource_flow_definition_1st_rule(model,resource):
         return model.V_resource_flow[resource]==model.V_resource_inflow[resource]-model.V_resource_outflow[resource]
@@ -267,7 +273,7 @@ def main(Resources_Technologies,Production_Technologies,Available_Technologies,P
     for v in model.component_data_objects(Var):
         if  v.name[:29]!='V_primary_resource_production' and v.name[:23]!='V_resource_tech_outflow' and \
             v.name[:22]!='V_resource_tech_inflow' and v.name[:15]!='V_resource_flow':
-            print(v,v.value)
+            # print(v,v.value)
             Results[v.name]= v.value
 
     return Results
