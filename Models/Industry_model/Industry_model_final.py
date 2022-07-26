@@ -6,11 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-input_path = "Input/Steel/Data/v2/"
-Resources_Technologies=pd.read_excel(input_path+"Resources_Technologies.xlsx").fillna(0)
-Production_Technologies = pd.read_excel(input_path + "Steel_Technologies.xlsx").fillna(0)
-Available_Technologies = pd.read_excel(input_path + "Steel_available_techs_opti_test.xlsx").fillna(0)
-Production = pd.read_excel(input_path + "Steel_production_2015.xlsx").fillna(0)
 
 def main(Resources_Technologies,Production_Technologies,Available_Technologies,Production,opti2mini="cost",carbon_tax=0):
     model = ConcreteModel()
@@ -184,6 +179,13 @@ def main(Resources_Technologies,Production_Technologies,Available_Technologies,P
         return model.V_resource_tech_inflow[tech,resource]-model.V_resource_tech_outflow[tech,resource]==model.V_technology_use_coef[tech]*model.P_tech_flows[tech,resource]
     model.Resource_flow_definition_2ndCtr = Constraint(model.TECHNOLOGIES,model.RESOURCES, rule=Resource_flow_definition_2nd_rule)
 
+    def Resource_flow_tech_rule(model,tech,resource):
+        if model.P_tech_flows[tech,resource]>0:
+            return model.V_resource_tech_outflow[tech,resource]==0
+        else:
+            return model.V_resource_tech_inflow[tech, resource] == 0
+    model.Resource_flow_techCtr=Constraint(model.TECHNOLOGIES,model.RESOURCES,rule=Resource_flow_tech_rule)
+
     def Resource_flow_definition_3rd_rule(model,resource):
         return model.V_resource_inflow[resource]==sum(model.V_resource_tech_inflow[tech,resource] for tech in model.TECHNOLOGIES)
     model.Resource_flow_definition_3rdCtr = Constraint(model.RESOURCES, rule=Resource_flow_definition_3rd_rule)
@@ -192,15 +194,15 @@ def main(Resources_Technologies,Production_Technologies,Available_Technologies,P
         return model.V_resource_outflow[resource]==sum(model.V_resource_tech_outflow[tech,resource] for tech in model.TECHNOLOGIES)
     model.Resource_flow_definition_4thCtr = Constraint(model.RESOURCES, rule=Resource_flow_definition_4th_rule)
 
-    #TODO find a way to limit biogas usage (say that primary resource production cannot exceed demand)
-    # PB: when I do that, it still does not work
 
-    # def Resource_flow_primary_resource_rule(model,resource):
-    #     return model.V_resource_inflow[resource]>=sum(model.V_resource_tech_outflow[tech,resource] for tech in model.PRIMARY_RESOURCE_TECHS)
-    # model.Resource_flow_primary_resourceCtr = Constraint(model.PRIMARY_RESOURCES, rule=Resource_flow_primary_resource_rule)
-    # def Resource_biogas_rule(model):
-    #     return model.V_resource_inflow['gas']<=sum(model.V_resource_tech_outflow[tech,'gas'] for tech in model.PRIMARY_RESOURCE_TECHS)
-    # model.Resource_biogasCtr = Constraint(rule=Resource_biogas_rule)
+    def Resource_flow_equilibrium_rule(model,resource):
+        if model.P_resource_prod[resource] == 0:
+            return model.V_resource_flow[resource]==0
+        else:
+            return Constraint.Skip
+    model.Resource_flow_equilibriumCtr=Constraint(model.RESOURCES,rule=Resource_flow_equilibrium_rule)
+
+
 
     ###Production Constraints###
     def Production_moins_rule(model,resource):
@@ -224,6 +226,12 @@ def main(Resources_Technologies,Production_Technologies,Available_Technologies,P
             return Constraint.Skip
     model.Technology_ProductionCtr=Constraint(model.TECHNOLOGIES,model.RESOURCES,rule=Technology_Production_rule)
 
+    def Technology_Capacity_rule(model,tech,resource):
+        if model.P_tech_resource_capacity[tech,resource]>0:
+            return model.V_resource_tech_outflow[tech,resource]<=model.P_tech_resource_capacity[tech,resource]
+        else:
+            return Constraint.Skip
+    model.Technology_CapacityCtr=Constraint(model.TECHNOLOGIES,model.RESOURCES,rule=Technology_Capacity_rule)
 
     opt = SolverFactory('mosek')
 
@@ -232,10 +240,20 @@ def main(Resources_Technologies,Production_Technologies,Available_Technologies,P
     ######################
     # Results treatment  #
     ######################
-    print("Print values for all variables")
+    # print("Print values for all variables")
+    Results = {}
     for v in model.component_data_objects(Var):
         if  v.name[:29]!='V_primary_resource_production' and v.name[:23]!='V_resource_tech_outflow' and \
             v.name[:22]!='V_resource_tech_inflow' and v.name[:15]!='V_resource_flow':
-            print(v, v.value)
+            print(v,v.value)
+            Results[v.name]= v.value
 
-main(Resources_Technologies,Production_Technologies,Available_Technologies,Production,opti2mini="cost",carbon_tax=60)
+    return Results
+
+#
+# input_path = "Input/Steel/Data/v2/"
+# Resources_Technologies=pd.read_excel(input_path+"Resources_Technologies.xlsx").fillna(0)
+# Production_Technologies = pd.read_excel(input_path + "Steel_Technologies.xlsx").fillna(0)
+# Available_Technologies = pd.read_excel(input_path + "Steel_available_techs_opti_test.xlsx").fillna(0)
+# Production = pd.read_excel(input_path + "Steel_production_2015.xlsx").fillna(0)
+# main(Resources_Technologies,Production_Technologies,Available_Technologies,Production,opti2mini="emissions",carbon_tax=0)
