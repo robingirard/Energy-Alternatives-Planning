@@ -19,8 +19,10 @@ nominal_COP_curve_Coefficients = {
     "A/W HP": {"a1": 7.972, "b1": -0.2233, "c1": 0.0017,
            "a2": 4.27, "b2": -0.09, "c2": 0.0005},}
 
+
+
 ### COEFFICIENTS DE LA REGULATION DE LA TEMPERATURE DE L'EAU (LOI D'EAU)
-def coeffs_T_fluid(Simulation_PAC_input_parameter):
+def coeffs_T_fluid(T_base,Simulation_PAC_input_parameter):
     """
     :param T_base: 
     :param T_target: 
@@ -28,7 +30,6 @@ def coeffs_T_fluid(Simulation_PAC_input_parameter):
     :return: 
     """
     global TemperatureValues
-    T_base=Simulation_PAC_input_parameter["T_base"]
     T_target=Simulation_PAC_input_parameter["T_target"]
     res={}
     if Simulation_PAC_input_parameter["System"]=="A/A HP": #PAC AIR/AIR
@@ -62,12 +63,12 @@ def estim_COP(T_ext,T_fluid,type = "A/W HP"):
     c1 = nominal_COP_curve_Coefficients[type]["c1"]
 
     if T_ext <= -3:
-        res = a2 - b2 * Delta_T + c2 * Delta_T**2
+        res = a2 + b2 * Delta_T + c2 * Delta_T**2
     elif T_ext >= 6:
-        res =  a1 - b1 * Delta_T + c1 * Delta_T ** 2
+        res =  a1 + b1 * Delta_T + c1 * Delta_T ** 2
     else:
-        res = (T_ext - 6) / (-9) * (a2 - b2 * Delta_T + c2 * Delta_T**2) + (T_ext + 3) / 9 * (
-                          a1 - b1 * Delta_T + c1 * Delta_T ** 2)
+        res = (T_ext - 6) / (-9) * (a2 + b2 * Delta_T + c2 * Delta_T**2) + (T_ext + 3) / 9 * (
+                          a1 + b1 * Delta_T + c1 * Delta_T ** 2)
     return res
 
 def compute_T_biv2(COP_biv,T_biv,a,b,Simulation_PAC_input_parameter):
@@ -151,6 +152,17 @@ def compute_T_biv2(COP_biv,T_biv,a,b,Simulation_PAC_input_parameter):
     return T_biv2
 
 
+def estim_T_biv(T_base,Simulation_PAC_input_parameter):
+    global TemperatureValues
+    if Simulation_PAC_input_parameter['Mode']=="Monovalent":
+        return max(T_base, Simulation_PAC_input_parameter["Temperature_limit"])
+    else: #bivalent
+        COP_base = estim_COP(T_ext=T_base,
+                             T_fluid=TemperatureValues[Simulation_PAC_input_parameter["Emitters"]])
+        ab = coeffs_T_fluid(T_base,Simulation_PAC_input_parameter)
+        return compute_T_biv2(COP_base, T_base, ab["a"], ab["b"], Simulation_PAC_input_parameter)
+        ## calcul à faire
+
 def estim_SCOP(meteo_data_heating_period,Simulation_PAC_input_parameter):
     """
 
@@ -162,15 +174,18 @@ def estim_SCOP(meteo_data_heating_period,Simulation_PAC_input_parameter):
 
     T_target = Simulation_PAC_input_parameter["T_target"]
     T_start = Simulation_PAC_input_parameter["T_start"]
-    T_base = Simulation_PAC_input_parameter["T_base"]
+
 
     comp_params={}
-    comp_params["T_biv"] = max(T_base, Simulation_PAC_input_parameter["Temperature_limit"]),
-    comp_params["Delta_T_biv"] = T_target - comp_params["T_biv"]
+    comp_params["T_base"] =  np.quantile(meteo_data_heating_period["temp"], q=5 / 365)
+    comp_params["T_biv"] = estim_T_biv(T_base = comp_params["T_base"],
+                                       Simulation_PAC_input_parameter=Simulation_PAC_input_parameter)
+    comp_params["Besoin_chauff_biv"] = T_target - comp_params["T_biv"] # à la valeur de U près
 
     # SI IL Y A UNE REGULATION DE LA TEMPERATURE DE L'EAU, ON AJUSTE
-    comp_params = {**comp_params,**coeffs_T_fluid(Simulation_PAC_input_parameter)} ## calcul de a et b
-    comp_params["T_fluid_biv"]  = comp_params["a"] * TemperatureValues[Simulation_PAC_input_parameter["Emitters"]] + comp_params["b"]
+    comp_params = {**comp_params,**coeffs_T_fluid(T_base = comp_params["T_base"], Simulation_PAC_input_parameter=Simulation_PAC_input_parameter)} ## calcul de a et b
+    comp_params["T_fluid_biv"]  = comp_params["a"] * comp_params["T_biv"] + comp_params["b"]
+    #comp_params["Delta_T_biv"] = comp_params["T_fluid_biv"] - comp_params["T_biv"] # pour calculer le COP à T_biv
 
     # ON CALCULE LE COP A LA TEMPERATURE DE BIVALENCE
     comp_params["COP_biv"] = estim_COP(T_ext=comp_params["T_biv"], T_fluid=comp_params["T_fluid_biv"],
@@ -178,53 +193,53 @@ def estim_SCOP(meteo_data_heating_period,Simulation_PAC_input_parameter):
 
     ## CALCUL DU DEUXIEME POINT DE BIVALENCE (PASSAGE DU FONCTIONNEMENT INVERTER A ON/OFF)
     ## RESOLUTION DE L'EQUATION DU 2ND DEGRE POUR TROUVER LES RACINES (SANS DEGIVRAGE)
-    comp_params["T_biv2"] = compute_T_biv2(COP_biv=comp_params["COP_biv"],
-                                           T_biv=comp_params["T_biv"],
-                                           a=comp_params["a"],
-                                           b=comp_params["b"],
-                                           Simulation_PAC_input_parameter)
-
-    # ON CALCULE LE COP AU DEUXIEME POINT DE BIVALENCE
-    Delta_T_biv2=T_target-T_biv2
-    T_fluid_biv2=Simulation_PAC_input_parameter["a"] * T_biv2+Simulation_PAC_input_parameter["b"]
-    COP_biv2=estim_COP(T_ext = T_biv2, T_fluid = T_fluid_biv2,type="AW")
-
-    # CE COP EST MODIFIE PAR LE REGIME DE CHARGE PARTIELLE (RATIO PLF APPLIQUE)
-    PLR_T_biv2=float(COP_biv * Delta_T_biv2 / (Delta_T_biv * COP_biv2))
-    a_PLF=(Techno["PLF_biv"]-1) / (PLR_T_biv2-1)
-    b_PLF=1-a_PLF
-
-    SCOP=[]
-    RE=[]
-    COP_data={}
-    RP={}
-    i=1
+    if Simulation_PAC_input_parameter['Technology'] == 'Inverter':
+        comp_params["T_biv2"] = compute_T_biv2(COP_biv=comp_params["COP_biv"],
+                                               T_biv=comp_params["T_biv"],
+                                               a=comp_params["a"],
+                                               b=comp_params["b"],
+                                               Simulation_PAC_input_parameter=Simulation_PAC_input_parameter)
+        Besoin_chauff_biv2 = T_target - comp_params["T_biv2"]
+        comp_params["T_fluid_biv2"] = comp_params["a"] * comp_params["T_biv2"] + comp_params["b"]
+        COP_biv2 = estim_COP(T_ext=comp_params["T_biv2"], T_fluid=comp_params["T_fluid_biv2"], type=Simulation_PAC_input_parameter["System"])
+        # CE COP EST MODIFIE PAR LE REGIME DE CHARGE PARTIELLE (RATIO PLF APPLIQUE)
+        PLR_T_biv2 = float(comp_params["COP_biv"] * Besoin_chauff_biv2 / (comp_params["Besoin_chauff_biv"] * COP_biv2))
+        a_PLF = (Simulation_PAC_input_parameter["PLF_biv"] - 1) / (PLR_T_biv2 - 1)
+        b_PLF = 1 - a_PLF
+    else :
+        a_PLF=0; b_PLF = 1;
+        comp_params["T_biv2"]=comp_params["T_biv"]
+        if Simulation_PAC_input_parameter['Technology'] == 'Bi-compressor':
+            print('not implemented')
+            #TODO implémenter le bi-compresseur
 
     meteo_data_heating_period= meteo_data_heating_period.\
-        assign(T_fluid=lambda x: a_PLF*x['temp']+b_PLF). \
-        assign(COP=lambda x: estim_COP(x['temp'], x['T_fluid'], type="AW")). \
-        assign(Delta_T_target = lambda x: T_target - x['temp']).\
-        assign(PLR_CR = lambda x: COP_biv * x['Delta_T_target']  / Delta_T_biv / x['COP'] ).\
+        assign(T_fluid=lambda x: comp_params["a"]*x['temp']+comp_params["b"])
+    meteo_data_heating_period["COP"] =meteo_data_heating_period.\
+        apply(lambda x: estim_COP(x['temp'], x['T_fluid'], type=Simulation_PAC_input_parameter["System"]), axis=1)
+    meteo_data_heating_period = meteo_data_heating_period.\
+        assign(Besoin_chauff = lambda x: T_target - x['temp']).\
+        assign(PLR_CR = lambda x: comp_params["COP_biv"] * x['Besoin_chauff']  / comp_params["Besoin_chauff_biv"] / x['COP'] ).\
         assign(PLF = lambda x: a_PLF * x['PLR_CR']  + b_PLF).\
-        assign(PLR_ma = lambda x: Techno["Power_ratio"] * x['PLR_CR'] / x['PLF']).\
-        assign(Dp = lambda x:  x['PLR_ma']  / (1 + Techno["Ce"] * (x['PLR_ma']-1)))
-
-    if Techno["Mode"] == "Monovalent":
-        meteo_data_heating_period.\
-            assign(P_calo=lambda x: x['Delta_T_target'] if x['temp']<Techno["Temperature_limit"] else Delta_T_biv * x['COP']  / COP_biv  if x['temp']<T_biv else x['Delta_T_target']  ). \
-            assign(P_elec=lambda x: x['Delta_T_target'] if x['temp'] < Techno["Temperature_limit"] else Delta_T_biv / COP_biv  if  x['temp']<T_biv else x['Delta_T_target'] / (x['COP'] * x['PLF']) if ((x['temp'] < T_biv2)&(x['temp'] > T_biv)) else x['Delta_T_target'] / (x['COP'] * x['PLF'] *x['Dp']))
-
+        assign(PLR_ma = lambda x: Simulation_PAC_input_parameter["Power_ratio"] * x['PLR_CR'] / x['PLF']).\
+        assign(Dp = lambda x:  x['PLR_ma']  / (1 + Simulation_PAC_input_parameter["Ce"] * (x['PLR_ma']-1)))
+    meteo_data_heating_period.loc[meteo_data_heating_period['Dp']==0,'Dp']=0.001
+    #P_calo : besoin calorifique du bâtiment, dépend de la diff de temp entre T_target et T_ext
+    if Simulation_PAC_input_parameter["Mode"] == "Monovalent":
+        meteo_data_heating_period["P_calo"]=meteo_data_heating_period.apply(lambda x: x['Besoin_chauff'] if x['temp']<Simulation_PAC_input_parameter["Temperature_limit"] else comp_params["Besoin_chauff_biv"] * x['COP']  / comp_params["COP_biv"]  if x['temp']<comp_params["T_biv"]  else x['Besoin_chauff']  , axis=1)
+        meteo_data_heating_period["P_elec"]=meteo_data_heating_period.apply(lambda x: x['Besoin_chauff'] if x['temp'] < Simulation_PAC_input_parameter["Temperature_limit"] else comp_params["Besoin_chauff_biv"] / comp_params["COP_biv"]  if  x['temp']<comp_params["T_biv"] else x['Besoin_chauff'] / (x['COP'] * x['PLF']) if ((x['temp'] < comp_params["T_biv2"])&(x['temp'] > comp_params["T_biv"])) else x['Besoin_chauff'] / (x['COP'] * x['PLF'] *x['Dp']), axis=1)
         RE=0
         RP=np.zeros(len(meteo_data_heating_period))
-    if Techno["Mode"] == "Bivalent":
-        meteo_data_heating_period.\
-            assign(P_calo=lambda x: 0 if x['temp']<Techno["Temperature_limit"] else Delta_T_biv * x['COP']  / COP_biv  if x['temp']<T_biv else x['Delta_T_target']  ). \
-            assign(P_elec=lambda x: 0 if x['temp'] < Techno["Temperature_limit"] else Delta_T_biv / COP_biv  if  x['temp']<T_biv else x['Delta_T_target'] / (x['COP'] * x['PLF']) if ((x['temp'] < T_biv2)&(x['temp'] > T_biv)) else x['Delta_T_target'] / (x['COP'] * x['PLF'] *x['Dp'])).\
-            assign(P_app=lambda x: x['Delta_T_target'] if x['temp'] < Techno["Temperature_limit"] else x['Delta_T_target'] - Delta_T_biv * x['COP'] / COP_biv if x['temp']<T_biv else 0). \
-            assign(P_PAC=lambda x: 0 if x['temp'] < Techno["Temperature_limit"] else Delta_T_biv * x['COP']/ COP_biv if x['temp'] < T_biv else x['Delta_T_target'])
+
+    if Simulation_PAC_input_parameter["Mode"] == "Bivalent":
+        meteo_data_heating_period["P_calo"] = meteo_data_heating_period.apply(lambda x: 0 if x['temp']<Simulation_PAC_input_parameter["Temperature_limit"] else comp_params["Besoin_chauff_biv"] * x['COP']  / comp_params["COP_biv"]  if x['temp']<comp_params["T_biv"] else x['Besoin_chauff']  , axis=1)
+        meteo_data_heating_period["P_elec"] = meteo_data_heating_period.apply(lambda x: 0 if x['temp'] < Simulation_PAC_input_parameter["Temperature_limit"] else comp_params["Besoin_chauff_biv"] / comp_params["COP_biv"]  if  x['temp']<comp_params["T_biv"] else x['Besoin_chauff'] / (x['COP'] * x['PLF']) if ((x['temp'] < comp_params["T_biv2"])&(x['temp'] > comp_params["T_biv"])) else x['Besoin_chauff'] / (x['COP'] * x['PLF'] *x['Dp']), axis=1)
+        meteo_data_heating_period["P_app"] = meteo_data_heating_period.apply(lambda x: x['Besoin_chauff'] if x['temp'] < Simulation_PAC_input_parameter["Temperature_limit"] else x['Besoin_chauff'] - comp_params["Besoin_chauff_biv"] * x['COP'] / comp_params["COP_biv"] if x['temp']<comp_params["T_biv"] else 0, axis=1)
+        meteo_data_heating_period["P_PAC"] = meteo_data_heating_period.apply(lambda x: 0 if x['temp'] < Simulation_PAC_input_parameter["Temperature_limit"] else comp_params["Besoin_chauff_biv"] * x['COP']/ comp_params["COP_biv"] if x['temp'] < comp_params["T_biv"] else x['Besoin_chauff'], axis=1)
 
         RE=meteo_data_heating_period["P_app"].sum() / (meteo_data_heating_period["P_calo"]+meteo_data_heating_period["P_app"]).sum()
         RP=meteo_data_heating_period["P_app"] / (meteo_data_heating_period["P_calo"]+meteo_data_heating_period["P_app"])
+
 
 
     ## ON STOCKE LES RESULTATS

@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 
-from f_heat_pump import *
+from   Models.HeatPump_models.f_heat_pump import *
 Data_Folder = "Models/HeatPump_models/data/"
 #endregion
 
@@ -24,8 +24,7 @@ population=pd.read_csv(Data_Folder+"Population_NUTS2.csv").set_index(["unit"]).l
 Systems.System.unique()
 Systems.Technology.unique()
 System=Systems.iloc[10,:]
-Heating_params = {  "T_start" : 15, "T_target" : 18,
-                    "T_base" : np.quantile(temp_ts_Zone, q = 5 / 365)}
+Heating_params = {  "T_start" : 15, "T_target" : 18   }
 Simulation_PAC_input_parameter = {**Heating_params, **System.to_dict()}
 Simulation_PAC_input_parameter.keys()
 meteo_data = temp_ts_Zone.loc["2018",:]
@@ -34,4 +33,4 @@ meteo_data_heating_period= get_heating_period_metdata(meteo_data)
 SCOP=estim_SCOP(meteo_data_heating_period=meteo_data_heating_period,
                 Simulation_PAC_input_parameter=Simulation_PAC_input_parameter)
 
-tmp_results = estim_COPs(, T_base = T_base, Heating_params = Heating_params, Systems = Systems)
+SCOP
