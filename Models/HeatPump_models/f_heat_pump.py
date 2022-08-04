@@ -94,15 +94,18 @@ def compute_T_biv2(COP_biv,T_biv,a,b,Simulation_PAC_input_parameter):
 
     # CALCUL DU DELTA ET DES RACINES
     delta_degiv=A2_degiv ** 2-4 * A1_degiv * A3_degiv
-    T_biv2_degiv=(-A2_degiv-math.sqrt(delta_degiv)) / (2 * A3_degiv)
-
+    if delta_degiv>=0:
+        T_biv2_degiv=(-A2_degiv-math.sqrt(delta_degiv)) / (2 * A3_degiv)
+    else: T_biv2_degiv = np.nan
     ## IDEM POUR LA DEUXIEME COURBES DE COP (AVEC DEGIVRAGE)
     A1_nodegiv=float(Omega* COP_biv / (T_target - T_biv) * T_target-(a1+b1 * b+c1 * b ** 2))
     A2_nodegiv=float(-Omega * COP_biv / (T_target - T_biv)+(b1+2 * c1 * b) * (1-a))
     A3_nodegiv=float(-c1 * (1-a) ** 2)
 
     delta_nodegiv=A2_nodegiv ** 2-4 * A1_nodegiv * A3_nodegiv
-    T_biv2_nodegiv=(-A2_nodegiv-math.sqrt(delta_nodegiv)) / (2 * A3_nodegiv)
+    if delta_nodegiv>=0:
+        T_biv2_nodegiv=(-A2_nodegiv-math.sqrt(delta_nodegiv)) / (2 * A3_nodegiv)
+    else: T_biv2_nodegiv = np.nan
 
     ## LA SOLUTION PEUT SE TROUVER DANS L'INTERVALE ENTRE LE DEGIVRAGE 100% ET PAS DE DEGIVRAGE
     ## ON RESOUD UNE EQUATION DU 3EME DEGRE
@@ -142,10 +145,10 @@ def compute_T_biv2(COP_biv,T_biv,a,b,Simulation_PAC_input_parameter):
     else: T_biv2_partdegiv=float(np.real(roots[np.imag(roots) == 0]))
 
     ## ON GARDE LA RACINE QUI SE TROUVE SUR LA BONNE PORTION DE LA COURBE (QUI CORRESPOND A CELLE SUR LAQUELLE ELLE EST CALCULEE)
-    if T_biv2_degiv < (-3):
+    if ((not np.isnan(T_biv2_degiv))&(T_biv2_degiv < (-3))):
         T_biv2=T_biv2_degiv
     else :
-        if T_biv2_nodegiv > 6:
+        if ((not np.isnan(T_biv2_nodegiv))&(T_biv2_nodegiv > 6)):
             T_biv2=T_biv2_nodegiv
         else:
             T_biv2=T_biv2_partdegiv
@@ -160,7 +163,9 @@ def estim_T_biv(T_base,Simulation_PAC_input_parameter):
         COP_base = estim_COP(T_ext=T_base,
                              T_fluid=TemperatureValues[Simulation_PAC_input_parameter["Emitters"]])
         ab = coeffs_T_fluid(T_base,Simulation_PAC_input_parameter)
-        return compute_T_biv2(COP_base, T_base, ab["a"], ab["b"], Simulation_PAC_input_parameter)
+        T_target = Simulation_PAC_input_parameter["T_target"]
+        T_dim = T_target+(T_base-T_target)*Simulation_PAC_input_parameter['Share_Power']
+        return compute_T_biv2(COP_base,T_dim , ab["a"], ab["b"], Simulation_PAC_input_parameter)
         ## calcul à faire
 
 def estim_SCOP(meteo_data_heating_period,Simulation_PAC_input_parameter):
@@ -235,18 +240,17 @@ def estim_SCOP(meteo_data_heating_period,Simulation_PAC_input_parameter):
         meteo_data_heating_period["P_calo"] = meteo_data_heating_period.apply(lambda x: 0 if x['temp']<Simulation_PAC_input_parameter["Temperature_limit"] else comp_params["Besoin_chauff_biv"] * x['COP']  / comp_params["COP_biv"]  if x['temp']<comp_params["T_biv"] else x['Besoin_chauff']  , axis=1)
         meteo_data_heating_period["P_elec"] = meteo_data_heating_period.apply(lambda x: 0 if x['temp'] < Simulation_PAC_input_parameter["Temperature_limit"] else comp_params["Besoin_chauff_biv"] / comp_params["COP_biv"]  if  x['temp']<comp_params["T_biv"] else x['Besoin_chauff'] / (x['COP'] * x['PLF']) if ((x['temp'] < comp_params["T_biv2"])&(x['temp'] > comp_params["T_biv"])) else x['Besoin_chauff'] / (x['COP'] * x['PLF'] *x['Dp']), axis=1)
         meteo_data_heating_period["P_app"] = meteo_data_heating_period.apply(lambda x: x['Besoin_chauff'] if x['temp'] < Simulation_PAC_input_parameter["Temperature_limit"] else x['Besoin_chauff'] - comp_params["Besoin_chauff_biv"] * x['COP'] / comp_params["COP_biv"] if x['temp']<comp_params["T_biv"] else 0, axis=1)
-        meteo_data_heating_period["P_PAC"] = meteo_data_heating_period.apply(lambda x: 0 if x['temp'] < Simulation_PAC_input_parameter["Temperature_limit"] else comp_params["Besoin_chauff_biv"] * x['COP']/ comp_params["COP_biv"] if x['temp'] < comp_params["T_biv"] else x['Besoin_chauff'], axis=1)
+
 
         RE=meteo_data_heating_period["P_app"].sum() / (meteo_data_heating_period["P_calo"]+meteo_data_heating_period["P_app"]).sum()
         RP=meteo_data_heating_period["P_app"] / (meteo_data_heating_period["P_calo"]+meteo_data_heating_period["P_app"])
-
-
 
     ## ON STOCKE LES RESULTATS
     SCOP = meteo_data_heating_period["P_calo"].sum()/meteo_data_heating_period["P_elec"].sum()
     COP_data = meteo_data_heating_period["P_calo"] / meteo_data_heating_period["P_elec"]
 
-    return {"SCOP":SCOP,"COP_data":COP_data,"RP":RP,"RE":RE}
+    return {"SCOP":SCOP,"COP_data":COP_data,"T_biv":comp_params["T_biv"],
+            "RP":RP,"RE":RE,"meteo_data_heating_period":meteo_data_heating_period}
 
 
 def get_heating_period_metdata(meteo_data):

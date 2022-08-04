@@ -3,7 +3,9 @@ import pandas as pd
 import numpy as np
 
 from   Models.HeatPump_models.f_heat_pump import *
+from functions.f_graphicalTools import *
 Data_Folder = "Models/HeatPump_models/data/"
+GraphicalResultsFolder = "Models/HeatPump_models/graphics/"
 #endregion
 
 
@@ -29,8 +31,44 @@ Simulation_PAC_input_parameter = {**Heating_params, **System.to_dict()}
 Simulation_PAC_input_parameter.keys()
 meteo_data = temp_ts_Zone.loc["2018",:]
 meteo_data_heating_period= get_heating_period_metdata(meteo_data)
+Power_Ratio={}
+Energy_Ratio={}
+Consumption_Ratio={}
+T_biv={}
+for Value in np.linspace(0.1,3,100):
+    Simulation_PAC_input_parameter['Share_Power']=Value
+    SCOP=estim_SCOP(meteo_data_heating_period=meteo_data_heating_period,
+                    Simulation_PAC_input_parameter=Simulation_PAC_input_parameter)
 
-SCOP=estim_SCOP(meteo_data_heating_period=meteo_data_heating_period,
-                Simulation_PAC_input_parameter=Simulation_PAC_input_parameter)
+    MyConsoData =SCOP["meteo_data_heating_period"][["P_calo",'P_app']]
+    Maximums = MyConsoData.max()
+    Means =  MyConsoData.mean()
+    mean_P_elec = SCOP["meteo_data_heating_period"]["P_elec"].mean()
+    Power_Ratio[Value] = Maximums["P_calo"] / (Maximums["P_calo"]+Maximums["P_app"])
+    Energy_Ratio[Value] = Means["P_calo"] / (Means["P_calo"]+Means["P_app"])
+    Consumption_Ratio[Value] = mean_P_elec / (mean_P_elec+Means["P_app"])
+    T_biv[Value] =SCOP["T_biv"]
 
-SCOP
+
+MyData = pd.DataFrame.from_dict({"T_biv" : T_biv.values(),
+                                 "Power_Ratio" : Power_Ratio.values(),
+                                 "Energy_Ratio" : Energy_Ratio.values(),
+                                 "Consumption_Ratio" : Consumption_Ratio.values()}).set_index("T_biv")
+
+MyData.plot(y=['Power_Ratio',"Energy_Ratio","Consumption_Ratio"], use_index=True)
+import plotly.express as px
+
+fig = px.line(MyData*100,
+              labels={
+                  "T_biv": "Température de bivalence [°C]",
+                  "value": "Contribution de la PAC [%]",
+                  "Power_Ratio" : "a la puissance",
+              },
+              x=MyData.index, y=['Power_Ratio',"Energy_Ratio","Consumption_Ratio"])
+plotly.offline.plot(fig, filename=GraphicalResultsFolder+'file.html') ## offline
+
+fig=MyStackedPlotly(y_df=MyConsoData)
+fig=fig.update_layout(title_text="Conso (en Delta°C)", xaxis_title="heures de l'année")
+plotly.offline.plot(fig, filename=GraphicalResultsFolder+'file.html') ## offline
+
+SCOP["COP_data"].mean()
