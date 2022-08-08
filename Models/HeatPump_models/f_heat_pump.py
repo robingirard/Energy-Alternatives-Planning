@@ -14,10 +14,13 @@ TemperatureValues = {
 # coefficients issus de la thèse d'Antoine https://pastel.archives-ouvertes.fr/tel-02969503/document
 # equation (3.7) (3.8) p78
 nominal_COP_curve_Coefficients = {
-    "A/A HP": {"a1": 9.3017, "b1": -0.2233, "c1": 0.0017,
+    "A/A HP": {"a1": 7.177, "b1": -0.156, "c1": 0.0005,"d1":-0.066,
            "a2": 5.6, "b2": -0.09, "c2": 0.0005},
-    "A/W HP": {"a1": 7.972, "b1": -0.2233, "c1": 0.0017,
-           "a2": 4.27, "b2": -0.09, "c2": 0.0005},}
+    "A/W HP": {"a1": 8.507, "b1": -0.156, "c1": 0.0005,"d1":-0.066,
+           "a2": 4.27, "b2": -0.09, "c2": 0.0005},
+    "W/W HP": {"a1": 10.29, "b1": -0.21, "c1": 0.0012,"d1":0,
+               "a2": 10.29, "b2": -0.21, "c2": 0.0012}
+}
 
 
 
@@ -33,7 +36,7 @@ def coeffs_T_fluid(T_base,Simulation_PAC_input_parameter):
     T_target=Simulation_PAC_input_parameter["T_target"]
     res={}
     if Simulation_PAC_input_parameter["System"]=="A/A HP": #PAC AIR/AIR
-        res["a"]=(35-25)/(T_base-T_target)
+        res["a"]=(35-T_target)/(T_base-T_target)
         res["b"]=35-res["a"]*T_base
     if ((Simulation_PAC_input_parameter["System"]=="A/W HP")|((Simulation_PAC_input_parameter["System"]=="chaudiere")&(Simulation_PAC_input_parameter["Technology"]=="condensation"))): #PAC AIR/EAU
         res["a"]=(TemperatureValues[Simulation_PAC_input_parameter["Emitters"]]-T_target)/(T_base-T_target)
@@ -61,14 +64,15 @@ def estim_COP(T_ext,T_fluid,type = "A/W HP"):
     a1 = nominal_COP_curve_Coefficients[type]["a1"]
     b1 = nominal_COP_curve_Coefficients[type]["b1"]
     c1 = nominal_COP_curve_Coefficients[type]["c1"]
+    d1 = nominal_COP_curve_Coefficients[type]["d1"]
 
     if T_ext <= -3:
         res = a2 + b2 * Delta_T + c2 * Delta_T**2
     elif T_ext >= 6:
-        res =  a1 + b1 * Delta_T + c1 * Delta_T ** 2
+        res =  a1 + b1 * Delta_T + c1 * Delta_T ** 2 + d1 * T_fluid
     else:
         res = (T_ext - 6) / (-9) * (a2 + b2 * Delta_T + c2 * Delta_T**2) + (T_ext + 3) / 9 * (
-                          a1 + b1 * Delta_T + c1 * Delta_T ** 2)
+                          a1 + b1 * Delta_T + c1 * Delta_T ** 2 + d1 * T_fluid)
     return res
 
 def compute_T_biv2(COP_biv,T_biv,a,b,Simulation_PAC_input_parameter):
@@ -82,6 +86,7 @@ def compute_T_biv2(COP_biv,T_biv,a,b,Simulation_PAC_input_parameter):
     b2 = nominal_COP_curve_Coefficients[type]["b2"]
     c1 = nominal_COP_curve_Coefficients[type]["c1"];
     c2 = nominal_COP_curve_Coefficients[type]["c2"]
+    d1 = nominal_COP_curve_Coefficients[type]["d1"];
 
     if Simulation_PAC_input_parameter["Technology"] == "Inverter":
         Omega = Simulation_PAC_input_parameter["Power_ratio"] / Simulation_PAC_input_parameter["PLF_biv"]
@@ -98,8 +103,8 @@ def compute_T_biv2(COP_biv,T_biv,a,b,Simulation_PAC_input_parameter):
         T_biv2_degiv=(-A2_degiv-math.sqrt(delta_degiv)) / (2 * A3_degiv)
     else: T_biv2_degiv = np.nan
     ## IDEM POUR LA DEUXIEME COURBES DE COP (AVEC DEGIVRAGE)
-    A1_nodegiv=float(Omega* COP_biv / (T_target - T_biv) * T_target-(a1+b1 * b+c1 * b ** 2))
-    A2_nodegiv=float(-Omega * COP_biv / (T_target - T_biv)+(b1+2 * c1 * b) * (1-a))
+    A1_nodegiv=float(Omega* COP_biv / (T_target - T_biv) * T_target-(a1+(b1+d1) * b+c1 * b ** 2))
+    A2_nodegiv=float(-Omega * COP_biv / (T_target - T_biv)+(b1+2 * c1 * b) * (1-a)+d1*a)
     A3_nodegiv=float(-c1 * (1-a) ** 2)
 
     delta_nodegiv=A2_nodegiv ** 2-4 * A1_nodegiv * A3_nodegiv
@@ -114,8 +119,8 @@ def compute_T_biv2(COP_biv,T_biv,a,b,Simulation_PAC_input_parameter):
     alpha=a
     beta=b
 
-    coeff1_1=N1 * (a1+b1 * beta+c1 * beta** 2)
-    coeff1_X=M1 * (a1+b1 * beta+c1 * beta** 2)-N1 * (b1 * (1-alpha)+2 * c1 * beta * (1-alpha))
+    coeff1_1=N1 * (a1+ (b1 + d1) * beta+ c1 * beta** 2)
+    coeff1_X=M1 * (a1+b1 * beta+c1 * beta** 2)-N1 * (b1 * (1-alpha)+2 * c1 * beta * (1-alpha) - d1 * alpha)
     coeff1_X2=-M1 * (b1 * (1-alpha)+2 * c1 * beta * (1-alpha))+N1 * c1 * (1-alpha) ** 2
     coeff1_X3=M1 * c1 * (1-alpha) ** 2
 
