@@ -10,17 +10,15 @@ colors = ["#004776","#b8e1ff","#72c5fe","#2baaff","#f8b740","#005f9e","#000000",
 customPalette = sns.set_palette(sns.color_palette(colors))
 
 input_path = "Models/Industry_model/Input/Steel/Data/"
-Resources_Technologies=pd.read_excel(input_path+"Resources_Technologies.xlsx").fillna(0).set_index('Resource').drop("unit",axis=1)
-Production_Technologies = pd.read_excel(input_path + "Steel_Technologies.xlsx").fillna(0).set_index('Resource').drop("unit",axis=1)
-Available_Technologies = pd.read_excel(input_path + "Steel_available_techs_2015.xlsx").fillna(0).set_index('Technologies')
-Production = pd.read_excel(input_path + "Steel_production_2015.xlsx").fillna(0).set_index('Resource')
-Resources_Characteristics=pd.read_excel(input_path+"Resources_Characteristics.xlsx").set_index("Resource")
+Parameters_data= pd.read_excel("Models/Industry_model/Input/Steel/Data/parameters.xlsx",sheet_name=["TECHNOLOGIES","RESOURCE","TECHNOLOGIES_RESOURCE"])
 
-Parameters={"Tech_paramters" : Resources_Technologies,
-            "Resource_parameters" : Production_Technologies,
-            "Tech_resource_parameters" :}
-
-Results=main(Parameters,opti2mini="cost",carbon_tax=0)#emission
+Parameters={"TECHNOLOGIES_parameters" : Parameters_data["TECHNOLOGIES"].fillna(0).set_index('TECHNOLOGIES'),
+            "RESOURCE_parameters" : Parameters_data["RESOURCE"].fillna(0).set_index('RESOURCE'),
+            "TECHNOLOGIES_RESOURCE_parameters" : Parameters_data["TECHNOLOGIES_RESOURCE"].fillna(0).\
+                melt(id_vars='TECHNOLOGIES', var_name="RESOURCE",value_name='Conversion_factor').\
+                set_index(['TECHNOLOGIES','RESOURCE'])
+}
+Results=GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0)#emission
 print(Results)
 
 fig,ax=plt.subplots()
