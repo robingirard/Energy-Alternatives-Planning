@@ -329,7 +329,7 @@ def GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0):
     model.V_emissions = Var(domain=Reals)
     model.V_emissions_plus=Var(domain=PositiveReals)
     model.V_emissions_minus=Var(domain=NegativeReals)
-    model.V_resource_flow = Var(model.RESOURCES, domain=NegativeReals)
+    model.V_resource_flow = Var(model.RESOURCES, domain=Reals)
     model.V_resource_inflow = Var(model.RESOURCES, domain=PositiveReals)
     model.V_resource_outflow = Var(model.RESOURCES, domain=PositiveReals)
     model.V_technology_use_coef=Var(model.TECHNOLOGIES,domain=PositiveReals)
@@ -361,7 +361,7 @@ def GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0):
     def Emissions_definition_rule(model):
         return model.V_emissions == sum(
             model.P_emissions_t[tech] * model.V_technology_use_coef[tech] for tech in model.TECHNOLOGIES) + \
-            sum(model.P_emissions_r[resource]*model.V_resource_inflow[resource] for resource in model.RESOURCES)
+            sum(model.P_emissions_r[resource]*model.V_resource_flow[resource] for resource in model.RESOURCES)
 
     model.Emissions_definitionCtr = Constraint(rule=Emissions_definition_rule)
 
