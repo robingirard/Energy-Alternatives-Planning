@@ -15,7 +15,7 @@ Parameters_data= pd.read_excel("Models/Industry_model/Input/Steel/Data/parameter
 Parameters={"TECHNOLOGIES_parameters" : Parameters_data["TECHNOLOGIES"].fillna(0).set_index('TECHNOLOGIES'),
             "RESOURCES_parameters" : Parameters_data["RESOURCES"].fillna(0).set_index('RESOURCES'),
             "TECHNOLOGIES_RESOURCES_parameters" : Parameters_data["TECHNOLOGIES_RESOURCES"].fillna(0).\
-                melt(id_vars='TECHNOLOGIES', var_name="RESOURCES",value_name='Conversion_factor').\
+                melt(id_vars='TECHNOLOGIES', var_name="RESOURCES",value_name='conversion_factor').\
                 set_index(['TECHNOLOGIES','RESOURCES'])
 }
 Results=GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0)#emission

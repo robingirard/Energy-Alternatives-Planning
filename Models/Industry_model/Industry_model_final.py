@@ -150,13 +150,13 @@ def main(RESOURCES_Technologies,Production_Technologies,Available_Technologies,P
     model.V_emissions = Var(domain=Reals)
     model.V_emissions_plus=Var(domain=PositiveReals)
     model.V_emissions_minus=Var(domain=NegativeReals)
-    model.V_RESOURCES_flow = Var(model.RESOURCES, domain=NegativeReals)
-    model.V_RESOURCES_inflow = Var(model.RESOURCES, domain=PositiveReals)
-    model.V_RESOURCES_outflow = Var(model.RESOURCES, domain=PositiveReals)
+    model.V_resource_flow = Var(model.RESOURCES, domain=NegativeReals)
+    model.V_resource_inflow = Var(model.RESOURCES, domain=PositiveReals)
+    model.V_resource_outflow = Var(model.RESOURCES, domain=PositiveReals)
     model.V_primary_RESOURCES_production=Var(model.PRIMARY_RESOURCES_TECHS,model.PRIMARY_RESOURCES,domain=PositiveReals)
     model.V_technology_use_coef=Var(model.TECHNOLOGIES,domain=PositiveReals)
-    model.V_RESOURCES_tech_inflow = Var(model.TECHNOLOGIES,model.RESOURCES, domain=PositiveReals)
-    model.V_RESOURCES_tech_outflow = Var(model.TECHNOLOGIES,model.RESOURCES, domain=PositiveReals)
+    model.V_resource_tech_inflow = Var(model.TECHNOLOGIES,model.RESOURCES, domain=PositiveReals)
+    model.V_resource_tech_outflow = Var(model.TECHNOLOGIES,model.RESOURCES, domain=PositiveReals)
 
     ########################
     # Objective Function   #
@@ -196,38 +196,38 @@ def main(RESOURCES_Technologies,Production_Technologies,Available_Technologies,P
     model.Emissions_definition_2ndCtr=Constraint(rule=Emissions_definition_2nd_rule)
 
     def RESOURCES_flow_definition_1st_rule(model,RESOURCES):
-        return model.V_RESOURCES_flow[RESOURCES]==model.V_RESOURCES_inflow[RESOURCES]-model.V_RESOURCES_outflow[RESOURCES]
+        return model.V_resource_flow[RESOURCES]==model.V_resource_inflow[RESOURCES]-model.V_resource_outflow[RESOURCES]
     model.RESOURCES_flow_definition_1stCtr=Constraint(model.RESOURCES,rule=RESOURCES_flow_definition_1st_rule)
 
     def RESOURCES_flow_definition_2nd_rule(model,tech,RESOURCES):
-        return model.V_RESOURCES_tech_inflow[tech,RESOURCES]-model.V_RESOURCES_tech_outflow[tech,RESOURCES]==model.V_technology_use_coef[tech]*model.P_tech_flows[tech,RESOURCES]
+        return model.V_resource_tech_inflow[tech,RESOURCES]-model.V_resource_tech_outflow[tech,RESOURCES]==model.V_technology_use_coef[tech]*model.P_tech_flows[tech,RESOURCES]
     model.RESOURCES_flow_definition_2ndCtr = Constraint(model.TECHNOLOGIES,model.RESOURCES, rule=RESOURCES_flow_definition_2nd_rule)
 
     def RESOURCES_flow_tech_rule(model,tech,RESOURCES):
         if model.P_tech_flows[tech,RESOURCES]>0:
-            return model.V_RESOURCES_tech_outflow[tech,RESOURCES]==0
+            return model.V_resource_tech_outflow[tech,RESOURCES]==0
         else:
-            return model.V_RESOURCES_tech_inflow[tech, RESOURCES] == 0
+            return model.V_resource_tech_inflow[tech, RESOURCES] == 0
     model.RESOURCES_flow_techCtr=Constraint(model.TECHNOLOGIES,model.RESOURCES,rule=RESOURCES_flow_tech_rule)
 
     def RESOURCES_flow_definition_3rd_rule(model,RESOURCES):
-        return model.V_RESOURCES_inflow[RESOURCES]==sum(model.V_RESOURCES_tech_inflow[tech,RESOURCES] for tech in model.TECHNOLOGIES)
+        return model.V_resource_inflow[RESOURCES]==sum(model.V_resource_tech_inflow[tech,RESOURCES] for tech in model.TECHNOLOGIES)
     model.RESOURCES_flow_definition_3rdCtr = Constraint(model.RESOURCES, rule=RESOURCES_flow_definition_3rd_rule)
 
     def RESOURCES_flow_definition_4th_rule(model,RESOURCES):
-        return model.V_RESOURCES_outflow[RESOURCES]==sum(model.V_RESOURCES_tech_outflow[tech,RESOURCES] for tech in model.TECHNOLOGIES)
+        return model.V_resource_outflow[RESOURCES]==sum(model.V_resource_tech_outflow[tech,RESOURCES] for tech in model.TECHNOLOGIES)
     model.RESOURCES_flow_definition_4thCtr = Constraint(model.RESOURCES, rule=RESOURCES_flow_definition_4th_rule)
 
 
     def RESOURCES_flow_equilibrium_rule(model,RESOURCES):
         if model.P_products_boolean[RESOURCES] == 0:
-            return model.V_RESOURCES_flow[RESOURCES]==0
+            return model.V_resource_flow[RESOURCES]==0
         else:
             return Constraint.Skip
     model.RESOURCES_flow_equilibriumCtr=Constraint(model.RESOURCES,rule=RESOURCES_flow_equilibrium_rule)
 
     def Primary_RESOURCES_prod_limit_rule(model,RESOURCES):
-        return model.V_RESOURCES_inflow[RESOURCES]>=sum(model.V_RESOURCES_tech_outflow[tech,RESOURCES] for tech in model.PRIMARY_RESOURCES_TECHS)
+        return model.V_resource_inflow[RESOURCES]>=sum(model.V_resource_tech_outflow[tech,RESOURCES] for tech in model.PRIMARY_RESOURCES_TECHS)
     model.Primary_RESOURCES_prod_limit_rule=Constraint(model.PRIMARY_RESOURCES,rule=Primary_RESOURCES_prod_limit_rule)
 
 
@@ -235,12 +235,12 @@ def main(RESOURCES_Technologies,Production_Technologies,Available_Technologies,P
     ###Production Constraints###
     def Production_moins_rule(model,RESOURCES):
         if model.P_RESOURCES_prod[RESOURCES]!=0:
-            return model.P_RESOURCES_prod[RESOURCES]*(1+model.P_production_error_margin[RESOURCES])>=model.V_RESOURCES_outflow[RESOURCES]
+            return model.P_RESOURCES_prod[RESOURCES]*(1+model.P_production_error_margin[RESOURCES])>=model.V_resource_outflow[RESOURCES]
         else:
             return Constraint.Skip
     def Production_plus_rule(model,RESOURCES):
         if model.P_RESOURCES_prod[RESOURCES]!=0:
-            return model.P_RESOURCES_prod[RESOURCES]*(1-model.P_production_error_margin[RESOURCES])<=model.V_RESOURCES_outflow[RESOURCES]
+            return model.P_RESOURCES_prod[RESOURCES]*(1-model.P_production_error_margin[RESOURCES])<=model.V_resource_outflow[RESOURCES]
         else:
             return Constraint.Skip
 
@@ -249,14 +249,14 @@ def main(RESOURCES_Technologies,Production_Technologies,Available_Technologies,P
 
     def Technology_Production_rule(model,tech,RESOURCES):
         if model.P_tech_RESOURCES_flow_coef[tech,RESOURCES]!=0:
-            return model.P_tech_RESOURCES_flow_coef[tech,RESOURCES]*model.V_RESOURCES_outflow[RESOURCES]==-model.V_technology_use_coef[tech]*model.P_tech_flows[tech,RESOURCES]
+            return model.P_tech_RESOURCES_flow_coef[tech,RESOURCES]*model.V_resource_outflow[RESOURCES]==-model.V_technology_use_coef[tech]*model.P_tech_flows[tech,RESOURCES]
         else:
             return Constraint.Skip
     model.Technology_ProductionCtr=Constraint(model.TECHNOLOGIES,model.RESOURCES,rule=Technology_Production_rule)
 
     def Technology_Capacity_rule(model,tech,RESOURCES):
         if model.P_tech_RESOURCES_capacity[tech,RESOURCES]>0:
-            return model.V_RESOURCES_tech_outflow[tech,RESOURCES]<=model.P_tech_RESOURCES_capacity[tech,RESOURCES]
+            return model.V_resource_tech_outflow[tech,RESOURCES]<=model.P_tech_RESOURCES_capacity[tech,RESOURCES]
         else:
             return Constraint.Skip
     model.Technology_CapacityCtr=Constraint(model.TECHNOLOGIES,model.RESOURCES,rule=Technology_Capacity_rule)
@@ -271,8 +271,8 @@ def main(RESOURCES_Technologies,Production_Technologies,Available_Technologies,P
     # print("Print values for all variables")
     Results = {}
     for v in model.component_data_objects(Var):
-        if  v.name[:29]!='V_primary_RESOURCES_production' and v.name[:23]!='V_RESOURCES_tech_outflow' and \
-            v.name[:22]!='V_RESOURCES_tech_inflow' and v.name[:15]!='V_RESOURCES_flow':
+        if  v.name[:29]!='V_primary_RESOURCES_production' and v.name[:23]!='V_resource_tech_outflow' and \
+            v.name[:22]!='V_resource_tech_inflow' and v.name[:15]!='V_resource_flow':
             # print(v,v.value)
             Results[v.name]= v.value
 
@@ -307,7 +307,8 @@ def GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0):
     ###############
     # Parameters ##
     ###############
-
+    model.P_carbon_tax = carbon_tax
+    
     for COLNAME in Parameters["TECHNOLOGIES_parameters"]:
         exec("model.P_" + COLNAME + " =  Param(model.TECHNOLOGIES, mutable=False, domain=Any,default=0," +
                  "initialize=Parameters[\"TECHNOLOGIES_parameters\"]." + COLNAME + ".squeeze().to_dict())")
@@ -328,12 +329,12 @@ def GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0):
     model.V_emissions = Var(domain=Reals)
     model.V_emissions_plus=Var(domain=PositiveReals)
     model.V_emissions_minus=Var(domain=NegativeReals)
-    model.V_RESOURCES_flow = Var(model.RESOURCES, domain=NegativeReals)
-    model.V_RESOURCES_inflow = Var(model.RESOURCES, domain=PositiveReals)
-    model.V_RESOURCES_outflow = Var(model.RESOURCES, domain=PositiveReals)
+    model.V_resource_flow = Var(model.RESOURCES, domain=NegativeReals)
+    model.V_resource_inflow = Var(model.RESOURCES, domain=PositiveReals)
+    model.V_resource_outflow = Var(model.RESOURCES, domain=PositiveReals)
     model.V_technology_use_coef=Var(model.TECHNOLOGIES,domain=PositiveReals)
-    model.V_RESOURCES_tech_inflow = Var(model.TECHNOLOGIES,model.RESOURCES, domain=PositiveReals)
-    model.V_RESOURCES_tech_outflow = Var(model.TECHNOLOGIES,model.RESOURCES, domain=PositiveReals)
+    model.V_resource_tech_inflow = Var(model.TECHNOLOGIES,model.RESOURCES, domain=PositiveReals)
+    model.V_resource_tech_outflow = Var(model.TECHNOLOGIES,model.RESOURCES, domain=PositiveReals)
 
     ########################
     # Objective Function   #
@@ -349,8 +350,8 @@ def GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0):
     model.OBJ = Objective(rule=Objective_rule, sense=minimize)
 
     def Cost_definition_rule(model):
-        return model.V_cost == sum(
-            model.P_flow_cost_t[tech] * model.V_technology_use_coef[tech] for tech in model.TECHNOLOGIES) + \
+        return model.V_cost == sum(model.P_flow_cost_r[resource]*model.V_resource_inflow[resource] for resource in model.RESOURCES)+\
+               sum(model.P_flow_cost_t[tech] * model.V_technology_use_coef[tech] for tech in model.TECHNOLOGIES) + \
                sum(model.P_capex[tech] * model.P_CRF[tech] * model.V_technology_use_coef[tech] for tech in
                    model.TECHNOLOGIES) + \
                model.P_carbon_tax * model.V_emissions_plus
@@ -359,7 +360,8 @@ def GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0):
 
     def Emissions_definition_rule(model):
         return model.V_emissions == sum(
-            model.P_emissions_t[tech] * model.V_technology_use_coef[tech] for tech in model.TECHNOLOGIES)
+            model.P_emissions_t[tech] * model.V_technology_use_coef[tech] for tech in model.TECHNOLOGIES) + \
+            sum(model.P_emissions_r[resource]*model.V_resource_inflow[resource] for resource in model.RESOURCES)
 
     model.Emissions_definitionCtr = Constraint(rule=Emissions_definition_rule)
 
@@ -373,65 +375,59 @@ def GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0):
         return model.V_emissions==model.V_emissions_plus+model.V_emissions_minus
     model.Emissions_definition_2ndCtr=Constraint(rule=Emissions_definition_2nd_rule)
 
-    #decomposition (+/-) of RESOURCES flow
-    def RESOURCES_flow_definition_1st_rule(model,RESOURCES):
-        return model.V_RESOURCES_flow[RESOURCES]==model.V_RESOURCES_inflow[RESOURCES]-model.V_RESOURCES_outflow[RESOURCES]
-    model.RESOURCES_flow_definition_1stCtr=Constraint(model.RESOURCES,rule=RESOURCES_flow_definition_1st_rule)
+    #decomposition (+/-) of resource flow
+    def resource_flow_definition_1st_rule(model,resource):
+        return model.V_resource_flow[resource]==model.V_resource_inflow[resource]-model.V_resource_outflow[resource]
+    model.resource_flow_definition_1stCtr=Constraint(model.RESOURCES,rule=resource_flow_definition_1st_rule)
 
     #decomposition (+/-) of tech flow
-    def RESOURCES_flow_definition_2nd_rule(model,tech,RESOURCES):
-        return model.V_RESOURCES_tech_inflow[tech,RESOURCES]-model.V_RESOURCES_tech_outflow[tech,RESOURCES]==model.V_technology_use_coef[tech]*model.[tech,RESOURCES]
-    model.RESOURCES_flow_definition_2ndCtr = Constraint(model.TECHNOLOGIES,model.RESOURCES, rule=RESOURCES_flow_definition_2nd_rule)
+    def resource_flow_definition_2nd_rule(model,tech,resource):
+        return model.V_resource_tech_inflow[tech,resource]-model.V_resource_tech_outflow[tech,resource]==model.V_technology_use_coef[tech]*model.P_conversion_factor[tech,resource]
+    model.resource_flow_definition_2ndCtr = Constraint(model.TECHNOLOGIES,model.RESOURCES, rule=resource_flow_definition_2nd_rule)
 
-    def RESOURCES_flow_tech_rule(model,tech,RESOURCES):
-        if model.P_tech_flows[tech,RESOURCES]>0:
-            return model.V_RESOURCES_tech_outflow[tech,RESOURCES]==0
+    def resource_flow_tech_rule(model,tech,resource):
+        if model.P_conversion_factor[tech,resource]>0:
+            return model.V_resource_tech_outflow[tech,resource]==0
         else:
-            return model.V_RESOURCES_tech_inflow[tech, RESOURCES] == 0
-    model.RESOURCES_flow_techCtr=Constraint(model.TECHNOLOGIES,model.RESOURCES,rule=RESOURCES_flow_tech_rule)
+            return model.V_resource_tech_inflow[tech, resource] == 0
+    model.resource_flow_techCtr=Constraint(model.TECHNOLOGIES,model.RESOURCES,rule=resource_flow_tech_rule)
 
-    def RESOURCES_flow_definition_3rd_rule(model,RESOURCES):
-        return model.V_RESOURCES_inflow[RESOURCES]==sum(model.V_RESOURCES_tech_inflow[tech,RESOURCES] for tech in model.TECHNOLOGIES)
-    model.RESOURCES_flow_definition_3rdCtr = Constraint(model.RESOURCES, rule=RESOURCES_flow_definition_3rd_rule)
+    def resource_flow_definition_3rd_rule(model,resource):
+        return model.V_resource_inflow[resource]==sum(model.V_resource_tech_inflow[tech,resource] for tech in model.TECHNOLOGIES)
+    model.resource_flow_definition_3rdCtr = Constraint(model.RESOURCES, rule=resource_flow_definition_3rd_rule)
 
-    def RESOURCES_flow_definition_4th_rule(model,RESOURCES):
-        return model.V_RESOURCES_outflow[RESOURCES]==sum(model.V_RESOURCES_tech_outflow[tech,RESOURCES] for tech in model.TECHNOLOGIES)
-    model.RESOURCES_flow_definition_4thCtr = Constraint(model.RESOURCES, rule=RESOURCES_flow_definition_4th_rule)
+    def resource_flow_definition_4th_rule(model,resource):
+        return model.V_resource_outflow[resource]==sum(model.V_resource_tech_outflow[tech,resource] for tech in model.TECHNOLOGIES)
+    model.resource_flow_definition_4thCtr = Constraint(model.RESOURCES, rule=resource_flow_definition_4th_rule)
 
 
-    def RESOURCES_flow_equilibrium_rule(model,RESOURCES):
-        if model.P_products_boolean[RESOURCES] == 0:
-            return model.V_RESOURCES_flow[RESOURCES]==0
-        else:
-            return Constraint.Skip
-    model.RESOURCES_flow_equilibriumCtr=Constraint(model.RESOURCES,rule=RESOURCES_flow_equilibrium_rule)
 
 
     ###Production Constraints###
-    def Production_moins_rule(model,RESOURCES):
-        if model.P_RESOURCES_prod[RESOURCES]!=0:
-            return model.P_RESOURCES_prod[RESOURCES]*(1+model.P_production_error_margin[RESOURCES])>=model.V_RESOURCES_outflow[RESOURCES]
+    def Production_moins_rule(model,resource):
+        if model.P_output[resource]!=0:
+            return model.P_output[resource]*(1+model.P_production_error_margin[resource])>=model.V_resource_outflow[resource]
         else:
             return Constraint.Skip
-    def Production_plus_rule(model,RESOURCES):
-        if model.P_RESOURCES_prod[RESOURCES]!=0:
-            return model.P_RESOURCES_prod[RESOURCES]*(1-model.P_production_error_margin[RESOURCES])<=model.V_RESOURCES_outflow[RESOURCES]
+    def Production_plus_rule(model,resource):
+        if model.P_output[resource]!=0:
+            return model.P_output[resource]*(1-model.P_production_error_margin[resource])<=model.V_resource_outflow[resource]
         else:
             return Constraint.Skip
 
     model.Production_moinsCtr=Constraint(model.RESOURCES,rule=Production_moins_rule)
     model.Production_plusCtr = Constraint(model.RESOURCES, rule=Production_plus_rule)
 
-    def Technology_Production_rule(model,tech,RESOURCES):
-        if model.P_tech_RESOURCES_flow_coef[tech,RESOURCES]!=0:
-            return model.P_tech_RESOURCES_flow_coef[tech,RESOURCES]*model.V_RESOURCES_outflow[RESOURCES]==-model.V_technology_use_coef[tech]*model.P_tech_flows[tech,RESOURCES]
+    def Technology_Production_rule(model,tech,resource):
+        if model.P_forced_prod_ratio[tech,resource]!=0:
+            return model.P_forced_prod_ratio[tech,resource]*model.V_resource_outflow[resource]==-model.V_technology_use_coef[tech]*model.P_conversion_factor[tech,resource]
         else:
             return Constraint.Skip
     model.Technology_ProductionCtr=Constraint(model.TECHNOLOGIES,model.RESOURCES,rule=Technology_Production_rule)
 
-    def Technology_Capacity_rule(model,tech,RESOURCES):
-        if model.P_tech_RESOURCES_capacity[tech,RESOURCES]>0:
-            return model.V_RESOURCES_tech_outflow[tech,RESOURCES]<=model.P_tech_RESOURCES_capacity[tech,RESOURCES]
+    def Technology_Capacity_rule(model,tech,resource):
+        if model.P_max_capacity_t[tech,resource]>0:
+            return model.V_resource_tech_outflow[tech,resource]<=model.P_max_capacity_t[tech,resource]
         else:
             return Constraint.Skip
     model.Technology_CapacityCtr=Constraint(model.TECHNOLOGIES,model.RESOURCES,rule=Technology_Capacity_rule)
@@ -446,8 +442,8 @@ def GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0):
     # print("Print values for all variables")
     Results = {}
     for v in model.component_data_objects(Var):
-        if  v.name[:29]!='V_primary_RESOURCES_production' and v.name[:23]!='V_RESOURCES_tech_outflow' and \
-            v.name[:22]!='V_RESOURCES_tech_inflow' and v.name[:15]!='V_RESOURCES_flow':
+        if  v.name[:29]!='V_primary_RESOURCES_production' and v.name[:23]!='V_resource_tech_outflow' and \
+            v.name[:22]!='V_resource_tech_inflow' and v.name[:15]!='V_resource_flow':
             # print(v,v.value)
             Results[v.name]= v.value
 
