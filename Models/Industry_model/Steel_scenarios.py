@@ -18,8 +18,23 @@ Parameters={"TECHNOLOGIES_parameters" : Parameters_data["TECHNOLOGIES"].fillna(0
                 melt(id_vars='TECHNOLOGIES', var_name="RESOURCES",value_name='conversion_factor').\
                 set_index(['TECHNOLOGIES','RESOURCES'])
 }
-Results=GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0)#emission
-print(Results)
+model=GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0)#emission
+opt = SolverFactory('mosek')
+
+results = opt.solve(model)
+
+######################
+# Results treatment  #
+######################
+# print("Print values for all variables")
+Results = {}
+for v in model.component_data_objects(Var):
+    if v.name[:29] != 'V_primary_RESOURCES_production' and v.name[:23] != 'V_resource_tech_outflow' and \
+            v.name[:22] != 'V_resource_tech_inflow' and v.name[:15] != 'V_resource_flow':
+        # print(v,v.value)
+        Results[v.name] = v.value
+
+return Results
 
 fig,ax=plt.subplots()
 ax.set_title("Total cost and emissions")

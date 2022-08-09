@@ -400,15 +400,13 @@ def GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0):
         return model.V_resource_outflow[resource]==sum(model.V_resource_tech_outflow[tech,resource] for tech in model.TECHNOLOGIES)
     model.resource_flow_definition_4thCtr = Constraint(model.RESOURCES, rule=resource_flow_definition_4th_rule)
 
-
-
-
     ###Production Constraints###
     def Production_moins_rule(model,resource):
         if model.P_output[resource]!=0:
             return model.P_output[resource]*(1+model.P_production_error_margin[resource])>=model.V_resource_outflow[resource]
         else:
             return Constraint.Skip
+
     def Production_plus_rule(model,resource):
         if model.P_output[resource]!=0:
             return model.P_output[resource]*(1-model.P_production_error_margin[resource])<=model.V_resource_outflow[resource]
@@ -418,34 +416,20 @@ def GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0):
     model.Production_moinsCtr=Constraint(model.RESOURCES,rule=Production_moins_rule)
     model.Production_plusCtr = Constraint(model.RESOURCES, rule=Production_plus_rule)
 
-    def Technology_Production_rule(model,tech,resource):
-        if model.P_forced_prod_ratio[tech,resource]!=0:
-            return model.P_forced_prod_ratio[tech,resource]*model.V_resource_outflow[resource]==-model.V_technology_use_coef[tech]*model.P_conversion_factor[tech,resource]
+    def Technology_Production_rule(model,tech):
+        if model.P_forced_prod_ratio[tech]!=0:
+            resource = model.P_forced_resource[tech]
+            return model.P_forced_prod_ratio[tech]*model.V_resource_outflow[resource]==-model.V_technology_use_coef[tech]*model.P_conversion_factor[tech,resource]
         else:
             return Constraint.Skip
-    model.Technology_ProductionCtr=Constraint(model.TECHNOLOGIES,model.RESOURCES,rule=Technology_Production_rule)
+    model.Technology_ProductionCtr=Constraint(model.TECHNOLOGIES,rule=Technology_Production_rule)
 
-    def Technology_Capacity_rule(model,tech,resource):
-        if model.P_max_capacity_t[tech,resource]>0:
-            return model.V_resource_tech_outflow[tech,resource]<=model.P_max_capacity_t[tech,resource]
+    def Technology_Capacity_rule(model,tech):
+        if model.P_max_capacity_t[tech]>0:
+            resource = model.P_forced_resource[tech]
+            return model.V_resource_tech_outflow[tech,resource]<=model.P_max_capacity_t[tech]
         else:
             return Constraint.Skip
-    model.Technology_CapacityCtr=Constraint(model.TECHNOLOGIES,model.RESOURCES,rule=Technology_Capacity_rule)
-
-    opt = SolverFactory('mosek')
-
-    results = opt.solve(model)
-
-    ######################
-    # Results treatment  #
-    ######################
-    # print("Print values for all variables")
-    Results = {}
-    for v in model.component_data_objects(Var):
-        if  v.name[:29]!='V_primary_RESOURCES_production' and v.name[:23]!='V_resource_tech_outflow' and \
-            v.name[:22]!='V_resource_tech_inflow' and v.name[:15]!='V_resource_flow':
-            # print(v,v.value)
-            Results[v.name]= v.value
-
-    return Results
+    model.Technology_CapacityCtr=Constraint(model.TECHNOLOGIES,rule=Technology_Capacity_rule)
+    return model
 
