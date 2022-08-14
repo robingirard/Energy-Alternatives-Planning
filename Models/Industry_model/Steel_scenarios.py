@@ -2,22 +2,39 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import plotly.express as px
-from Industry_model_final import *
+from Models.Industry_model.Industry_model_final import *
 
 # Create an array with the colors you want to use
 colors = ["#004776","#b8e1ff","#72c5fe","#2baaff","#f8b740","#005f9e","#000000",
           "#e7e7e7","#fef3e8","#e8f1ff","#ebf5ff","#c69131","#2087cb"]# Set your custom color palette
 customPalette = sns.set_palette(sns.color_palette(colors))
 
-input_path = "Input/Steel/Data/"
-Resources_Technologies=pd.read_excel(input_path+"Resources_Technologies.xlsx").fillna(0)
-Production_Technologies = pd.read_excel(input_path + "Steel_Technologies.xlsx").fillna(0)
-Available_Technologies = pd.read_excel(input_path + "Steel_available_techs_2015.xlsx").fillna(0)
-Production = pd.read_excel(input_path + "Steel_production_2015.xlsx").fillna(0)
-Resources_Characteristics=pd.read_excel(input_path+"Resources_Characteristics.xlsx").set_index("Resource")
+input_path = "Models/Industry_model/Input/Steel/Data/"
+Parameters_data= pd.read_excel("Models/Industry_model/Input/Steel/Data/parameters.xlsx",sheet_name=["TECHNOLOGIES","RESOURCES","TECHNOLOGIES_RESOURCES"])
 
-Results=main(Resources_Technologies,Production_Technologies,Available_Technologies,Production,opti2mini="cost",carbon_tax=0)
-print(Results)
+Parameters={"TECHNOLOGIES_parameters" : Parameters_data["TECHNOLOGIES"].fillna(0).set_index('TECHNOLOGIES'),
+            "RESOURCES_parameters" : Parameters_data["RESOURCES"].fillna(0).set_index('RESOURCES'),
+            "TECHNOLOGIES_RESOURCES_parameters" : Parameters_data["TECHNOLOGIES_RESOURCES"].fillna(0).\
+                melt(id_vars='TECHNOLOGIES', var_name="RESOURCES",value_name='conversion_factor').\
+                set_index(['TECHNOLOGIES','RESOURCES'])
+}
+model=GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=200)#emission
+opt = SolverFactory('mosek')
+
+results = opt.solve(model)
+######################
+# Results treatment  #
+######################
+# print("Print values for all variables")
+Results = {}
+for v in model.component_data_objects(Var):
+    #if v.name[:29] != 'V_primary_RESOURCES_production' and v.name[:23] != 'V_resource_tech_outflow' and \
+    #        v.name[:22] != 'V_resource_tech_inflow' and v.name[:15] != 'V_resource_flow':
+        # print(v,v.value)
+    if v.value!=0:
+        Results[v.name] = v.value
+
+Results
 
 fig,ax=plt.subplots()
 ax.set_title("Total cost and emissions")
@@ -29,30 +46,30 @@ plt.show()
 
 fig,ax=plt.subplots()
 ax.set_title("Cost and emissions per ton of steel")
-ax.bar(["Cost (k€/tsteel)"],[Results["V_cost"]/Results["V_resource_outflow[steel]"]/1e3])
-ax.bar(["Emissions (t/tsteel)"],Results["V_emissions"]/Results["V_resource_outflow[steel]"])
+ax.bar(["Cost (k€/tsteel)"],[Results["V_cost"]/Results["V_resource_outflow[Steel]"]/1e3])
+ax.bar(["Emissions (t/tsteel)"],Results["V_emissions"]/Results["V_resource_outflow[Steel]"])
 for bars in ax.containers:
     ax.bar_label(bars)
 plt.show()
 
 
 Consumption_MWh={}
-Consumption_MWh["Oil"]=Results["V_technology_use_coef[Oil]"]*Resources_Characteristics.loc["oil","calorific_value_MWh_t"]
-Consumption_MWh["Natural Gas"]=Results["V_technology_use_coef[Gas]"]*Resources_Characteristics.loc["gas","calorific_value_MWh_t"]
-Consumption_MWh["Biogas"]=Results["V_technology_use_coef[Biogas]"]*Resources_Characteristics.loc["gas","calorific_value_MWh_t"]
-Consumption_MWh["Coal"]=Results["V_technology_use_coef[Coal]"]*Resources_Characteristics.loc["coal","calorific_value_MWh_t"]
-Consumption_MWh["Electricity"]=Results["V_technology_use_coef[Electricity]"]*Resources_Characteristics.loc["electricity","calorific_value_MWh_t"]
+Consumption_MWh["Oil"]=Results["V_technology_use_coef[Oil]"]*RESOURCESs_Characteristics.loc["oil","calorific_value_MWh_t"]
+Consumption_MWh["Natural Gas"]=Results["V_technology_use_coef[Gas]"]*RESOURCESs_Characteristics.loc["gas","calorific_value_MWh_t"]
+Consumption_MWh["Biogas"]=Results["V_technology_use_coef[Biogas]"]*RESOURCESs_Characteristics.loc["gas","calorific_value_MWh_t"]
+Consumption_MWh["Coal"]=Results["V_technology_use_coef[Coal]"]*RESOURCESs_Characteristics.loc["coal","calorific_value_MWh_t"]
+Consumption_MWh["Electricity"]=Results["V_technology_use_coef[Electricity]"]*RESOURCESs_Characteristics.loc["electricity","calorific_value_MWh_t"]
 
 df=pd.DataFrame.from_dict(Consumption_MWh,orient="index",columns=['Consumption']).reset_index()
 df["Consumption"]=df["Consumption"].astype("float")/1e6
-df.rename(columns={"index":"Resource"},inplace=True)
+df.rename(columns={"index":"RESOURCES"},inplace=True)
 df["Year"]=2015
-# fig = px.bar(df, x="Year", y="Consumption",color="Resource")
+# fig = px.bar(df, x="Year", y="Consumption",color="RESOURCES")
 # fig.show()
 
 
 
-df=df.pivot(index="Year",columns="Resource",values="Consumption")
+df=df.pivot(index="Year",columns="RESOURCES",values="Consumption")
 
 sns.set(palette=customPalette)
 df.plot(kind="bar",stacked="True")
@@ -73,34 +90,34 @@ Costs={}
 Emissions={}
 
 for carbon_tax in [0,50,100,200,300,400]:
-    Results=main(Resources_Technologies,Production_Technologies,Available_Technologies,Production,opti2mini="cost",carbon_tax=carbon_tax)
+    Results=main(RESOURCESs_Technologies,Production_Technologies,Available_Technologies,Production,opti2mini="cost",carbon_tax=carbon_tax)
     Result_dict[carbon_tax]=Results
 
     #Consumption
 
     Consumption_MWh = {}
-    Consumption_MWh["Oil"] = Results["V_technology_use_coef[Oil]"] * Resources_Characteristics.loc[
+    Consumption_MWh["Oil"] = Results["V_technology_use_coef[Oil]"] * RESOURCESs_Characteristics.loc[
         "oil", "calorific_value_MWh_t"]
-    Consumption_MWh["Natural Gas"] = Results["V_technology_use_coef[Gas]"] * Resources_Characteristics.loc[
+    Consumption_MWh["Natural Gas"] = Results["V_technology_use_coef[Gas]"] * RESOURCESs_Characteristics.loc[
         "gas", "calorific_value_MWh_t"]
-    Consumption_MWh["Biogas"] = Results["V_technology_use_coef[Biogas]"] * Resources_Characteristics.loc[
+    Consumption_MWh["Biogas"] = Results["V_technology_use_coef[Biogas]"] * RESOURCESs_Characteristics.loc[
         "gas", "calorific_value_MWh_t"]
-    Consumption_MWh["Coal"] = Results["V_technology_use_coef[Coal]"] * Resources_Characteristics.loc[
+    Consumption_MWh["Coal"] = Results["V_technology_use_coef[Coal]"] * RESOURCESs_Characteristics.loc[
         "coal", "calorific_value_MWh_t"]
-    Consumption_MWh["Electricity"] = Results["V_technology_use_coef[Electricity]"] * Resources_Characteristics.loc[
+    Consumption_MWh["Electricity"] = Results["V_technology_use_coef[Electricity]"] * RESOURCESs_Characteristics.loc[
         "electricity", "calorific_value_MWh_t"]
 
     df = pd.DataFrame.from_dict(Consumption_MWh, orient="index", columns=['Consumption']).reset_index()
     df["Consumption"] = df["Consumption"].astype("float") / 1e6
-    df.rename(columns={"index": "Resource"}, inplace=True)
+    df.rename(columns={"index": "RESOURCES"}, inplace=True)
     df["Carbon tax (€/tCO2)"] = carbon_tax
-    df = df.pivot(index="Carbon tax (€/tCO2)", columns="Resource", values="Consumption")
+    df = df.pivot(index="Carbon tax (€/tCO2)", columns="RESOURCES", values="Consumption")
     Consumption_df=pd.concat([Consumption_df,df])
 
     #Hydrogen production
     Hydrogen={}
     for tech in Hydrogen_df.columns:
-        Hydrogen[tech]=Results["V_technology_use_coef["+tech+"]"]*Resources_Characteristics.loc[
+        Hydrogen[tech]=Results["V_technology_use_coef["+tech+"]"]*RESOURCESs_Characteristics.loc[
         "hydrogen", "calorific_value_MWh_t"]
     df = pd.DataFrame.from_dict(Hydrogen, orient="index", columns=['Production']).reset_index()
     df["Production"] = df["Production"].astype("float") / 1e6
@@ -110,14 +127,14 @@ for carbon_tax in [0,50,100,200,300,400]:
     Hydrogen_df=pd.concat([Hydrogen_df,df])
 
     # Cost of steel
-    Costs[str(carbon_tax)]=Results["V_cost"]/Results["V_resource_outflow[steel]"]
+    Costs[str(carbon_tax)]=Results["V_cost"]/Results["V_RESOURCES_outflow[steel]"]
     # Emissions
-    Emissions[str(carbon_tax)]=Results["V_emissions"]/Results["V_resource_outflow[steel]"]
+    Emissions[str(carbon_tax)]=Results["V_emissions"]/Results["V_RESOURCES_outflow[steel]"]
 
     #Technologies for production
     Techs={}
     for tech in Techno_list:
-        Techs[tech]=Results["V_technology_use_coef["+tech+"]"]*-1*Production_Technologies.loc[Production_Technologies.Resource=="steel",tech].values[0]
+        Techs[tech]=Results["V_technology_use_coef["+tech+"]"]*-1*Production_Technologies.loc[Production_Technologies.RESOURCES=="steel",tech].values[0]
     df = pd.DataFrame.from_dict(Techs, orient="index", columns=['Production']).reset_index()
     df["Production"] = df["Production"].astype("float") / 1e6
     df.rename(columns={"index": "Technology"}, inplace=True)

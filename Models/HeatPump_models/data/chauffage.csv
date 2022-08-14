@@ -1,0 +1,22 @@
+System,Technology,Mode,Emitters,N_stages,Power_ratio,PLF_biv,Ce,Lifetime,Temperature_limit,Share_Power
+A/A HP,Inverter,Bivalent,Fan coil unit,,3,1.4,0.7,17,-10,0.5
+A/W HP,Inverter,Monovalent,RadiatorHT,,3,1.4,0.7,17,-15,1
+A/W HP,Inverter,Bivalent,RadiatorHT,,3,1.4,0.7,17,-15,0.5
+A/A HP,On/off,Bivalent,Fan coil unit,,3,1.4,0.7,9,-5,0.5
+A/A HP,Bi-compressor,Bivalent,Fan coil unit,2,3,1.4,0.7,12,-5,0.5
+A/W HP,On/off,Monovalent,RadiatorHT,,,,0.7,9,-10,1
+A/W HP,Bi-compressor,Monovalent,RadiatorHT,2,,,0.7,12,-10,1
+A/W HP,On/off,Bivalent,RadiatorHT,,3,1.4,0.7,9,-10,0.5
+A/W HP,Bi-compressor,Bivalent,RadiatorHT,2,3,1.4,0.7,12,-10,0.5
+A/W HP,Inverter,Monovalent,RadiatorMT,,3,1.4,0.7,17,-15,1
+A/W HP,Inverter,Bivalent,RadiatorMT,,3,1.4,0.7,17,-15,0.5
+A/W HP,On/off,Monovalent,RadiatorMT,,,,0.7,9,-10,1
+A/W HP,Bi-compressor,Monovalent,RadiatorMT,2,,,0.7,12,-10,1
+A/W HP,On/off,Bivalent,RadiatorMT,,3,1.4,0.7,9,-10,0.5
+A/W HP,Bi-compressor,Bivalent,RadiatorMT,2,3,1.4,0.7,12,-10,0.5
+A/W HP,Inverter,Monovalent,RadiatorLT,,3,1.4,0.7,17,-15,1
+A/W HP,Inverter,Bivalent,RadiatorLT,,3,1.4,0.7,17,-15,0.5
+A/W HP,On/off,Monovalent,RadiatorLT,,,,0.7,9,-10,1
+A/W HP,Bi-compressor,Monovalent,RadiatorLT,2,,,0.7,12,-10,1
+A/W HP,On/off,Bivalent,RadiatorLT,,3,1.4,0.7,9,-10,0.5
+A/W HP,Bi-compressor,Bivalent,RadiatorLT,2,3,1.4,0.7,12,-10,0.5

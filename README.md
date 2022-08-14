@@ -1,4 +1,4 @@
-# Etude_TP_CapaExpPlaning-Python
+# Energy-Alternatives-Planing
 
 This project contains code and data to model the electric system.
 It relies mainly on a combined use of two well known python packages (panda and pyomo)
