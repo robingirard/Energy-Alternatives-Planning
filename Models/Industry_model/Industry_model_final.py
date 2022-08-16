@@ -300,6 +300,7 @@ def GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0):
     ###
     # SETS
     ###
+
     model.TECHNOLOGIES = Set(initialize=TECHNOLOGIES, ordered=False)
     model.RESOURCES = Set(initialize=RESOURCES, ordered=False)
     model.TECHNOLOGIES_RESOURCES = model.TECHNOLOGIES * model.RESOURCES

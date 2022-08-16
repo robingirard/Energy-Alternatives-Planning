@@ -1,0 +1,449 @@
+Categories,Energy_source,Efficiency_class,surface
+Bureaux Administration,Biomasse,A,0.0
+Bureaux Administration,Biomasse,B,0.0
+Bureaux Administration,Biomasse,C,894240.0
+Bureaux Administration,Biomasse,D,2101464.0
+Bureaux Administration,Biomasse,E,1117800.0
+Bureaux Administration,Biomasse,F,357696.0
+Bureaux Administration,Biomasse,G,0.0
+Bureaux Administration,Chaudière fioul,A,0.0
+Bureaux Administration,Chaudière fioul,B,0.0
+Bureaux Administration,Chaudière fioul,C,5365440.0
+Bureaux Administration,Chaudière fioul,D,12608783.999999998
+Bureaux Administration,Chaudière fioul,E,6706800.0
+Bureaux Administration,Chaudière fioul,F,2146176.0
+Bureaux Administration,Chaudière fioul,G,0.0
+Bureaux Administration,Chaudière gaz,A,0.0
+Bureaux Administration,Chaudière gaz,B,0.0
+Bureaux Administration,Chaudière gaz,C,19226160.0
+Bureaux Administration,Chaudière gaz,D,45181475.99999999
+Bureaux Administration,Chaudière gaz,E,24032700.0
+Bureaux Administration,Chaudière gaz,F,7690464.0
+Bureaux Administration,Chaudière gaz,G,0.0
+Bureaux Administration,Chauffage urbain,A,0.0
+Bureaux Administration,Chauffage urbain,B,0.0
+Bureaux Administration,Chauffage urbain,C,3576960.0
+Bureaux Administration,Chauffage urbain,D,8405856.0
+Bureaux Administration,Chauffage urbain,E,4471200.0
+Bureaux Administration,Chauffage urbain,F,1430784.0
+Bureaux Administration,Chauffage urbain,G,0.0
+Bureaux Administration,Chauffage électrique,A,0.0
+Bureaux Administration,Chauffage électrique,B,0.0
+Bureaux Administration,Chauffage électrique,C,10283760.000000002
+Bureaux Administration,Chauffage électrique,D,24166836.0
+Bureaux Administration,Chauffage électrique,E,12854700.0
+Bureaux Administration,Chauffage électrique,F,4113504.0
+Bureaux Administration,Chauffage électrique,G,0.0
+Bureaux Administration,Pompes à chaleur air-eau,A,0.0
+Bureaux Administration,Pompes à chaleur air-eau,B,0.0
+Bureaux Administration,Pompes à chaleur air-eau,C,5365440.0
+Bureaux Administration,Pompes à chaleur air-eau,D,12608783.999999998
+Bureaux Administration,Pompes à chaleur air-eau,E,6706800.0
+Bureaux Administration,Pompes à chaleur air-eau,F,2146176.0
+Bureaux Administration,Pompes à chaleur air-eau,G,0.0
+Bureaux Administration,Pompes à chaleur air-air,A,0.0
+Bureaux Administration,Pompes à chaleur air-air,B,0.0
+Bureaux Administration,Pompes à chaleur air-air,C,0.0
+Bureaux Administration,Pompes à chaleur air-air,D,0.0
+Bureaux Administration,Pompes à chaleur air-air,E,0.0
+Bureaux Administration,Pompes à chaleur air-air,F,0.0
+Bureaux Administration,Pompes à chaleur air-air,G,0.0
+Bureaux Administration,Pompes à chaleur hybride,A,0.0
+Bureaux Administration,Pompes à chaleur hybride,B,0.0
+Bureaux Administration,Pompes à chaleur hybride,C,0.0
+Bureaux Administration,Pompes à chaleur hybride,D,0.0
+Bureaux Administration,Pompes à chaleur hybride,E,0.0
+Bureaux Administration,Pompes à chaleur hybride,F,0.0
+Bureaux Administration,Pompes à chaleur hybride,G,0.0
+Café Hôtel Restaurant,Biomasse,A,0.0
+Café Hôtel Restaurant,Biomasse,B,0.0
+Café Hôtel Restaurant,Biomasse,C,983664.0000000001
+Café Hôtel Restaurant,Biomasse,D,1073088.0
+Café Hôtel Restaurant,Biomasse,E,1296648.0
+Café Hôtel Restaurant,Biomasse,F,983664.0000000001
+Café Hôtel Restaurant,Biomasse,G,134136.0
+Café Hôtel Restaurant,Chaudière fioul,A,0.0
+Café Hôtel Restaurant,Chaudière fioul,B,0.0
+Café Hôtel Restaurant,Chaudière fioul,C,8852976.0
+Café Hôtel Restaurant,Chaudière fioul,D,9657791.999999998
+Café Hôtel Restaurant,Chaudière fioul,E,11669832.0
+Café Hôtel Restaurant,Chaudière fioul,F,8852976.0
+Café Hôtel Restaurant,Chaudière fioul,G,1207223.9999999998
+Café Hôtel Restaurant,Chaudière gaz,A,0.0
+Café Hôtel Restaurant,Chaudière gaz,B,0.0
+Café Hôtel Restaurant,Chaudière gaz,C,17214120.0
+Café Hôtel Restaurant,Chaudière gaz,D,18779039.999999996
+Café Hôtel Restaurant,Chaudière gaz,E,22691340.0
+Café Hôtel Restaurant,Chaudière gaz,F,17214120.0
+Café Hôtel Restaurant,Chaudière gaz,G,2347379.9999999995
+Café Hôtel Restaurant,Chauffage urbain,A,0.0
+Café Hôtel Restaurant,Chauffage urbain,B,0.0
+Café Hôtel Restaurant,Chauffage urbain,C,2950992.0
+Café Hôtel Restaurant,Chauffage urbain,D,3219264.0
+Café Hôtel Restaurant,Chauffage urbain,E,3889943.9999999995
+Café Hôtel Restaurant,Chauffage urbain,F,2950992.0
+Café Hôtel Restaurant,Chauffage urbain,G,402408.0
+Café Hôtel Restaurant,Chauffage électrique,A,0.0
+Café Hôtel Restaurant,Chauffage électrique,B,0.0
+Café Hôtel Restaurant,Chauffage électrique,C,12787632.0
+Café Hôtel Restaurant,Chauffage électrique,D,13950144.0
+Café Hôtel Restaurant,Chauffage électrique,E,16856424.0
+Café Hôtel Restaurant,Chauffage électrique,F,12787632.0
+Café Hôtel Restaurant,Chauffage électrique,G,1743768.0
+Café Hôtel Restaurant,Pompes à chaleur air-eau,A,0.0
+Café Hôtel Restaurant,Pompes à chaleur air-eau,B,0.0
+Café Hôtel Restaurant,Pompes à chaleur air-eau,C,6393816.0
+Café Hôtel Restaurant,Pompes à chaleur air-eau,D,6975072.0
+Café Hôtel Restaurant,Pompes à chaleur air-eau,E,8428212.0
+Café Hôtel Restaurant,Pompes à chaleur air-eau,F,6393816.0
+Café Hôtel Restaurant,Pompes à chaleur air-eau,G,871884.0
+Café Hôtel Restaurant,Pompes à chaleur air-air,A,0.0
+Café Hôtel Restaurant,Pompes à chaleur air-air,B,0.0
+Café Hôtel Restaurant,Pompes à chaleur air-air,C,0.0
+Café Hôtel Restaurant,Pompes à chaleur air-air,D,0.0
+Café Hôtel Restaurant,Pompes à chaleur air-air,E,0.0
+Café Hôtel Restaurant,Pompes à chaleur air-air,F,0.0
+Café Hôtel Restaurant,Pompes à chaleur air-air,G,0.0
+Café Hôtel Restaurant,Pompes à chaleur hybride,A,0.0
+Café Hôtel Restaurant,Pompes à chaleur hybride,B,0.0
+Café Hôtel Restaurant,Pompes à chaleur hybride,C,0.0
+Café Hôtel Restaurant,Pompes à chaleur hybride,D,0.0
+Café Hôtel Restaurant,Pompes à chaleur hybride,E,0.0
+Café Hôtel Restaurant,Pompes à chaleur hybride,F,0.0
+Café Hôtel Restaurant,Pompes à chaleur hybride,G,0.0
+Commerce,Biomasse,A,0.0
+Commerce,Biomasse,B,53460.0
+Commerce,Biomasse,C,2566080.0
+Commerce,Biomasse,D,5559840.000000001
+Commerce,Biomasse,E,2352240.0000000005
+Commerce,Biomasse,F,160380.0
+Commerce,Biomasse,G,0.0
+Commerce,Chaudière fioul,A,0.0
+Commerce,Chaudière fioul,B,235224.0
+Commerce,Chaudière fioul,C,11290752.0
+Commerce,Chaudière fioul,D,24463296.0
+Commerce,Chaudière fioul,E,10349856.0
+Commerce,Chaudière fioul,F,705672.0
+Commerce,Chaudière fioul,G,0.0
+Commerce,Chaudière gaz,A,0.0
+Commerce,Chaudière gaz,B,406296.0
+Commerce,Chaudière gaz,C,19502208.0
+Commerce,Chaudière gaz,D,42254784.0
+Commerce,Chaudière gaz,E,17877024.0
+Commerce,Chaudière gaz,F,1218888.0
+Commerce,Chaudière gaz,G,0.0
+Commerce,Chauffage urbain,A,0.0
+Commerce,Chauffage urbain,B,32075.999999999996
+Commerce,Chauffage urbain,C,1539648.0
+Commerce,Chauffage urbain,D,3335904.0
+Commerce,Chauffage urbain,E,1411344.0
+Commerce,Chauffage urbain,F,96228.0
+Commerce,Chauffage urbain,G,0.0
+Commerce,Chauffage électrique,A,0.0
+Commerce,Chauffage électrique,B,224532.0
+Commerce,Chauffage électrique,C,10777535.999999998
+Commerce,Chauffage électrique,D,23351328.0
+Commerce,Chauffage électrique,E,9879408.0
+Commerce,Chauffage électrique,F,673595.9999999999
+Commerce,Chauffage électrique,G,0.0
+Commerce,Pompes à chaleur air-eau,A,0.0
+Commerce,Pompes à chaleur air-eau,B,53460.0
+Commerce,Pompes à chaleur air-eau,C,2566080.0
+Commerce,Pompes à chaleur air-eau,D,5559840.000000001
+Commerce,Pompes à chaleur air-eau,E,2352240.0000000005
+Commerce,Pompes à chaleur air-eau,F,160380.0
+Commerce,Pompes à chaleur air-eau,G,0.0
+Commerce,Pompes à chaleur air-air,A,0.0
+Commerce,Pompes à chaleur air-air,B,64151.99999999999
+Commerce,Pompes à chaleur air-air,C,3079296.0
+Commerce,Pompes à chaleur air-air,D,6671808.0
+Commerce,Pompes à chaleur air-air,E,2822688.0
+Commerce,Pompes à chaleur air-air,F,192456.0
+Commerce,Pompes à chaleur air-air,G,0.0
+Commerce,Pompes à chaleur hybride,A,0.0
+Commerce,Pompes à chaleur hybride,B,0.0
+Commerce,Pompes à chaleur hybride,C,0.0
+Commerce,Pompes à chaleur hybride,D,0.0
+Commerce,Pompes à chaleur hybride,E,0.0
+Commerce,Pompes à chaleur hybride,F,0.0
+Commerce,Pompes à chaleur hybride,G,0.0
+Enseignement Recherche,Biomasse,A,36936.0
+Enseignement Recherche,Biomasse,B,1034208.0000000001
+Enseignement Recherche,Biomasse,C,4358448.0
+Enseignement Recherche,Biomasse,D,1699056.0
+Enseignement Recherche,Biomasse,E,221615.99999999997
+Enseignement Recherche,Biomasse,F,36936.0
+Enseignement Recherche,Biomasse,G,0.0
+Enseignement Recherche,Chaudière fioul,A,193914.0
+Enseignement Recherche,Chaudière fioul,B,5429592.0
+Enseignement Recherche,Chaudière fioul,C,22881851.999999996
+Enseignement Recherche,Chaudière fioul,D,8920044.0
+Enseignement Recherche,Chaudière fioul,E,1163483.9999999998
+Enseignement Recherche,Chaudière fioul,F,193914.0
+Enseignement Recherche,Chaudière fioul,G,0.0
+Enseignement Recherche,Chaudière gaz,A,544806.0
+Enseignement Recherche,Chaudière gaz,B,15254568.000000002
+Enseignement Recherche,Chaudière gaz,C,64287107.99999999
+Enseignement Recherche,Chaudière gaz,D,25061075.999999996
+Enseignement Recherche,Chaudière gaz,E,3268835.9999999995
+Enseignement Recherche,Chaudière gaz,F,544806.0
+Enseignement Recherche,Chaudière gaz,G,0.0
+Enseignement Recherche,Chauffage urbain,A,55403.99999999999
+Enseignement Recherche,Chauffage urbain,B,1551312.0000000002
+Enseignement Recherche,Chauffage urbain,C,6537671.999999999
+Enseignement Recherche,Chauffage urbain,D,2548584.0
+Enseignement Recherche,Chauffage urbain,E,332424.0
+Enseignement Recherche,Chauffage urbain,F,55403.99999999999
+Enseignement Recherche,Chauffage urbain,G,0.0
+Enseignement Recherche,Chauffage électrique,A,64638.00000000001
+Enseignement Recherche,Chauffage électrique,B,1809864.0000000002
+Enseignement Recherche,Chauffage électrique,C,7627284.000000001
+Enseignement Recherche,Chauffage électrique,D,2973348.0000000005
+Enseignement Recherche,Chauffage électrique,E,387828.00000000006
+Enseignement Recherche,Chauffage électrique,F,64638.00000000001
+Enseignement Recherche,Chauffage électrique,G,0.0
+Enseignement Recherche,Pompes à chaleur air-eau,A,27701.999999999996
+Enseignement Recherche,Pompes à chaleur air-eau,B,775656.0000000001
+Enseignement Recherche,Pompes à chaleur air-eau,C,3268835.9999999995
+Enseignement Recherche,Pompes à chaleur air-eau,D,1274292.0
+Enseignement Recherche,Pompes à chaleur air-eau,E,166212.0
+Enseignement Recherche,Pompes à chaleur air-eau,F,27701.999999999996
+Enseignement Recherche,Pompes à chaleur air-eau,G,0.0
+Enseignement Recherche,Pompes à chaleur air-air,A,0.0
+Enseignement Recherche,Pompes à chaleur air-air,B,0.0
+Enseignement Recherche,Pompes à chaleur air-air,C,0.0
+Enseignement Recherche,Pompes à chaleur air-air,D,0.0
+Enseignement Recherche,Pompes à chaleur air-air,E,0.0
+Enseignement Recherche,Pompes à chaleur air-air,F,0.0
+Enseignement Recherche,Pompes à chaleur air-air,G,0.0
+Enseignement Recherche,Pompes à chaleur hybride,A,0.0
+Enseignement Recherche,Pompes à chaleur hybride,B,0.0
+Enseignement Recherche,Pompes à chaleur hybride,C,0.0
+Enseignement Recherche,Pompes à chaleur hybride,D,0.0
+Enseignement Recherche,Pompes à chaleur hybride,E,0.0
+Enseignement Recherche,Pompes à chaleur hybride,F,0.0
+Enseignement Recherche,Pompes à chaleur hybride,G,0.0
+Habitat Communautaire,Biomasse,A,0.0
+Habitat Communautaire,Biomasse,B,1061424.0
+Habitat Communautaire,Biomasse,C,2163672.0
+Habitat Communautaire,Biomasse,D,816480.0
+Habitat Communautaire,Biomasse,E,40824.0
+Habitat Communautaire,Biomasse,F,0.0
+Habitat Communautaire,Biomasse,G,0.0
+Habitat Communautaire,Chaudière fioul,A,0.0
+Habitat Communautaire,Chaudière fioul,B,4776408.000000001
+Habitat Communautaire,Chaudière fioul,C,9736524.0
+Habitat Communautaire,Chaudière fioul,D,3674160.0000000005
+Habitat Communautaire,Chaudière fioul,E,183708.0
+Habitat Communautaire,Chaudière fioul,F,0.0
+Habitat Communautaire,Chaudière fioul,G,0.0
+Habitat Communautaire,Chaudière gaz,A,0.0
+Habitat Communautaire,Chaudière gaz,B,7960680.0
+Habitat Communautaire,Chaudière gaz,C,16227540.000000002
+Habitat Communautaire,Chaudière gaz,D,6123600.000000001
+Habitat Communautaire,Chaudière gaz,E,306180.00000000006
+Habitat Communautaire,Chaudière gaz,F,0.0
+Habitat Communautaire,Chaudière gaz,G,0.0
+Habitat Communautaire,Chauffage urbain,A,0.0
+Habitat Communautaire,Chauffage urbain,B,884520.0000000001
+Habitat Communautaire,Chauffage urbain,C,1803060.0000000002
+Habitat Communautaire,Chauffage urbain,D,680400.0000000001
+Habitat Communautaire,Chauffage urbain,E,34020.0
+Habitat Communautaire,Chauffage urbain,F,0.0
+Habitat Communautaire,Chauffage urbain,G,0.0
+Habitat Communautaire,Chauffage électrique,A,0.0
+Habitat Communautaire,Chauffage électrique,B,1945944.0
+Habitat Communautaire,Chauffage électrique,C,3966732.0000000005
+Habitat Communautaire,Chauffage électrique,D,1496880.0000000002
+Habitat Communautaire,Chauffage électrique,E,74844.0
+Habitat Communautaire,Chauffage électrique,F,0.0
+Habitat Communautaire,Chauffage électrique,G,0.0
+Habitat Communautaire,Pompes à chaleur air-eau,A,0.0
+Habitat Communautaire,Pompes à chaleur air-eau,B,1061424.0
+Habitat Communautaire,Pompes à chaleur air-eau,C,2163672.0
+Habitat Communautaire,Pompes à chaleur air-eau,D,816480.0
+Habitat Communautaire,Pompes à chaleur air-eau,E,40824.0
+Habitat Communautaire,Pompes à chaleur air-eau,F,0.0
+Habitat Communautaire,Pompes à chaleur air-eau,G,0.0
+Habitat Communautaire,Pompes à chaleur air-air,A,0.0
+Habitat Communautaire,Pompes à chaleur air-air,B,0.0
+Habitat Communautaire,Pompes à chaleur air-air,C,0.0
+Habitat Communautaire,Pompes à chaleur air-air,D,0.0
+Habitat Communautaire,Pompes à chaleur air-air,E,0.0
+Habitat Communautaire,Pompes à chaleur air-air,F,0.0
+Habitat Communautaire,Pompes à chaleur air-air,G,0.0
+Habitat Communautaire,Pompes à chaleur hybride,A,0.0
+Habitat Communautaire,Pompes à chaleur hybride,B,0.0
+Habitat Communautaire,Pompes à chaleur hybride,C,0.0
+Habitat Communautaire,Pompes à chaleur hybride,D,0.0
+Habitat Communautaire,Pompes à chaleur hybride,E,0.0
+Habitat Communautaire,Pompes à chaleur hybride,F,0.0
+Habitat Communautaire,Pompes à chaleur hybride,G,0.0
+Santé Action Sociale,Biomasse,A,0.0
+Santé Action Sociale,Biomasse,B,233280.0
+Santé Action Sociale,Biomasse,C,629856.0
+Santé Action Sociale,Biomasse,D,1283040.0000000002
+Santé Action Sociale,Biomasse,E,163296.00000000003
+Santé Action Sociale,Biomasse,F,23328.0
+Santé Action Sociale,Biomasse,G,0.0
+Santé Action Sociale,Chaudière fioul,A,0.0
+Santé Action Sociale,Chaudière fioul,B,2216160.0000000005
+Santé Action Sociale,Chaudière fioul,C,5983632.000000001
+Santé Action Sociale,Chaudière fioul,D,12188880.000000002
+Santé Action Sociale,Chaudière fioul,E,1551312.0000000002
+Santé Action Sociale,Chaudière fioul,F,221616.0
+Santé Action Sociale,Chaudière fioul,G,0.0
+Santé Action Sociale,Chaudière gaz,A,0.0
+Santé Action Sociale,Chaudière gaz,B,6531840.000000001
+Santé Action Sociale,Chaudière gaz,C,17635968.000000004
+Santé Action Sociale,Chaudière gaz,D,35925120.00000001
+Santé Action Sociale,Chaudière gaz,E,4572288.000000001
+Santé Action Sociale,Chaudière gaz,F,653184.0000000001
+Santé Action Sociale,Chaudière gaz,G,0.0
+Santé Action Sociale,Chauffage urbain,A,0.0
+Santé Action Sociale,Chauffage urbain,B,933120.0
+Santé Action Sociale,Chauffage urbain,C,2519424.0
+Santé Action Sociale,Chauffage urbain,D,5132160.000000001
+Santé Action Sociale,Chauffage urbain,E,653184.0000000001
+Santé Action Sociale,Chauffage urbain,F,93312.0
+Santé Action Sociale,Chauffage urbain,G,0.0
+Santé Action Sociale,Chauffage électrique,A,0.0
+Santé Action Sociale,Chauffage électrique,B,1166400.0000000002
+Santé Action Sociale,Chauffage électrique,C,3149280.0000000005
+Santé Action Sociale,Chauffage électrique,D,6415200.000000001
+Santé Action Sociale,Chauffage électrique,E,816480.0000000001
+Santé Action Sociale,Chauffage électrique,F,116640.0
+Santé Action Sociale,Chauffage électrique,G,0.0
+Santé Action Sociale,Pompes à chaleur air-eau,A,0.0
+Santé Action Sociale,Pompes à chaleur air-eau,B,583200.0000000001
+Santé Action Sociale,Pompes à chaleur air-eau,C,1574640.0000000002
+Santé Action Sociale,Pompes à chaleur air-eau,D,3207600.0000000005
+Santé Action Sociale,Pompes à chaleur air-eau,E,408240.00000000006
+Santé Action Sociale,Pompes à chaleur air-eau,F,58320.0
+Santé Action Sociale,Pompes à chaleur air-eau,G,0.0
+Santé Action Sociale,Pompes à chaleur air-air,A,0.0
+Santé Action Sociale,Pompes à chaleur air-air,B,0.0
+Santé Action Sociale,Pompes à chaleur air-air,C,0.0
+Santé Action Sociale,Pompes à chaleur air-air,D,0.0
+Santé Action Sociale,Pompes à chaleur air-air,E,0.0
+Santé Action Sociale,Pompes à chaleur air-air,F,0.0
+Santé Action Sociale,Pompes à chaleur air-air,G,0.0
+Santé Action Sociale,Pompes à chaleur hybride,A,0.0
+Santé Action Sociale,Pompes à chaleur hybride,B,0.0
+Santé Action Sociale,Pompes à chaleur hybride,C,0.0
+Santé Action Sociale,Pompes à chaleur hybride,D,0.0
+Santé Action Sociale,Pompes à chaleur hybride,E,0.0
+Santé Action Sociale,Pompes à chaleur hybride,F,0.0
+Santé Action Sociale,Pompes à chaleur hybride,G,0.0
+Sport Loisir Culture,Biomasse,A,0.0
+Sport Loisir Culture,Biomasse,B,61236.0
+Sport Loisir Culture,Biomasse,C,489888.0
+Sport Loisir Culture,Biomasse,D,2020788.0
+Sport Loisir Culture,Biomasse,E,1530900.0
+Sport Loisir Culture,Biomasse,F,796068.0
+Sport Loisir Culture,Biomasse,G,1224720.0
+Sport Loisir Culture,Chaudière fioul,A,0.0
+Sport Loisir Culture,Chaudière fioul,B,102060.0
+Sport Loisir Culture,Chaudière fioul,C,816480.0
+Sport Loisir Culture,Chaudière fioul,D,3367980.0
+Sport Loisir Culture,Chaudière fioul,E,2551500.0
+Sport Loisir Culture,Chaudière fioul,F,1326780.0
+Sport Loisir Culture,Chaudière fioul,G,2041200.0
+Sport Loisir Culture,Chaudière gaz,A,0.0
+Sport Loisir Culture,Chaudière gaz,B,278963.99999999994
+Sport Loisir Culture,Chaudière gaz,C,2231711.9999999995
+Sport Loisir Culture,Chaudière gaz,D,9205812.0
+Sport Loisir Culture,Chaudière gaz,E,6974100.0
+Sport Loisir Culture,Chaudière gaz,F,3626532.0
+Sport Loisir Culture,Chaudière gaz,G,5579280.0
+Sport Loisir Culture,Chauffage urbain,A,0.0
+Sport Loisir Culture,Chauffage urbain,B,47628.00000000001
+Sport Loisir Culture,Chauffage urbain,C,381024.00000000006
+Sport Loisir Culture,Chauffage urbain,D,1571724.0000000002
+Sport Loisir Culture,Chauffage urbain,E,1190700.0
+Sport Loisir Culture,Chauffage urbain,F,619164.0
+Sport Loisir Culture,Chauffage urbain,G,952560.0000000001
+Sport Loisir Culture,Chauffage électrique,A,0.0
+Sport Loisir Culture,Chauffage électrique,B,129276.0
+Sport Loisir Culture,Chauffage électrique,C,1034208.0
+Sport Loisir Culture,Chauffage électrique,D,4266108.0
+Sport Loisir Culture,Chauffage électrique,E,3231900.0
+Sport Loisir Culture,Chauffage électrique,F,1680588.0
+Sport Loisir Culture,Chauffage électrique,G,2585520.0000000005
+Sport Loisir Culture,Pompes à chaleur air-eau,A,0.0
+Sport Loisir Culture,Pompes à chaleur air-eau,B,61236.0
+Sport Loisir Culture,Pompes à chaleur air-eau,C,489888.0
+Sport Loisir Culture,Pompes à chaleur air-eau,D,2020788.0
+Sport Loisir Culture,Pompes à chaleur air-eau,E,1530900.0
+Sport Loisir Culture,Pompes à chaleur air-eau,F,796068.0
+Sport Loisir Culture,Pompes à chaleur air-eau,G,1224720.0
+Sport Loisir Culture,Pompes à chaleur air-air,A,0.0
+Sport Loisir Culture,Pompes à chaleur air-air,B,0.0
+Sport Loisir Culture,Pompes à chaleur air-air,C,0.0
+Sport Loisir Culture,Pompes à chaleur air-air,D,0.0
+Sport Loisir Culture,Pompes à chaleur air-air,E,0.0
+Sport Loisir Culture,Pompes à chaleur air-air,F,0.0
+Sport Loisir Culture,Pompes à chaleur air-air,G,0.0
+Sport Loisir Culture,Pompes à chaleur hybride,A,0.0
+Sport Loisir Culture,Pompes à chaleur hybride,B,0.0
+Sport Loisir Culture,Pompes à chaleur hybride,C,0.0
+Sport Loisir Culture,Pompes à chaleur hybride,D,0.0
+Sport Loisir Culture,Pompes à chaleur hybride,E,0.0
+Sport Loisir Culture,Pompes à chaleur hybride,F,0.0
+Sport Loisir Culture,Pompes à chaleur hybride,G,0.0
+Transport,Biomasse,A,0.0
+Transport,Biomasse,B,0.0
+Transport,Biomasse,C,0.0
+Transport,Biomasse,D,0.0
+Transport,Biomasse,E,69984.0
+Transport,Biomasse,F,1096416.0
+Transport,Biomasse,G,0.0
+Transport,Chaudière fioul,A,0.0
+Transport,Chaudière fioul,B,0.0
+Transport,Chaudière fioul,C,0.0
+Transport,Chaudière fioul,D,0.0
+Transport,Chaudière fioul,E,384912.0
+Transport,Chaudière fioul,F,6030287.999999999
+Transport,Chaudière fioul,G,0.0
+Transport,Chaudière gaz,A,0.0
+Transport,Chaudière gaz,B,0.0
+Transport,Chaudière gaz,C,0.0
+Transport,Chaudière gaz,D,0.0
+Transport,Chaudière gaz,E,787320.0
+Transport,Chaudière gaz,F,12334680.0
+Transport,Chaudière gaz,G,0.0
+Transport,Chauffage urbain,A,0.0
+Transport,Chauffage urbain,B,0.0
+Transport,Chauffage urbain,C,0.0
+Transport,Chauffage urbain,D,0.0
+Transport,Chauffage urbain,E,87480.0
+Transport,Chauffage urbain,F,1370520.0
+Transport,Chauffage urbain,G,0.0
+Transport,Chauffage électrique,A,0.0
+Transport,Chauffage électrique,B,0.0
+Transport,Chauffage électrique,C,0.0
+Transport,Chauffage électrique,D,0.0
+Transport,Chauffage électrique,E,279936.0
+Transport,Chauffage électrique,F,4385664.0
+Transport,Chauffage électrique,G,0.0
+Transport,Pompes à chaleur air-eau,A,0.0
+Transport,Pompes à chaleur air-eau,B,0.0
+Transport,Pompes à chaleur air-eau,C,0.0
+Transport,Pompes à chaleur air-eau,D,0.0
+Transport,Pompes à chaleur air-eau,E,69984.0
+Transport,Pompes à chaleur air-eau,F,1096416.0
+Transport,Pompes à chaleur air-eau,G,0.0
+Transport,Pompes à chaleur air-air,A,0.0
+Transport,Pompes à chaleur air-air,B,0.0
+Transport,Pompes à chaleur air-air,C,0.0
+Transport,Pompes à chaleur air-air,D,0.0
+Transport,Pompes à chaleur air-air,E,69984.0
+Transport,Pompes à chaleur air-air,F,1096416.0
+Transport,Pompes à chaleur air-air,G,0.0
+Transport,Pompes à chaleur hybride,A,0.0
+Transport,Pompes à chaleur hybride,B,0.0
+Transport,Pompes à chaleur hybride,C,0.0
+Transport,Pompes à chaleur hybride,D,0.0
+Transport,Pompes à chaleur hybride,E,0.0
+Transport,Pompes à chaleur hybride,F,0.0
+Transport,Pompes à chaleur hybride,G,0.0
