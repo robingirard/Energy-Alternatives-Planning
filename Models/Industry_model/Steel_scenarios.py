@@ -18,7 +18,7 @@ Parameters={"TECHNOLOGIES_parameters" : Parameters_data["TECHNOLOGIES"].fillna(0
                 melt(id_vars='TECHNOLOGIES', var_name="RESOURCES",value_name='conversion_factor').\
                 set_index(['TECHNOLOGIES','RESOURCES'])
 }
-model=GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0)#emission
+model=GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=200)#emission
 opt = SolverFactory('mosek')
 
 results = opt.solve(model)
@@ -46,8 +46,8 @@ plt.show()
 
 fig,ax=plt.subplots()
 ax.set_title("Cost and emissions per ton of steel")
-ax.bar(["Cost (k€/tsteel)"],[Results["V_cost"]/Results["V_RESOURCES_outflow[steel]"]/1e3])
-ax.bar(["Emissions (t/tsteel)"],Results["V_emissions"]/Results["V_RESOURCES_outflow[steel]"])
+ax.bar(["Cost (k€/tsteel)"],[Results["V_cost"]/Results["V_resource_outflow[Steel]"]/1e3])
+ax.bar(["Emissions (t/tsteel)"],Results["V_emissions"]/Results["V_resource_outflow[Steel]"])
 for bars in ax.containers:
     ax.bar_label(bars)
 plt.show()

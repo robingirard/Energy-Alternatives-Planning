@@ -351,7 +351,7 @@ def GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0):
     model.OBJ = Objective(rule=Objective_rule, sense=minimize)
 
     def Cost_definition_rule(model):
-        return model.V_cost == sum(model.P_flow_cost_r[resource]*model.V_resource_inflow[resource] for resource in model.RESOURCES)+\
+        return model.V_cost == sum(model.P_flow_cost_r[resource]*model.V_resource_flow[resource]*(1-model.P_is_product[resource]) for resource in model.RESOURCES) +\
                sum(model.P_flow_cost_t[tech] * model.V_technology_use_coef[tech] for tech in model.TECHNOLOGIES) + \
                sum(model.P_capex[tech] * model.P_CRF[tech] * model.V_technology_use_coef[tech] for tech in
                    model.TECHNOLOGIES) + \
@@ -417,13 +417,30 @@ def GetIndustryModel(Parameters,opti2mini="cost",carbon_tax=0):
     model.Production_moinsCtr=Constraint(model.RESOURCES,rule=Production_moins_rule)
     model.Production_plusCtr = Constraint(model.RESOURCES, rule=Production_plus_rule)
 
-    def Technology_Production_rule(model,tech):
-        if model.P_forced_prod_ratio[tech]!=0:
-            resource = model.P_forced_resource[tech]
-            return model.P_forced_prod_ratio[tech]*model.V_resource_outflow[resource]==-model.V_technology_use_coef[tech]*model.P_conversion_factor[tech,resource]
+    def Resource_flow_rule(model,resource):
+        if model.P_is_product[resource]==0:
+            return model.V_resource_flow[resource]>=0
         else:
             return Constraint.Skip
-    model.Technology_ProductionCtr=Constraint(model.TECHNOLOGIES,rule=Technology_Production_rule)
+    model.Resource_flowCtr=Constraint(model.RESOURCES,rule=Resource_flow_rule)
+
+    def Technology_Production_Min_rule(model,tech):
+        if model.P_forced_prod_ratio_min[tech]!=0:
+            resource = model.P_forced_resource[tech]
+            return model.P_forced_prod_ratio_min[tech]*model.V_resource_outflow[resource]<=-model.V_technology_use_coef[tech]*model.P_conversion_factor[tech,resource]
+        else:
+            return Constraint.Skip
+
+    model.Technology_Production_MinCtr=Constraint(model.TECHNOLOGIES,rule=Technology_Production_Min_rule)
+
+    def Technology_Production_Max_rule(model,tech):
+        if model.P_forced_prod_ratio_max[tech]!=0:
+            resource = model.P_forced_resource[tech]
+            return model.P_forced_prod_ratio_max[tech]*model.V_resource_outflow[resource]>=-model.V_technology_use_coef[tech]*model.P_conversion_factor[tech,resource]
+        else:
+            return Constraint.Skip
+
+    model.Technology_Production_MaxCtr=Constraint(model.TECHNOLOGIES,rule=Technology_Production_Max_rule)
 
     def Technology_Capacity_rule(model,tech):
         if model.P_max_capacity_t[tech]>0:
