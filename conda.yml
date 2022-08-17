@@ -22,4 +22,5 @@ dependencies :
       - plotly
       - matplotlib
       - sklearn
+      - mycolorpy
 

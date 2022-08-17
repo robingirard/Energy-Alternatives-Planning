@@ -8,6 +8,131 @@ import re
 import sys
 
 
+#TODO code a version of expand_grid that takes a dictionnary as input. Or even data frames
+def expand_grid_3D(x, y , z,names):
+    res=pd.DataFrame()
+    xG, yG, zG = np.meshgrid(x, y, z) # create the actual grid
+    res.loc[:,names[0]] = xG.flatten() # make the grid 1d
+    res.loc[:,names[1]] = yG.flatten() # same
+    res.loc[:,names[2]] = zG.flatten() # same
+    return res # return a dataframe
+
+def expand_DF_2D(df1,df2,names):
+    res=pd.DataFrame()
+    xG, yG = np.meshgrid(df1.index, df2.index) # create the actual grid
+    res.loc[:,names[0]] = xG.flatten() # make the grid 1d
+    res.loc[:,names[1]] = yG.flatten() # same
+    res=res.set_index(names)
+
+    My_indexes = []
+    for key, value in My_dict.items():
+        My_indexes.append(value.index)
+    G = np.meshgrid(*My_indexes) # create the actual grid
+    for key in range(0,len(My_indexes)):
+        res.loc[:,names[key]] = G[key].flatten() # make the grid 1d
+
+    res=res.set_index(names)
+
+    i=0
+    for key, value in My_dict.items():
+        for j in range(0,len(value.index)):
+            My_key = insert_in_slice_None(i,len(My_dict),value.index[j])
+            res.loc[My_key, value.columns] = value.loc[value.index[j],value.columns]
+        i=i+1
+
+    return res # return a dataframe
+
+### not finished
+def expand_grid_fromc_dict(My_dict,names ):
+    res=pd.DataFrame()
+    My_indexes = []
+    for key, value in My_dict.items():
+        My_indexes.append(value.index)
+    G = np.meshgrid(*My_indexes) # create the actual grid
+    for key in range(0,len(My_indexes)):
+        res.loc[:,names[key]] = G[key].flatten() # make the grid 1d
+
+    res=res.set_index(names)
+
+    i=0
+    for key, value in My_dict.items():
+        for j in range(0,len(value.index)):
+            My_key = insert_in_slice_None(i,len(My_dict),value.index[j])
+            res.loc[My_key, value.columns] = value.loc[value.index[j],value.columns]
+        i=i+1
+
+    return res # return a dataframe
+
+def insert_slice_None(position,to_insert_tuple):
+    tuple_l = list(to_insert_tuple)
+    tuple_l.insert(position, 'slice(None)')
+    return tuple(tuple_l)
+
+def tuple_insert(tup,pos,ele):
+    tup = tup[:pos]+(ele,)+tup[pos:]
+    return tup
+
+
+
+def insert_in_slice_None(position,length,to_insert_tuple):
+    My_tuple_list = (length-1)*['slice(None)']
+    return tuple_insert((*My_tuple_list,),position,to_insert_tuple)
+
+import sys
+def progressbar(it, prefix="", size=60, out=sys.stdout): # Python3.3+
+    count = len(it)
+    def show(j):
+        x = int(size*j/count)
+        print("{}[{}{}] {}/{}".format(prefix, "#"*x, "."*(size-x), j, count),
+                end='\r', file=out, flush=True)
+    show(0)
+    for i, item in enumerate(it):
+        yield item
+        show(i+1)
+    print("\n", flush=True, file=out)
+
+def groupbyAndAgg(self,group_along,aggregation_dic,weightedMean_weight=None):
+    '''
+    :self pandas dataframe
+    :group_along list of column name to group by along
+    :aggregation_dic aggregation dictionary with the possibility to use a weighted mean 'wmean'
+    :weightedMean_weight a column name to do the weighted mean(s) along
+    Split data set between duplicated and non duplicated to avoid memory issues
+    '''
+    df_loc=self.copy()
+    Duplicated_rows = df_loc.duplicated(subset=group_along,keep=False)
+    df_nodup = df_loc[~Duplicated_rows][group_along+list(aggregation_dic)]
+
+    ### calcul des prod et modifiction du dictionnaire des aggregations pour faire sommeprod
+    values = [elem for elem in aggregation_dic.keys() if aggregation_dic[elem] == 'wmean']
+    new_aggregation_dic={key:aggregation_dic[key] for key in aggregation_dic.keys() if key not in values}
+
+    for value_col in values:
+        prod_name = 'prod_{v}_{w}'.format(v=value_col, w=weightedMean_weight)
+        weights_name = 'weights_{v}_{w}'.format(v=value_col, w=weightedMean_weight)
+        df_loc[prod_name] = df_loc[value_col] * df_loc[weightedMean_weight]
+        df_loc[weights_name] = df_loc[weightedMean_weight].where(~df_loc[prod_name].isnull())
+        new_aggregation_dic[prod_name] = 'sum'
+        new_aggregation_dic[weights_name] = 'sum'
+
+    output = df_loc[Duplicated_rows]. \
+        groupby(group_along, observed=True).aggregate(new_aggregation_dic, engine='cython'). \
+        reset_index()
+
+
+    for value_col in values:
+        prod_name = 'prod_{v}_{w}'.format(v=value_col, w=weightedMean_weight)
+        weights_name = 'weights_{v}_{w}'.format(v=value_col,w=weightedMean_weight)
+        output[value_col] = output[prod_name] / output[weights_name]
+        output.drop(columns=[prod_name,weights_name],inplace=True)
+
+    output = output.append(df_nodup)
+    del df_nodup,df_loc
+    return output
+
+pd.DataFrame.groupbyAndAgg = groupbyAndAgg
+
+
 def allin(vec,dest):
     return(all([name in dest for name in vec]))
 
