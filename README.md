@@ -46,3 +46,31 @@ Contains:
 
 ## 4 other folder  <a class="anchor" id="CSV"></a>
 Other Folder (Data, SujetsDAnalyse)  should disappear soon. 
+
+## Getting help
+
+If you have questions, concerns, bug reports, etc, please file an issue in this repository's Issue Tracker.
+
+## Getting involved
+
+BuildingModel is looking for users to provide feedback and bug reports on the initial set of functionalities as well as
+developers to contribute to the next versions, with a focus on validation of models, cooling need simulation,
+adaptation to other countries' datasets and building usages.
+
+Instructions on how to contribute are available at [CONTRIBUTING](CONTRIBUTING.md).
+
+
+## Open source licensing info
+1. [LICENSE](LICENSE)
+
+----
+
+## Credits and references
+Energy-Alternatives-Planing models are directly derived from work performes for several courses given at MINES ParisTech by Robin Girard, and by students. 
+
+### Main contributors : 
+- [Robin Girard](https://www.minesparis.psl.eu/Services/Annuaire/robin-girard) -- [blog](https://www.energy-alternatives.eu/) [gitHub](https://github.com/robingirard) [LinkedIn](https://www.linkedin.com/in/robin-girard-a88baa4/) [google Scholar](https://scholar.google.fr/citations?user=cEYGStIAAAAJ&hl=fr)
+- Quentin Raillard Cazanove
+- Pierrick Dartois
+- Anaelle Jodry
+

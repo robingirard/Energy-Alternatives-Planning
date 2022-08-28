@@ -4,6 +4,7 @@ from pyomo.core import *
 from pyomo.opt import SolverFactory
 from datetime import timedelta
 import pandas as pd
+import numpy as np
 import re
 import sys
 
@@ -43,7 +44,26 @@ def expand_DF_2D(df1,df2,names):
     return res # return a dataframe
 
 ### not finished
-def expand_grid_fromc_dict(My_dict,names ):
+
+def expand_grid_3D(x, y , z,names):
+    res=pd.DataFrame()
+    xG, yG, zG = np.meshgrid(x, y, z) # create the actual grid
+    res.loc[:,names[0]] = xG.flatten() # make the grid 1d
+    res.loc[:,names[1]] = yG.flatten() # same
+    res.loc[:,names[2]] = zG.flatten() # same
+    return res # return a dataframe
+
+def expand_grid_from_dict(My_dict,as_MultiIndex=False):
+    names= list(My_dict.keys())
+    res=pd.DataFrame()
+    G = np.meshgrid(*list(My_dict.values())) # create the actual grid
+    for key in range(0,len(names)):
+        res.loc[:,names[key]] = G[key].flatten() # make the grid 1d
+    if as_MultiIndex:res=pd.MultiIndex.from_frame(res)
+    return res # return a dataframe or a multiindex
+
+
+def expand_grid_fromc_dict_2(My_dict,names ):
     res=pd.DataFrame()
     My_indexes = []
     for key, value in My_dict.items():
@@ -77,6 +97,40 @@ def tuple_insert(tup,pos,ele):
 def insert_in_slice_None(position,length,to_insert_tuple):
     My_tuple_list = (length-1)*['slice(None)']
     return tuple_insert((*My_tuple_list,),position,to_insert_tuple)
+
+
+def change_index_values(df,index_name,change_dict):
+    old_index_names = df.index.names
+    if isinstance(df, pd.Series):
+        old_col_names = df.name
+        if type(old_col_names)==type(None): old_col_names =0
+        df = df.reset_index()
+        df.loc[:,index_name] = df[index_name].replace(change_dict)
+        return df.set_index(old_index_names)[old_col_names]
+    else:
+        old_col_names = df.columns
+        df = df.reset_index()
+        df.loc[:,index_name] = df[index_name].replace(change_dict)
+        return df.set_index(old_index_names)[old_col_names]
+pd.DataFrame.change_index_values = change_index_values
+pd.Series.change_index_values = change_index_values
+
+
+def remove_index_from_name(df,index_name):
+    old_index_names = list(df.index.names)
+    old_index_names.remove(index_name)
+    if isinstance(df, pd.Series):
+        old_col_names = df.name
+        if type(old_col_names)==type(None): old_col_names =0
+        df = df.reset_index().drop(columns=[index_name])
+        return df.set_index(old_index_names)[old_col_names]
+    else:
+        old_col_names = list(df.columns)
+        df = df.reset_index().drop(columns=[index_name])
+        return df.set_index(old_index_names)[old_col_names]
+pd.DataFrame.remove_index_from_name = remove_index_from_name
+pd.Series.remove_index_from_name = remove_index_from_name
+
 
 import sys
 def progressbar(it, prefix="", size=60, out=sys.stdout): # Python3.3+
@@ -132,6 +186,12 @@ def groupbyAndAgg(self,group_along,aggregation_dic,weightedMean_weight=None):
 
 pd.DataFrame.groupbyAndAgg = groupbyAndAgg
 
+
+def soustrait_mais_reste_positif(df_1, df_2):
+    TMP_df = pd.DataFrame(None);
+    TMP_df["df_1_moins_df_2"] = df_1 - df_2;
+    TMP_df["0"] = 0
+    return TMP_df.max(axis=1)
 
 def allin(vec,dest):
     return(all([name in dest for name in vec]))

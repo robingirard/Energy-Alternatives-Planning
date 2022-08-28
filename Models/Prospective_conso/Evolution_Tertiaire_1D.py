@@ -1,122 +1,96 @@
 #region Chargement des packages
 import pandas as pd
 from functions.f_tools import *
-#from Models.Prospective_conso.f_evolution_simulation import Renovation_changement_chauff
+from functions.f_graphicalTools import *
+from Models.Prospective_conso.f_evolution_tools import *
 from mycolorpy import colorlist as mcp
 import numpy as np
-
+import time
 dpe_colors = ['#009900', '#33cc33', '#B3FF00', '#e6e600', '#FFB300', '#FF4D00', '#FF0000',"#000000"]
 Graphic_folder = "Models/Prospective_conso/Graphics/"
 Data_folder = "Models/Prospective_conso/data/"
+pd.options.display.width = 0
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.width', 1000)
 #endregion
 
 #region chargement des données
-data_tertiaire =  pd.read_excel(Data_folder+"Hypotheses_tertiaire_1D.xlsx",
-                            sheet_name=["Energy_source","Transition","0D"])
+start = time.process_time()
 
-Description_Parc_initiale = data_tertiaire["Energy_source"].set_index(["Energy_source"]).\
-    assign(Besoin_surfacique = float(data_tertiaire["0D"]["Besoin_surfacique"])).\
-    assign(proportion_besoin_chauffage =  float(data_tertiaire["0D"]["proportion_besoin_chauffage"])).\
-    assign(Conso=lambda x: x["Besoin_surfacique"] * x["Surface"]*x["proportion_besoin_chauffage"]/x["COP"])
+sheet_name_and_dim={"Energy_source" : ["Energy_source"],
+                    "retrofit_Transition" : ["Energy_source","year"] ,"0D" : [],
+                    "Energy_source_year": ["Energy_source","year"],"year":["year"]}
+data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_tertiaire_1D.xlsx",
+                            sheet_name=list(sheet_name_and_dim.keys()))
+simulation_parameters = extract_simulation_parameters(data_set_from_excel,sheet_name_and_dim,Index_names = ["Energy_source"])
+simulation_parameters["type_index"] = data_set_from_excel["Energy_source"]["Energy_source"] ### l'index des archetypes
+simulation_parameters   =   complete_parameters(simulation_parameters,Para_2_fill=["retrofit_improvement","retrofit_Transition"])
+simulation_parameters["init_Description_Parc"]=create_initial_parc(simulation_parameters).sort_index()
 
-data_fin = 2050
-data_debut = 2020
-
-#hypothèses pour la destruction
-taux_disp=0.005 # taux de disparition chaque année sur l'ancien
-
-#hypothèses pour la réno
-Transition=data_tertiaire["Transition"].assign(old_new="new").rename(columns ={"Energy_source":"Energy_source_old"}).set_index(["Energy_source_old","old_new"]).\
-    melt(ignore_index=False,var_name="Energy_source",value_name="Transition").set_index(["Energy_source"],append=True)
-
-Changement_total = 1 # fraction de la surface initiale rénovée/changée dans le parc à la date de fin
-rythme_changement_m2_par_chauff_par_an = {chauff : Changement_total/(data_fin-data_debut) *Description_Parc_initiale.loc[chauff,"Surface"] for chauff in Description_Parc_initiale.index}
-Renovation_changement_chauff_assumptions={"rythme_changement_m2_par_chauff_par_an":rythme_changement_m2_par_chauff_par_an,
-                                          "perf_reno" : 0.30 ,#taux de diminution
-                                          "Transition" : Transition}
-#hypothèses pour le neuf
-Repartition_chauffage_neuf=Description_Parc_initiale[["Repartition_chauffage_neuf_premieres_annees","Repartition_chauffage_neuf_regime_normal"]].\
-            assign(old_new="new").reset_index().\
-            rename(columns = {"index" : "Energy_source"}).\
-            set_index(["Energy_source","old_new"])
-New_buildings_assumption ={"Repartition_chauffage_neuf" : Repartition_chauffage_neuf,
-                 "energy_new" : 50,
-                 "date_changement_neuf": 2025,
-                 "Nouvelle_surface_par_an" :float(data_tertiaire["0D"]["Nouvelle_surface_par_an"])}
-
-
-
-#rythme_changement_m2_par_chauff_par_an = pd.DataFrame.from_dict({chauff : Changement_total/(data_fin-data_debut) *Description_Parc_initiale.loc[chauff,"Surface"] for chauff in Description_Parc_initiale.index},
-#                                                                orient='index').reset_index().\
-#    assign(old_new="new").rename(columns = {"index" : "Energy_source",0:"Surface"}).set_index(["Energy_source","old_new"])
+end = time.process_time()
+print("Chargement et interpolation des données terminé en : "+str(end-start)+" secondes")
 #endregion
 
-#region creation des modèles
+#region models
+# ce dont on a besoin à la fin pour la simulation
+# une formule pour calculer la conso et les émissions
+start = time.process_time()
 
-#lorsque l'on met à jour l'ensemble des surfaces et le besoin associé
-def update_surface_heat_need(Description_Parc_year,Surfaces,heat_need):
-    Surfaces=Surfaces.reset_index().set_index(["Energy_source","old_new"])
-    Surfaces=Surfaces["Surface"]
-    Ancien_besoin = Description_Parc_year.loc[(slice(None), "new"), "Besoin_surfacique"]
-    Anciennes_surfaces = Description_Parc_year.loc[(slice(None), "new"), "Surface"]
-    Description_Parc_year.loc[(slice(None), "new"), "Surface"] += Surfaces
-    Description_Parc_year.loc[(slice(None), "new"), "Besoin_surfacique"] = (Ancien_besoin * Anciennes_surfaces + heat_need *Surfaces) / \
-                                                                            Description_Parc_year.loc[(slice(None), "new"), "Surface"]
-    return Description_Parc_year
+def f_Compute_conso(x,Vecteur = "total"):
+    if Vecteur=="total":
+        conso_unitaire = x["conso_unitaire_elec"]+x["conso_unitaire_gaz"]+x["conso_unitaire_fioul"]+x["conso_unitaire_bois"]
+    else: conso_unitaire = x["conso_unitaire_"+Vecteur]
+    return x["Besoin_surfacique"] * x["Surface"]*x["proportion_besoin_chauffage"]*conso_unitaire
+simulation_parameters["f_Compute_conso"]=f_Compute_conso
+
+def f_Compute_besoin(x): return x["Besoin_surfacique"] * x["Surface"]*x["proportion_besoin_chauffage"]
+simulation_parameters["f_Compute_besoin"]=f_Compute_besoin
 
 
-#renovation et changement de mode de chauffage
-def Renovation_changement_chauff(Description_Parc,year,Renovation_changement_chauff_assumptions):
-    Energy_sources = Description_Parc[year].reset_index()["Energy_source"].unique()
-    for chauff in Energy_sources:
-        Surface_renovee = Renovation_changement_chauff_assumptions["rythme_changement_m2_par_chauff_par_an"][chauff]
-        Nouveau_besoin = (1 - Renovation_changement_chauff_assumptions["perf_reno"]) * Description_Parc[year - 1].loc[(chauff, "old"), "Besoin_surfacique"]
-        Surfaces_renovee_par_chauff = Surface_renovee*Renovation_changement_chauff_assumptions["Transition"].loc[(chauff,slice(None),slice(None)),].rename(columns={"Transition" :"Surface"})
-        Description_Parc[year]=update_surface_heat_need(Description_Parc_year=Description_Parc[year],
-                                                        Surfaces=Surfaces_renovee_par_chauff,
-                                                        heat_need=Nouveau_besoin)
-        Description_Parc[year].loc[(chauff, "old"), "Surface"] -= Surface_renovee
-    return Description_Parc
+## initialize all "new_yearly_surface"
+simulation_parameters["new_yearly_surface"]= pd.Series(0.,index=simulation_parameters["type_index_year_new"])
+simulation_parameters["new_energy"]= pd.Series(simulation_parameters["new_energy"],index=simulation_parameters["type_index_year_new"] )
+TMP = ((simulation_parameters["new_yearly_surface_total"]*simulation_parameters["new_yearly_repartition_per_Energy_source"])).to_frame()
+TMP.columns =["new_yearly_surface"];TMP=TMP.assign(old_new="new").set_index(["old_new"],append=True)["new_yearly_surface"]
+simulation_parameters["new_yearly_surface"][TMP.index]+=TMP
 
-def Construction_neuf(Description_Parc,year,New_buildings_assumption):
-    if year<New_buildings_assumption["date_changement_neuf"]:
-        surface_neuf="Repartition_chauffage_neuf_premieres_annees"
-    else:
-        surface_neuf = "Repartition_chauffage_neuf_regime_normal"
-
-    Nouvelles_Surfaces = New_buildings_assumption["Repartition_chauffage_neuf"][surface_neuf] * New_buildings_assumption["Nouvelle_surface_par_an"]
-    Description_Parc[year] = update_surface_heat_need(Description_Parc_year=Description_Parc[year],
-                                                      Surfaces=Nouvelles_Surfaces.to_frame().rename(columns={surface_neuf: "Surface"}),
-                                                      heat_need=New_buildings_assumption["energy_new"])
-    return Description_Parc
-
-def Destruction_ancien(Description_Parc,year,taux_disp):
-    Description_Parc[year].loc[(slice(None),"old"),"Surface"] -=  taux_disp * Description_Parc[year].loc[(slice(None),"old"),"Surface"]
-    return Description_Parc
+def f_retrofit_total_yearly_surface(year,alpha,simulation_parameters):
+    ## Ici ne dépend pas de year
+    return  alpha *  simulation_parameters["init_Description_Parc"].loc[:, "Surface"]
+simulation_parameters["f_retrofit_total_yearly_surface"]=f_retrofit_total_yearly_surface
+calibration_parameters={"f_retrofit_total_yearly_surface" :
+                            {"total_change_target": simulation_parameters["retrofit_change"] *
+                                                    simulation_parameters["init_Description_Parc"]["Surface"]}}
+simulation_parameters=calibrate_simulation_parameters(simulation_parameters,calibration_parameters)
+end = time.process_time()
+print("Chargement et calibration des modèles terminé en : "+str(end-start)+" secondes")
 #endregion
 
+#region simulation et représentation des résultats
+Description_Parc= loanch_simulation(simulation_parameters)
 
-#region ordre des indexs : Categories Energy_source Efficiency_class old_new
-Description_Parc = {}
-year=data_debut
-Description_Parc[year]=pd.concat( [ Description_Parc_initiale.assign(old_new="old"),
-                                Description_Parc_initiale.assign(old_new="new")]).set_index(['old_new'], append=True)
-Description_Parc[year].loc[(slice(None),"new"),"Surface"]=0 ## on commence sans "neuf"
-
-for year in progressbar(range(data_debut+1,data_fin), "Computing: ", 40):
-    Description_Parc[year] = Description_Parc[year-1]
-    Description_Parc    =   Destruction_ancien(Description_Parc, year, taux_disp)
-    Description_Parc    =   Renovation_changement_chauff(Description_Parc, year, Renovation_changement_chauff_assumptions)
-    Description_Parc    =   Construction_neuf(Description_Parc, year, New_buildings_assumption)
-    Description_Parc[year]= Description_Parc[year].assign(Conso=lambda x: x["Besoin_surfacique"] * x["Surface"]*x["proportion_besoin_chauffage"]/x["COP"])
-    #energy_new
-#endregion
-
-year=data_debut+1
 Description_Parc_df = pd.concat(Description_Parc, axis=0).reset_index().\
     rename(columns={"level_0":"year"}).set_index([ "year"  ,  "Energy_source"  , "old_new"])
-Description_Parc_df.groupby(["year","Energy_source"]).Conso.sum().to_frame().reset_index().\
-    pivot(index='year', columns='Energy_source')['Conso']
 
-Description_Parc_df.groupby(["year","Energy_source"]).Surface.sum().to_frame().reset_index().\
-    pivot(index='year', columns='Energy_source')['Surface']
+Var = "Conso"
+y_df = Description_Parc_df.groupby(["year","Energy_source"])[Var].sum().to_frame().reset_index().\
+    pivot(index='year', columns='Energy_source').loc[[year for year in range(2021,2050)],Var]/10**9
+fig = MyStackedPlotly(y_df=y_df)
+fig=fig.update_layout(title_text="Conso énergie finale par mode de chauffage (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")
+plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
+
+Var = "Besoin"
+y_df = Description_Parc_df.groupby(["year","Energy_source"])[Var].sum().to_frame().reset_index().\
+    pivot(index='year', columns='Energy_source').loc[[year for year in range(2021,2050)],Var]/10**9
+fig = MyStackedPlotly(y_df=y_df)
+fig=fig.update_layout(title_text="Besoin de chaleur par mode de chauffage (en TWh)", xaxis_title="Année",yaxis_title="Besoin [TWh]")
+plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
+
+y_df = Description_Parc_df.groupby(["year"])[ 'Conso_elec', 'Conso_gaz', 'Conso_fioul', 'Conso_bois'].sum().loc[[year for year in range(2021,2050)],:]/10**9
+fig = MyStackedPlotly(y_df=y_df)
+fig=fig.update_layout(title_text="Conso énergie finale par vecteur (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")
+plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
+
+
+#endregion
