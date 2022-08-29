@@ -116,7 +116,7 @@ pd.DataFrame.change_index_values = change_index_values
 pd.Series.change_index_values = change_index_values
 
 
-def remove_index_from_name(df,index_name):
+def rm_index(df,index_name):
     old_index_names = list(df.index.names)
     old_index_names.remove(index_name)
     if isinstance(df, pd.Series):
@@ -128,8 +128,8 @@ def remove_index_from_name(df,index_name):
         old_col_names = list(df.columns)
         df = df.reset_index().drop(columns=[index_name])
         return df.set_index(old_index_names)[old_col_names]
-pd.DataFrame.remove_index_from_name = remove_index_from_name
-pd.Series.remove_index_from_name = remove_index_from_name
+pd.DataFrame.rm_index = rm_index
+pd.Series.rm_index = rm_index
 
 
 import sys
@@ -187,7 +187,7 @@ def groupbyAndAgg(self,group_along,aggregation_dic,weightedMean_weight=None):
 pd.DataFrame.groupbyAndAgg = groupbyAndAgg
 
 
-def soustrait_mais_reste_positif(df_1, df_2):
+def sub_keep_positive(df_1, df_2):
     TMP_df = pd.DataFrame(None);
     TMP_df["df_1_moins_df_2"] = df_1 - df_2;
     TMP_df["0"] = 0
