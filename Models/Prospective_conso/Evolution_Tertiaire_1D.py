@@ -1,6 +1,6 @@
 #region Chargement des packages
-from IPython import get_ipython;
-get_ipython().magic('reset -sf')
+# from IPython import get_ipython;
+# get_ipython().magic('reset -sf')
 import pandas as pd
 from functions.f_tools import *
 from functions.f_graphicalTools import *
@@ -72,19 +72,19 @@ y_df = sim_stock_df.groupby(["year","Energy_source"])[Var].sum().to_frame().rese
     pivot(index='year', columns='Energy_source').loc[[year for year in range(2021,2050)],Var]/10**9
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Conso énergie finale par mode de chauffage (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")
-plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
+plotly.offline.plot(fig, filename=Graphic_folder+'file1.html') ## offline
 
 Var = "Besoin"
 y_df = sim_stock_df.groupby(["year","Energy_source"])[Var].sum().to_frame().reset_index().\
     pivot(index='year', columns='Energy_source').loc[[year for year in range(2021,2050)],Var]/10**9
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Besoin de chaleur par mode de chauffage (en TWh)", xaxis_title="Année",yaxis_title="Besoin [TWh]")
-plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
+plotly.offline.plot(fig, filename=Graphic_folder+'file2.html') ## offline
 
 y_df = sim_stock_df.groupby(["year"])[ 'Conso_elec', 'Conso_gaz', 'Conso_fioul', 'Conso_bois'].sum().loc[[year for year in range(2021,2050)],:]/10**9
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Conso énergie finale par vecteur (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")
-plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
-
+# plotly.offline.plot(fig, filename=Graphic_folder+'file3.html') ## offline
+fig.show()
 
 #endregion
