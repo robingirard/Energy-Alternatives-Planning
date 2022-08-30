@@ -72,7 +72,7 @@ print("Chargement et interpolation des données terminé en : "+str(end-start)+"
 #endregion
 
 #region simulation
-sim_stock = loanch_simulation(sim_param)
+sim_stock = launch_simulation(sim_param)
 #endregion
 
 #region représentation des résultats

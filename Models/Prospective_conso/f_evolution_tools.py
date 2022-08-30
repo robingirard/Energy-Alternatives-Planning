@@ -197,13 +197,14 @@ def initialize_Simulation(sim_param):
 
     return sim_stock
 
-def loanch_simulation(sim_param):
+def launch_simulation(sim_param):
     sim_stock = initialize_Simulation(sim_param)
     for year in progressbar(range(int(sim_param["date_debut"]) + 1, int(sim_param["date_fin"])), "Computing: ", 40):
         sim_stock[year] = sim_stock[year-1].copy()
 
         #destruction
-        sim_stock[year].loc[:,"Surface"] -= sim_param["old_taux_disp"][year] * sim_stock[year].loc[:, "Surface"]
+        if "old_taux_disp" in sim_param:
+            sim_stock[year].loc[:,"Surface"] -= sim_param["old_taux_disp"][year] * sim_stock[year].loc[:, "Surface"]
 
         #renovation
         base_index_old =(*sim_param["base_index_tuple"], "old")
@@ -220,10 +221,11 @@ def loanch_simulation(sim_param):
         sim_stock[year].loc[(*sim_param["base_index_tuple"], "old"), "Surface"] = Surf_remain
 
         #neuf
-        sim_stock = update_surface_heat_need(sim_stock=sim_stock,year=year,
-            Nouvelles_surfaces=sim_param["new_yearly_surface"].loc[(*sim_param["base_index_tuple"], year)],
-            Nouveau_besoin=sim_param["new_energy"].loc[(*sim_param["base_index_tuple"], year)],
-            sim_param=sim_param)
+        if "new_yearly_surface" in sim_param:
+            sim_stock = update_surface_heat_need(sim_stock=sim_stock,year=year,
+                Nouvelles_surfaces=sim_param["new_yearly_surface"].loc[(*sim_param["base_index_tuple"], year)],
+                Nouveau_besoin=sim_param["new_energy"].loc[(*sim_param["base_index_tuple"], year)],
+                sim_param=sim_param)
 
         sim_stock[year]  = sim_stock[year].assign(Conso=lambda x: sim_param["f_Compute_conso"](x)).fillna(0)
         sim_stock[year]  = sim_stock[year].assign(Besoin=lambda x: sim_param["f_Compute_besoin"](x)).fillna(0)

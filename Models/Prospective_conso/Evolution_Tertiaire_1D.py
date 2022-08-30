@@ -1,6 +1,6 @@
 #region Chargement des packages
-from IPython import get_ipython;
-get_ipython().magic('reset -sf')
+#from IPython import get_ipython;
+#get_ipython().magic('reset -sf')
 import pandas as pd
 from functions.f_tools import *
 from functions.f_graphicalTools import *
@@ -37,6 +37,7 @@ def Error_function(alpha,sim_param):
 
 alpha = scop.minimize(Error_function, x0=1, method='BFGS',args=(sim_param))["x"][0]
 sim_param["retrofit_change_surface"] = alpha * sim_param["init_sim_stock"]["Surface"]
+
 Pameter_to_fill_along_index_year = {param : sim_param["base_index_year"] for param in ["retrofit_improvement","retrofit_change_surface","retrofit_Transition",
                                                                                                    "new_energy","new_yearly_repartition_per_Energy_source"]}
 sim_param   =   complete_parameters(sim_param,Para_2_fill=Pameter_to_fill_along_index_year)
@@ -59,7 +60,7 @@ print("Chargement des données, des modèles et interpolation terminés en : "+s
 #endregion
 
 #region simulation
-sim_stock = loanch_simulation(sim_param)
+sim_stock = launch_simulation(sim_param)
 #endregion
 
 #region représentation des résultats
@@ -85,6 +86,6 @@ y_df = sim_stock_df.groupby(["year"])[ 'Conso_elec', 'Conso_gaz', 'Conso_fioul',
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Conso énergie finale par vecteur (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
-
+#fig.show()
 
 #endregion
