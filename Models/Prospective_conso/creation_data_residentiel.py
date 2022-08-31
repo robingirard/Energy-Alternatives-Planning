@@ -12,8 +12,6 @@ pd.options.display.width = 0
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
-
-
 #endregion
 
 #region creation des données résidentielles 2D simples vers Hypotheses_residentiel_2D_bis
@@ -78,8 +76,8 @@ base_dpe_residentiel_df.columns= ["init_"+col for col in base_dpe_residentiel_df
 variable_dict["res_type_Energy_source"] = base_dpe_residentiel_df.reset_index().set_index(["Energy_source","residential_type"])
 
 ### il faudrait améliorer extract_sim_param pour ne pas avoir à créer ces deux tables ...
-variable_dict["residential_type"] = pd.DataFrame.from_dict({"residential_type": base_dpe_residentiel_df.reset_index()["residential_type"].unique(),
-                                                  "Null":"null"},orient="columns").set_index(["residential_type"])
+#variable_dict["residential_type"] = pd.DataFrame.from_dict({"residential_type": base_dpe_residentiel_df.reset_index()["residential_type"].unique(),
+#                                                  "Null":"null"},orient="columns").set_index(["residential_type"])
 
 with pd.ExcelWriter(Data_folder + "Hypotheses_residentiel_2D_bis.xlsx") as writer:
     for V in variable_dict:
