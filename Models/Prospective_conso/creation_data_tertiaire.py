@@ -25,7 +25,7 @@ sim_param = extract_sim_param(data_set_from_excel,Index_names =  ["Categories", 
 sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
 def f_Compute_surface(x):
     return x["Energy_source_per_Category"]*x["Efficiency_class_per_Category"]*x["total_surface"]
-sim_param["init_sim_stock"]=sim_param["init_sim_stock"].assign(Surface = lambda x : f_Compute_surface(x))
+sim_param["init_sim_stock"]=sim_param["init_sim_stock"].assign(surface = lambda x : f_Compute_surface(x))
 
 
 
@@ -45,7 +45,7 @@ variable_dict = {
         "dims" : [],
         "values": {
             'date_debut': "",
-            'Besoin_surfacique': "mean",
+            'energy_need_per_surface': "mean",
             'proportion_besoin_chauffage': 'mean',
             'new_energy': 'mean',
             'new_yearly_surface': 'sum'
@@ -59,7 +59,7 @@ variable_dict = {
     "Energy_source" : {
         "dims": ["Energy_source"],
         "values": {
-            "Surface": "sum",
+            "surface": "sum",
             "conso_unitaire_elec": "sum",
             "conso_unitaire_gaz": "sum",
             "conso_unitaire_fioul": "sum",
@@ -75,11 +75,11 @@ variable_dict = {
 }
 
 Transition = sim_param["retrofit_Transition"].groupby([ "Categories","Energy_source"]).mean().\
-    merge(sim_param["init_sim_stock"].groupby([ "Categories","Energy_source"])["Surface"].sum(),
+    merge(sim_param["init_sim_stock"].groupby([ "Categories","Energy_source"])["surface"].sum(),
           how = 'outer',left_index=True,right_index=True).reset_index().\
     groupbyAndAgg(group_along= ["Energy_source"],
             aggregation_dic={chauff : "wmean" for chauff in sim_param["Energy_source_index"]},
-            weightedMean_weight="Surface").\
+            weightedMean_weight="surface").\
     assign(year=2020).set_index(["Energy_source","year"]).fillna(0)
 
 with pd.ExcelWriter(Data_folder + "Hypotheses_tertiaire_1D_bis.xlsx") as writer:
