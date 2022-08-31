@@ -13,10 +13,13 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
+
 #endregion
 
 #region creation des données résidentielles 2D simples vers Hypotheses_residentiel_2D_bis
 base_dpe_residentiel_df=pd.read_csv(Data_folder+'base_logement_agregee.csv', sep=';', decimal='.')
+index= base_dpe_residentiel_df["occupancy_status"].isin(['free accomodation', 'low rent housing','owner', 'renter'])
+base_dpe_residentiel_df=base_dpe_residentiel_df[index]
 base_dpe_residentiel_df.IPONDL.sum()
 Fraction_PACS ={    "Pompes à chaleur air-air": 6.5 / 8,
                     "Pompes à chaleur air-eau": 1.5 / 8,
