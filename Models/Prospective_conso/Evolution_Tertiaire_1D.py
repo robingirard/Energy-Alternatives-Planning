@@ -21,6 +21,7 @@ pd.set_option('display.width', 1000)
 start = time.process_time()
 
 data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_tertiaire_1D.xlsx", None);
+data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_tertiary_BASIC.xlsx", None);
 sim_param = extract_sim_param(data_set_from_excel,Index_names = ["Energy_source"],
                               dim_names=["Energy_source","year"])
 sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
