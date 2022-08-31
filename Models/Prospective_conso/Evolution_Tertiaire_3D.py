@@ -24,10 +24,10 @@ data_set_from_excel     =   pd.read_excel(Data_folder+"Hypotheses_tertiaire_3D.x
 sim_param = extract_sim_param(data_set_from_excel,Index_names =  ["Categories", "Efficiency_class" ,"Energy_source"],
                               dim_names=["Categories","Energy_source","Efficiency_class","year","year"])
 sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
-
+sim_param["volume_variable_name"] = "surface"
 def f_Compute_surface(x):
     return x["Energy_source_per_Category"]*x["Efficiency_class_per_Category"]*x["total_surface"]
-sim_param["init_sim_stock"]=sim_param["init_sim_stock"].assign(Surface = lambda x : f_Compute_surface(x))
+sim_param["init_sim_stock"]=sim_param["init_sim_stock"].assign(surface = lambda x : f_Compute_surface(x))
 
 sim_param["energy_class_dictionnary" ]= {"A" : 50,"B" : 90, "C": 150,"D":230,"E":330,"F":450}
 def energy_to_class(x,energy_class_dictionnary):
@@ -40,14 +40,14 @@ sim_param["f_energy_to_class"]=energy_to_class
 ### modèle avec alpha paramètre libre : rénovation tous les ans de alpha *  sim_param["init_sim_stock"].loc[:, "Surface"]
 ### cible : on veut que sur toute la période de simulation que cela fasse sim_param["retrofit_change"] * sim_param["init_sim_stock"]["Surface"]
 def Error_function(alpha,sim_param):
-    total_change_target = sim_param["retrofit_change_total_proportion_surface"] * sim_param["init_sim_stock"]["Surface"]
+    total_change_target = sim_param["retrofit_change_total_proportion_surface"] * sim_param["init_sim_stock"]["surface"]
     Total_change = pd.Series(0.,index=sim_param["base_index"])
     for year in range(int(sim_param["date_debut"])+1,int(sim_param["date_fin"])):
-        Total_change+=alpha *  sim_param["init_sim_stock"].loc[:, "Surface"]
+        Total_change+=alpha *  sim_param["init_sim_stock"].loc[:, "surface"]
     return  ((Total_change-total_change_target)**2).sum()
 
 alpha = scop.minimize(Error_function, x0=1, method='BFGS',args=(sim_param))["x"][0]
-sim_param["retrofit_change_surface"] = alpha * sim_param["init_sim_stock"]["Surface"]
+sim_param["retrofit_change_surface"] = alpha * sim_param["init_sim_stock"]["surface"]
 
 Para_2_fill = {param : sim_param["base_index_year"] for param in ["retrofit_improvement","retrofit_change_surface","retrofit_Transition",
                                                                                                    "new_energy","new_yearly_repartition"]}
@@ -61,10 +61,10 @@ def f_Compute_conso(x,Vecteur = "total"):
     if Vecteur=="total":
         conso_unitaire = x["conso_unitaire_elec"]+x["conso_unitaire_gaz"]+x["conso_unitaire_fioul"]+x["conso_unitaire_bois"]
     else: conso_unitaire = x["conso_unitaire_"+Vecteur]
-    return x["Besoin_surfacique"] * x["Surface"]*x["proportion_besoin_chauffage"]*conso_unitaire
+    return x["energy_need_per_surface"] * x["surface"]*x["proportion_besoin_chauffage"]*conso_unitaire
 sim_param["f_Compute_conso"]=f_Compute_conso
 
-def f_Compute_besoin(x): return x["Besoin_surfacique"] * x["Surface"]*x["proportion_besoin_chauffage"]
+def f_Compute_besoin(x): return x["energy_need_per_surface"] * x["surface"]*x["proportion_besoin_chauffage"]
 sim_param["f_Compute_besoin"]=f_Compute_besoin
 
 end = time.process_time()
@@ -105,30 +105,30 @@ plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 #region graphique de Marrimenko
 colors = mcp.gen_color(cmap='Accent',n=8)
 # see https://matplotlib.org/stable/gallery/color/colormap_reference.html
-fig=marimekko(sim_param["init_sim_stock"][["Surface"]].reset_index().groupby(['Categories',"Energy_source"], as_index=False).sum(),
+fig=marimekko(sim_param["init_sim_stock"][["surface"]].reset_index().groupby(['Categories',"Energy_source"], as_index=False).sum(),
                 x_var_name = "Energy_source",
                 y_var_name= "Categories",
-                effectif_var_name='Surface',
+                effectif_var_name='surface',
               color_discrete_sequence=colors )
 plotly.offline.plot(fig, filename=Graphic_folder+'surface_Energy_source_Categories.html')
 
-fig=marimekko(sim_param["init_sim_stock"][["Surface"]].reset_index().groupby(['Efficiency_class',"Categories"], as_index=False).sum(),
+fig=marimekko(sim_param["init_sim_stock"][["surface"]].reset_index().groupby(['Efficiency_class',"Categories"], as_index=False).sum(),
                 x_var_name = "Categories",
                 y_var_name= "Efficiency_class",
-                effectif_var_name='Surface',
+                effectif_var_name='surface',
               color_discrete_sequence= dpe_colors)
 plotly.offline.plot(fig, filename=Graphic_folder+'surface_Categories_Efficiency_class.html')
 
-fig=marimekko(sim_param["init_sim_stock"][["Surface"]].reset_index().groupby(['Efficiency_class',"Energy_source"], as_index=False).sum(),
+fig=marimekko(sim_param["init_sim_stock"][["surface"]].reset_index().groupby(['Efficiency_class',"Energy_source"], as_index=False).sum(),
                 x_var_name = "Energy_source",
                 y_var_name= "Efficiency_class",
-                effectif_var_name='Surface',
+                effectif_var_name='surface',
               color_discrete_sequence= dpe_colors)
 plotly.offline.plot(fig, filename=Graphic_folder+'surface_Energy_source_Efficiency_class.html')
 
 #not working
-# fig = marimekko_2(df =sim_stock_initiale[["Surface"]].reset_index().groupby(['Categories',"Efficiency_class","Energy_source"], as_index=False).sum() ,
-#             effectif_var_name = "Surface",
+# fig = marimekko_2(df =sim_stock_initiale[["surface"]].reset_index().groupby(['Categories',"Efficiency_class","Energy_source"], as_index=False).sum() ,
+#             effectif_var_name = "surface",
 #             ColorY_var_name="Categories",
 #             horizontalX_var_name="Energy_source",
 #             TextureX_var_name="Efficiency_class",

@@ -24,21 +24,23 @@ data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_residentiel_2D_bis.
 sim_param = extract_sim_param(data_set_from_excel,Index_names = ["residential_type","Energy_source"],
                               dim_names=["residential_type","Energy_source","year"])
 sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
-sim_param["init_sim_stock"]["Surface"]=sim_param["init_sim_stock"]["Surface"]*sim_param["init_sim_stock"]["IPONDL"]
+sim_param["volume_variable_name"] = "surface"
+sim_param["init_sim_stock"]["surface"]=sim_param["init_sim_stock"]["surface"]*sim_param["init_sim_stock"]["IPONDL"]
 
-(sim_param["init_sim_stock"]["Surface"]*sim_param["init_sim_stock"]["Besoin_surfacique"]).sum()/10**9 #
+
+(sim_param["init_sim_stock"]["surface"]*sim_param["init_sim_stock"]["energy_need_per_surface"]).sum()/10**9 #
 ### example (un peu trop simpliste car ici on pourrait le faire formellement) de callage de paramètre
 ### modèle avec alpha paramètre libre : rénovation tous les ans de alpha *  sim_param["init_sim_stock"].loc[:, "Surface"]
 ### cible : on veut que sur toute la période de simulation que cela fasse sim_param["retrofit_change"] * sim_param["init_sim_stock"]["Surface"]
 def Error_function(alpha,sim_param):
-    total_change_target = sim_param["retrofit_change_total_proportion_surface"] * sim_param["init_sim_stock"]["Surface"]
+    total_change_target = sim_param["retrofit_change_total_proportion_surface"] * sim_param["init_sim_stock"]["surface"]
     Total_change = pd.Series(0.,index=sim_param["base_index"])
     for year in range(int(sim_param["date_debut"])+1,int(sim_param["date_fin"])):
         Total_change+=alpha *  sim_param["init_sim_stock"].loc[:, "Surface"]
     return  ((Total_change-total_change_target)**2).sum()
 
 alpha = scop.minimize(Error_function, x0=1, method='BFGS',args=(sim_param))["x"][0]
-sim_param["retrofit_change_surface"] = alpha * sim_param["init_sim_stock"]["Surface"]
+sim_param["retrofit_change_surface"] = alpha * sim_param["init_sim_stock"]["surface"]
 sim_param["retrofit_change_surface"]=sim_param["retrofit_change_surface"].reset_index().assign(year=2020).set_index(sim_param['Index_names']+["year"])["Surface"]
 sim_param["retrofit_improvement"]=pd.DataFrame([sim_param["retrofit_improvement"]]*len(sim_param['base_index_year']),index =sim_param['base_index_year'])[0]
 Para_2_fill = {param : sim_param["base_index_year"] for param in ["retrofit_change_surface","retrofit_Transition"]}
@@ -48,10 +50,10 @@ def f_Compute_conso(x,Vecteur = "total"):
     if Vecteur=="total":
         conso_unitaire = x["conso_unitaire_elec"]+x["conso_unitaire_gaz"]+x["conso_unitaire_fioul"]+x["conso_unitaire_bois"]
     else: conso_unitaire = x["conso_unitaire_"+Vecteur]
-    return x["Besoin_surfacique"] * x["Surface"]*conso_unitaire
+    return x["energy_need_per_surface"] * x["surface"]*conso_unitaire
 sim_param["f_Compute_conso"]=f_Compute_conso
 
-def f_Compute_besoin(x): return x["Besoin_surfacique"] * x["Surface"]
+def f_Compute_besoin(x): return x["energy_need_per_surface"] * x["surface"]
 sim_param["f_Compute_besoin"]=f_Compute_besoin
 
 end = time.process_time()

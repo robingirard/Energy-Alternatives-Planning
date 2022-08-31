@@ -198,32 +198,37 @@ def initialize_Simulation(sim_param):
     return sim_stock
 
 def launch_simulation(sim_param):
+    sim_param["energy_need_variable_name"]= "energy_need_per_"+sim_param["volume_variable_name"]
+    sim_param["new_yearly_variable_name"]=  "new_yearly_"+sim_param["volume_variable_name"]
+    sim_param["retrofit_change_variable_name"]="retrofit_change_"+sim_param["volume_variable_name"]
+
     sim_stock = initialize_Simulation(sim_param)
     for year in progressbar(range(int(sim_param["date_debut"]) + 1, int(sim_param["date_fin"])), "Computing: ", 40):
         sim_stock[year] = sim_stock[year-1].copy()
 
         #destruction
         if "old_taux_disp" in sim_param:
-            sim_stock[year].loc[:,"Surface"] -= sim_param["old_taux_disp"][year] * sim_stock[year].loc[:, "Surface"]
+            sim_stock[year].loc[:,sim_param["volume_variable_name"]] -= \
+                sim_param["old_taux_disp"][year] * sim_stock[year].loc[:, sim_param["volume_variable_name"]]
 
         #renovation
         base_index_old =(*sim_param["base_index_tuple"], "old")
         base_index_year_new =(*sim_param["base_index_tuple"], year, "new")
-        Surf_2_retrofit = sim_param["retrofit_change_surface"].loc[(*sim_param["base_index_tuple"], year)]
-        Surf_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, "Surface"],Surf_2_retrofit)
-        Surf_2_retrofit = (sim_stock[year]["Surface"].loc[base_index_old] - Surf_remain.rm_index("old_new"))
+        Surf_2_retrofit = sim_param[sim_param["retrofit_change_variable_name"]].loc[(*sim_param["base_index_tuple"], year)]
+        Surf_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],Surf_2_retrofit)
+        Surf_2_retrofit = (sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] - Surf_remain.rm_index("old_new"))
         Transition = sim_param["retrofit_Transition"].loc[base_index_year_new, :].rm_index("year").rm_index("old_new")
-        sim_stock = update_surface_heat_need(sim_stock=sim_stock,year=year,
+        sim_stock = update_heat_need(sim_stock=sim_stock,year=year,
                   Nouvelles_surfaces=apply_transition(Surf_2_retrofit,Transition,sim_param),
                   Nouveau_besoin=(1 -sim_param["retrofit_improvement"].loc[(*sim_param["base_index_tuple"],year)]) * \
-                                 sim_stock[year - 1]["Besoin_surfacique"].loc[(*sim_param["base_index_tuple"],"old")],
+                                 sim_stock[year - 1][sim_param["energy_need_variable_name"]].loc[(*sim_param["base_index_tuple"],"old")],
                   sim_param=sim_param)
-        sim_stock[year].loc[(*sim_param["base_index_tuple"], "old"), "Surface"] = Surf_remain
+        sim_stock[year].loc[(*sim_param["base_index_tuple"], "old"), sim_param["volume_variable_name"]] = Surf_remain
 
         #neuf
-        if "new_yearly_surface" in sim_param:
-            sim_stock = update_surface_heat_need(sim_stock=sim_stock,year=year,
-                Nouvelles_surfaces=sim_param["new_yearly_surface"].loc[(*sim_param["base_index_tuple"], year)],
+        if sim_param["new_yearly_variable_name"] in sim_param:
+            sim_stock = update_heat_need(sim_stock=sim_stock,year=year,
+                Nouvelles_surfaces=sim_param[sim_param["new_yearly_variable_name"]].loc[(*sim_param["base_index_tuple"], year)],
                 Nouveau_besoin=sim_param["new_energy"].loc[(*sim_param["base_index_tuple"], year)],
                 sim_param=sim_param)
 
@@ -243,27 +248,27 @@ def get_index_name(xx):
     else : res = xx.names
     return res
 
-def update_surface_heat_need(sim_stock,year,Nouvelles_surfaces,Nouveau_besoin,sim_param):
+def update_heat_need(sim_stock,year,Nouvelles_surfaces,Nouveau_besoin,sim_param):
 
     #mise à jour des surfaces
     old_col_names=Nouvelles_surfaces.name
     if type(old_col_names) == type(None): old_col_names = 0
-    Nouvelles_surfaces_neuf = Nouvelles_surfaces.loc[sim_param["base_index_tuple"]]
+    Nouvelles_unite_neuf = Nouvelles_surfaces.loc[sim_param["base_index_tuple"]]
     My_index_names = get_index_name(sim_param["base_index"])
     if 'Efficiency_class' in My_index_names:
-        Nouvelles_surfaces_neuf=Nouvelles_surfaces_neuf.update_Efficiency_class(Nouveau_besoin,sim_param)
+        Nouvelles_unite_neuf=Nouvelles_unite_neuf.update_Efficiency_class(Nouveau_besoin,sim_param)
         Nouveau_besoin=Nouveau_besoin.update_Efficiency_class(Nouveau_besoin,sim_param)
     #mise à jouro du besoin
-    Ancien_besoin_neuf = sim_stock[year]["Besoin_surfacique"].loc[(*sim_param["base_index_tuple"], "new")]
-    Anciennes_surfaces = sim_stock[year]["Surface"].loc[(*sim_param["base_index_tuple"], "new")]
-    Nouveau_besoin_neuf = sim_stock[year]["Besoin_surfacique"].loc[(*sim_param["base_index_tuple"], "new")].copy()
-    sub_index = Nouvelles_surfaces_neuf > 0
-    Nouveau_besoin_neuf.loc[sub_index] = (Ancien_besoin_neuf.loc[sub_index] * Anciennes_surfaces.loc[sub_index] + Nouveau_besoin.loc[sub_index] *Nouvelles_surfaces_neuf.loc[sub_index]) / \
-                                                                (Anciennes_surfaces.loc[sub_index]+Nouvelles_surfaces_neuf.loc[sub_index])
-    Nouveau_besoin_neuf=Nouveau_besoin_neuf.to_frame().assign(old_new="new").set_index(["old_new"],append=True)["Besoin_surfacique"]
+    Ancien_besoin_neuf = sim_stock[year][sim_param["energy_need_variable_name"]].loc[(*sim_param["base_index_tuple"], "new")]
+    Anciennes_unite= sim_stock[year][sim_param["volume_variable_name"]].loc[(*sim_param["base_index_tuple"], "new")]
+    Nouveau_besoin_neuf = sim_stock[year][sim_param["energy_need_variable_name"]].loc[(*sim_param["base_index_tuple"], "new")].copy()
+    sub_index = Nouvelles_unite_neuf > 0
+    Nouveau_besoin_neuf.loc[sub_index] = (Ancien_besoin_neuf.loc[sub_index] * Anciennes_unite.loc[sub_index] + Nouveau_besoin.loc[sub_index] *Nouvelles_unite_neuf.loc[sub_index]) / \
+                                                                (Anciennes_unite.loc[sub_index]+Nouvelles_unite_neuf.loc[sub_index])
+    Nouveau_besoin_neuf=Nouveau_besoin_neuf.to_frame().assign(old_new="new").set_index(["old_new"],append=True)[sim_param["energy_need_variable_name"]]
 
-    sim_stock[year].loc[(*sim_param["base_index_tuple"], "new"), "Surface"] +=Nouvelles_surfaces_neuf.to_frame().assign(old_new="new").set_index(["old_new"],append=True)[old_col_names]
-    sim_stock[year].loc[(*sim_param["base_index_tuple"], "new"),"Besoin_surfacique"] =Nouveau_besoin_neuf
+    sim_stock[year].loc[(*sim_param["base_index_tuple"], "new"), sim_param["volume_variable_name"]] +=Nouvelles_unite_neuf.to_frame().assign(old_new="new").set_index(["old_new"],append=True)[old_col_names]
+    sim_stock[year].loc[(*sim_param["base_index_tuple"], "new"),sim_param["energy_need_variable_name"]] =Nouveau_besoin_neuf
 
     return sim_stock
 

@@ -41,7 +41,7 @@ base_dpe_residentiel_df.groupbyAndAgg(group_along= ['heating_system',"heating_fu
 
 Index_to_add = expand_grid_from_dict({"Energy_source": list(Fraction_PACS.keys()),
                                       "residential_type":base_dpe_residentiel_df["residential_type"].unique()}).\
-    assign(IPONDL = 0,Besoin_surfacique=0,Surface=0).\
+    assign(IPONDL = 0,energy_need_per_surface=0,surface=0).\
         set_index(["residential_type", "Energy_source"])
 base_dpe_residentiel_df=base_dpe_residentiel_df.\
         groupbyAndAgg(group_along= ["residential_type",'heating_system'],
@@ -50,8 +50,7 @@ base_dpe_residentiel_df=base_dpe_residentiel_df.\
                              "IPONDL" : "sum"},
             weightedMean_weight="IPONDL").\
         rename(columns = {"heating_system":"Energy_source",
-                          "surface":"Surface",
-                          "energy_consumption" : "Besoin_surfacique"}).\
+                          "energy_consumption" : "energy_need_per_surface"}).\
         set_index(["residential_type", "Energy_source"])
 
 
