@@ -134,7 +134,8 @@ def interpolate_along_one_index_column(df,new_x_values,x_columns_for_interpolati
         to_append_df = df.reset_index().copy()
         to_append_df[x_columns_for_interpolation]=new_x_values[-1]
         to_append_df=to_append_df.set_index(df.index.names)[df.columns]
-        df=df.append(to_append_df)
+        df=pd.concat([df,to_append_df])
+        # df=df.append(to_append_df)
         for col in df.columns:
             df.loc[cat_tuple(tuple(len(Index_set.columns) * [slice(None)]), new_x_values[-1]),col] = df.loc[cat_tuple(tuple(len(Index_set.columns) * [slice(None)]), float(x_columns_for_interpolation_input_values)),col]
     for key in df.columns:
