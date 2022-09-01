@@ -23,7 +23,7 @@ def get_index_vals(data_set_from_excel,key):
                 return res
 
 def extract_sim_param(data_set_from_excel,Index_names = ["Energy_source"],
-                      dim_names=["Energy_source","year"],Energy_source_name="Energy_source"):
+                      dim_names=["Energy_source","year"],Energy_system_name="Energy_source"):
 
     sheet_name_and_dim = {key : get_colnames_in_dim_names(data_set_from_excel[key],dim_names) for key in data_set_from_excel.keys()}
     sheet_name = list(sheet_name_and_dim.keys())
@@ -42,8 +42,8 @@ def extract_sim_param(data_set_from_excel,Index_names = ["Energy_source"],
 
     sim_param["retrofit_Transition"] = data_set_from_excel["retrofit_Transition"].set_index(sheet_name_and_dim["retrofit_Transition"])
     sim_param["Index_names"]=Index_names
-    Complementary_Index_names=Index_names.copy(); Complementary_Index_names.remove(Energy_source_name)
-    sim_param["Energy_source_name"]=Energy_source_name
+    Complementary_Index_names=Index_names.copy(); Complementary_Index_names.remove(Energy_system_name)
+    sim_param["Energy_system_name"]=Energy_system_name
     sim_param["Complementary_Index_names"]=Complementary_Index_names
 
     Index_val_dict = {key: get_index_vals(data_set_from_excel,key) for key in Index_names}
@@ -61,7 +61,7 @@ def extract_sim_param(data_set_from_excel,Index_names = ["Energy_source"],
     else:     sim_param["base_index"] = expand_grid_from_dict(Index_val_dict,as_MultiIndex=True)
 
 
-    sim_param["Energy_source_index"] = data_set_from_excel[Energy_source_name][Energy_source_name]
+    sim_param["Energy_source_index"] = data_set_from_excel[Energy_system_name][Energy_system_name]
     if len(sim_param["Complementary_Index_names"])>0:
         sim_param["Complementary_index"] = expand_grid_from_dict(My_dict={ key :  Index_val_dict[key] for key in sim_param["Complementary_Index_names"] },as_MultiIndex=True)
         sim_param["Complementary_index_tuple"] = tuple([slice(None)] * len(list(sim_param["Complementary_index"].to_frame().columns)))
@@ -115,12 +115,12 @@ def complete_parameters(sim_param,Para_2_fill={}):
 
     #particular processing for "retrofit_Transition" : kind of matrix transpose
     past_dim = sim_param["retrofit_Transition"].index.names
-    Other_dims = list(map(lambda x: x.replace(sim_param["Energy_source_name"] , sim_param["Energy_source_name"] + "_out"), past_dim))
+    Other_dims = list(map(lambda x: x.replace(sim_param["Energy_system_name"] , sim_param["Energy_system_name"] + "_out"), past_dim))
     sim_param["retrofit_Transition"] = sim_param["retrofit_Transition"].reset_index().assign(old_new="new").set_index(past_dim+  ["old_new"]). \
-        melt(ignore_index=False, var_name=sim_param["Energy_source_name"]+"_out", value_name="retrofit_Transition").set_index(
-        [sim_param["Energy_source_name"]+"_out"], append=True).\
-        pivot_table(values='retrofit_Transition',index=Other_dims+  ["old_new"],columns=sim_param["Energy_source_name"]).\
-        reset_index().rename(columns={sim_param["Energy_source_name"]+"_out": sim_param["Energy_source_name"] }).set_index(past_dim+  ["old_new"])
+        melt(ignore_index=False, var_name=sim_param["Energy_system_name"]+"_out", value_name="retrofit_Transition").set_index(
+        [sim_param["Energy_system_name"]+"_out"], append=True).\
+        pivot_table(values='retrofit_Transition',index=Other_dims+  ["old_new"],columns=sim_param["Energy_system_name"]).\
+        reset_index().rename(columns={sim_param["Energy_system_name"]+"_out": sim_param["Energy_system_name"] }).set_index(past_dim+  ["old_new"])
     return sim_param
 
 
@@ -128,9 +128,9 @@ def complete_parameters(sim_param,Para_2_fill={}):
 def apply_transition(Surf_2_retrofit,Transition,sim_param):
     Name = Surf_2_retrofit.name
     if type(Name)==type(None): Name=0
-    X_df=Surf_2_retrofit.copy().to_frame().pivot_table(values = Name,index=sim_param["Complementary_Index_names"],columns=sim_param["Energy_source_name"])
+    X_df=Surf_2_retrofit.copy().to_frame().pivot_table(values = Name,index=sim_param["Complementary_Index_names"],columns=sim_param["Energy_system_name"])
     res = Surf_2_retrofit.copy()*0
-    #res = res.reset_index().assign(old_new="new").set_index(sim_param["Complementary_Index_names"]+[sim_param["Energy_source_name"]]+  ["old_new"])[Name]
+    #res = res.reset_index().assign(old_new="new").set_index(sim_param["Complementary_Index_names"]+[sim_param["Energy_system_name"]]+  ["old_new"])[Name]
     for  Energy_source in sim_param["Energy_source_index"]:
         if len(X_df.loc[:,Energy_source])==1:
             res += Transition.loc[:, Energy_source] * float(X_df.loc[:,Energy_source])  # implicite merge because Energy_source_index is not in X_df rows but is in transition and res

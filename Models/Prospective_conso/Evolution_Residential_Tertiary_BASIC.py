@@ -1,3 +1,4 @@
+
 #region Chargement des packages
 #from IPython import get_ipython;
 #get_ipython().magic('reset -sf')
@@ -19,42 +20,41 @@ pd.set_option('display.width', 1000)
 
 #region chargement des données
 start = time.process_time()
-
+dim_names=["Energy_source","building_type","year"];Index_names = ["Energy_source","building_type"];Energy_system_name="Energy_source"
 data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_residential_tertiary_BASIC.xlsx", None);
-sim_param = extract_sim_param(data_set_from_excel,Index_names = ["Energy_source","building_type"],
-                              dim_names=["Energy_source","building_type","year"])
+sim_param = extract_sim_param(data_set_from_excel,Index_names = Index_names,dim_names=dim_names,Energy_system_name=Energy_system_name)
 sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
 sim_param["volume_variable_name"] = "surface"
 sim_param["init_sim_stock"]["surface"]=sim_param["init_sim_stock"]["surface"]*sim_param["init_sim_stock"]["IPONDL"]
 
-### example (un peu trop simpliste car ici on pourrait le faire formellement) de callage de paramètre
-### modèle avec alpha paramètre libre : rénovation tous les ans de alpha *  sim_param["init_sim_stock"].loc[:, "surface"]
-### cible : on veut que sur toute la période de simulation que cela fasse sim_param["retrofit_change"] * sim_param["init_sim_stock"]["Surface"]
-# def Error_function(alpha,sim_param):
-#     total_change_target = sim_param["retrofit_change_total_proportion_surface"] * sim_param["init_sim_stock"]["surface"]
-#     Total_change = pd.Series(0.,index=sim_param["base_index"])
-#     for year in range(int(sim_param["date_debut"])+1,int(sim_param["date_fin"])):
-#         Total_change+=alpha *  sim_param["init_sim_stock"].loc[:, "surface"]
-#     return  ((Total_change-total_change_target)**2).sum()
-#
-# alpha = scop.minimize(Error_function, x0=1, method='BFGS',args=(sim_param))["x"][0]
-# sim_param["retrofit_change_surface"] = alpha * sim_param["init_sim_stock"]["surface"]
-
-Pameter_to_fill_along_index_year = {param : sim_param["base_index_year"] for param in ["retrofit_improvement","retrofit_change_surface","retrofit_Transition"]}
-sim_param   =   complete_parameters(sim_param,Para_2_fill=Pameter_to_fill_along_index_year)
+Para_2_fill = {param : sim_param["base_index_year"] for param in ["retrofit_improvement","retrofit_change_surface","retrofit_Transition"]}
+sim_param   =   complete_parameters(sim_param,Para_2_fill=Para_2_fill)
 
 ## initialize all "new_yearly_surface"
 # sim_param["new_yearly_surface"]=sim_param["new_yearly_surface"]*sim_param["new_yearly_repartition_per_Energy_source"]
 
-def f_Compute_conso(x,Vecteur = "total"):
+def f_Compute_conso(x,sim_param,Vecteur = "total"):
     if Vecteur=="total":
-        conso_unitaire = x["conso_unitaire_elec"]+x["conso_unitaire_gaz"]+x["conso_unitaire_fioul"]+x["conso_unitaire_bois"]
+        conso_unitaire=0
+        for Vecteur_ in sim_param["Vecteurs"]: conso_unitaire+=f_Compute_conso(x,sim_param,Vecteur =Vecteur_)
     else: conso_unitaire = x["conso_unitaire_"+Vecteur]
-    return x["energy_need_per_surface"] * x["surface"]*conso_unitaire
-sim_param["f_Compute_conso"]=f_Compute_conso
+    return x[sim_param["volume_variable_name"]]*conso_unitaire
+#
+sim_param["f_Compute_conso"]={"Conso" : lambda x,sim_param: f_Compute_conso(x,sim_param,Vecteur ="total")}
+for Vecteur in sim_param["Vecteurs"]:
+    sim_param["f_Compute_conso_"+Vecteur]={"conso_"+Vecteur : lambda x,sim_param: f_Compute_conso(x,sim_param,Vecteur =Vecteur)}
 
-def f_Compute_besoin(x): return x["energy_need_per_surface"] * x["surface"]
-sim_param["f_Compute_besoin"]=f_Compute_besoin
+def f_Compute_besoin(x,sim_param): return x["energy_need_per_surface"] * x["surface"]
+sim_param["f_Compute_besoin"]={"energy_need" : f_Compute_besoin}
+
+#A rajouter ci-dessous :
+#def f_compute_emissions(x,sim_param):
+#    emissions = 0
+#    for vecteur_ in sim_param["vecteurs"]: emissions += x["conso_unitaire_"+vecteur]*float(sim_param["emissions_scope_2_3"][vecteur])
+#    emissions+=x["emissions_unitaire"]* x[sim_param["volume_variable_name"]]
+#    return emissions
+
+#sim_param["f_Compute_emissions"]={"Emissions" : lambda x,sim_param: f_Compute_emissions(x,sim_param)}
 
 
 end = time.process_time()
@@ -73,7 +73,7 @@ sim_stock_df = pd.concat(sim_stock, axis=0).reset_index().\
 Var = "Conso"
 y_df = sim_stock_df.groupby(["year","Energy_source","old_new"])[Var].sum().to_frame().reset_index().\
     pivot(index=['year','old_new'], columns='Energy_source').loc[[year for year in range(2021,2050)],Var]/10**9
-y_df=y_df.loc[(slice(None),"old"),:].reset_index().drop(columns='old_new').set_index([ "year"  ])
+y_df=y_df.loc[(slice(None),"new"),:].reset_index().drop(columns='old_new').set_index([ "year"  ])
 
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Conso énergie finale par mode de chauffage (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")

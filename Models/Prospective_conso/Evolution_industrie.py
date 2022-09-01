@@ -20,9 +20,9 @@ pd.set_option('display.width', 1000)
 
 #region chargement des données
 start = time.process_time()
-dim_names=["Production_system","year","Vecteurs"];Index_names = ["Production_system"];Energy_source_name="Production_system"
+dim_names=["Production_system","year","Vecteurs"];Index_names = ["Production_system"];Energy_system_name="Production_system"
 data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_acier_1D_QR.xlsx", None);
-sim_param = extract_sim_param(data_set_from_excel,Index_names = Index_names,dim_names=dim_names,Energy_source_name=Energy_source_name)
+sim_param = extract_sim_param(data_set_from_excel,Index_names = Index_names,dim_names=dim_names,Energy_system_name=Energy_system_name)
 sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
 sim_param["volume_variable_name"] = "unite_prod"
 
@@ -76,19 +76,19 @@ sim_stock = launch_simulation(sim_param)
 #region représentation des résultats
 
 sim_stock_df = pd.concat(sim_stock, axis=0).reset_index().\
-    rename(columns={"level_0":"year"}).set_index([ "year"  ,  Energy_source_name  , "old_new"])
+    rename(columns={"level_0":"year"}).set_index([ "year"  ,  Energy_system_name  , "old_new"])
 
 Var = "Conso"
-y_df = sim_stock_df.groupby(["year",Energy_source_name])[Var].sum().to_frame().reset_index().\
-    pivot(index='year', columns=Energy_source_name).loc[[year for year in range(2021,2050)],Var]/10**9
+y_df = sim_stock_df.groupby(["year",Energy_system_name])[Var].sum().to_frame().reset_index().\
+    pivot(index='year', columns=Energy_system_name).loc[[year for year in range(2021,2050)],Var]/10**9
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Conso énergie finale par mode de chauffage (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 
 
 Var = "Emissions"
-y_df = sim_stock_df.groupby(["year",Energy_source_name])[Var].sum().to_frame().reset_index().\
-    pivot(index='year', columns=Energy_source_name).loc[[year for year in range(2021,2050)],Var]/10**6
+y_df = sim_stock_df.groupby(["year",Energy_system_name])[Var].sum().to_frame().reset_index().\
+    pivot(index='year', columns=Energy_system_name).loc[[year for year in range(2021,2050)],Var]/10**6
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Emissions CO2 Mt", xaxis_title="Année",yaxis_title="Emissions [MtCO2]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline

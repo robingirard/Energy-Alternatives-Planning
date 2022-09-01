@@ -19,9 +19,9 @@ pd.set_option('display.width', 1000)
 
 #region chargement des données
 start = time.process_time()
-dim_names=["Energy_source","year"];Index_names = ["Energy_source"];Energy_source_name="Energy_source"
+dim_names=["Energy_source","year"];Index_names = ["Energy_source"];Energy_system_name="Energy_source"
 data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_tertiaire_1D.xlsx", None);
-sim_param = extract_sim_param(data_set_from_excel,Index_names = Index_names,dim_names=dim_names,Energy_source_name=Energy_source_name)
+sim_param = extract_sim_param(data_set_from_excel,Index_names = Index_names,dim_names=dim_names,Energy_system_name=Energy_system_name)
 sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
 sim_param["volume_variable_name"] = "surface"
 ### example (un peu trop simpliste car ici on pourrait le faire formellement) de callage de paramètre
