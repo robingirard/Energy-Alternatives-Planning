@@ -73,7 +73,7 @@ sim_stock_df = pd.concat(sim_stock, axis=0).reset_index().\
 Var = "Conso"
 y_df = sim_stock_df.groupby(["year","Energy_source","old_new"])[Var].sum().to_frame().reset_index().\
     pivot(index=['year','old_new'], columns='Energy_source').loc[[year for year in range(2021,2050)],Var]/10**9
-y_df=y_df.loc[(slice(None),"old"),:].reset_index().drop(columns='old_new').set_index([ "year"  ])
+y_df=y_df.loc[(slice(None),"new"),:].reset_index().drop(columns='old_new').set_index([ "year"  ])
 
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Conso énergie finale par mode de chauffage (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")
@@ -84,7 +84,7 @@ Var = "surface"
 y_df = sim_stock_df.groupby(["year","Energy_source"])[Var].sum().to_frame().reset_index().\
     pivot(index='year', columns='Energy_source').loc[[year for year in range(2021,2050)],Var]/10**9
 fig = MyStackedPlotly(y_df=y_df)
-fig=fig.update_layout(title_text="Besoin de chaleur par mode de chauffage (en TWh)", xaxis_title="Année",yaxis_title="Besoin [TWh]")
+fig=fig.update_layout(title_text="Surface par mode de chauffage (en TWh)", xaxis_title="Année",yaxis_title="S [TWh]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 
 y_df = sim_stock_df.groupby(["year"])[ 'Conso_elec', 'Conso_gaz', 'Conso_fioul', 'Conso_bois'].sum().loc[[year for year in range(2021,2050)],:]/10**9
