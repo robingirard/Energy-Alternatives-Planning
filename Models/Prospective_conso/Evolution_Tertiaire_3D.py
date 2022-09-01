@@ -9,6 +9,7 @@ from mycolorpy import colorlist as mcp
 from Models.Prospective_conso.f_evolution_tools import *
 import numpy as np
 import time
+from functools import partial
 dpe_colors = ['#009900', '#33cc33', '#B3FF00', '#e6e600', '#FFB300', '#FF4D00', '#FF0000',"#000000"]
 Graphic_folder = "Models/Prospective_conso/Graphics/"
 Data_folder = "Models/Prospective_conso/data/"
@@ -20,9 +21,10 @@ pd.set_option('display.width', 1000)
 
 #region chargement des données
 start = time.process_time()
+dim_names=["Categories","Energy_source","Efficiency_class","year"];
+Index_names = ["Categories", "Efficiency_class" ,"Energy_source"];Energy_system_name="Energy_source"
 data_set_from_excel     =   pd.read_excel(Data_folder+"Hypotheses_tertiaire_3D.xlsx", None);
-sim_param = extract_sim_param(data_set_from_excel,Index_names =  ["Categories", "Efficiency_class" ,"Energy_source"],
-                              dim_names=["Categories","Energy_source","Efficiency_class","year","year"])
+sim_param = extract_sim_param(data_set_from_excel,Index_names = Index_names,dim_names=dim_names,Energy_system_name=Energy_system_name)
 sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
 sim_param["volume_variable_name"] = "surface"
 def f_Compute_surface(x):
@@ -35,7 +37,7 @@ def energy_to_class(x,energy_class_dictionnary):
         if x<=energy_class_dictionnary[key]:
             return key
     return "G"
-sim_param["f_energy_to_class"]=energy_to_class
+sim_param["_f_energy_to_class"]=energy_to_class
 ### example (un peu trop simpliste car ici on pourrait le faire formellement) de callage de paramètre
 ### modèle avec alpha paramètre libre : rénovation tous les ans de alpha *  sim_param["init_sim_stock"].loc[:, "Surface"]
 ### cible : on veut que sur toute la période de simulation que cela fasse sim_param["retrofit_change"] * sim_param["init_sim_stock"]["Surface"]
@@ -82,14 +84,14 @@ sim_stock_df = pd.concat(sim_stock, axis=0).reset_index().\
 
 Var = "Conso"
 y_df = sim_stock_df.groupby(["year","Energy_source"])[Var].sum().to_frame().reset_index().\
-    pivot(index='year', columns='Energy_source').loc[[year for year in range(2021,2050)],Var]/10**9
+    pivot(index='year', columns='Energy_source').loc[[year for year in sim_param["years"][1:]],Var]/10**9
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Conso énergie finale par mode de chauffage (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 
 Var = "Besoin"
 y_df = sim_stock_df.groupby(["year","Energy_source"])[Var].sum().to_frame().reset_index().\
-    pivot(index='year', columns='Energy_source').loc[[year for year in range(2021,2050)],Var]/10**9
+    pivot(index='year', columns='Energy_source').loc[[year for year in sim_param["years"][1:]],Var]/10**9
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Besoin de chaleur par mode de chauffage (en TWh)", xaxis_title="Année",yaxis_title="Besoin [TWh]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline

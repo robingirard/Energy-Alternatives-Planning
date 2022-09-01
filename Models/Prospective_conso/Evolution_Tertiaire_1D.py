@@ -9,6 +9,7 @@ from Models.Prospective_conso.f_evolution_tools import *
 from mycolorpy import colorlist as mcp
 import numpy as np
 import time
+from functools import partial
 dpe_colors = ['#009900', '#33cc33', '#B3FF00', '#e6e600', '#FFB300', '#FF4D00', '#FF0000',"#000000"]
 Graphic_folder = "Models/Prospective_conso/Graphics/"
 Data_folder = "Models/Prospective_conso/data/"
@@ -44,16 +45,19 @@ sim_param["old_taux_disp"]
 ## initialize all "new_yearly_surface"
 sim_param["new_yearly_surface"]=sim_param["new_yearly_surface"]*sim_param["new_yearly_repartition_per_Energy_source"]
 
-def f_Compute_conso(x,sim_param,Vecteur = "total"):
-    if Vecteur=="total":
-        conso_unitaire=0
-        for Vecteur_ in sim_param["Vecteurs"]: conso_unitaire+=f_Compute_conso(x,sim_param,Vecteur =Vecteur_)
-    else: conso_unitaire = x["conso_unitaire_"+Vecteur]
+def f_Compute_conso(x,sim_param,Vecteur):
+    conso_unitaire = x["conso_unitaire_"+Vecteur]
     return x["energy_need_per_"+sim_param["volume_variable_name"]] * x[sim_param["volume_variable_name"]]*x["proportion_energy_need"]*conso_unitaire
+def f_Compute_conso_totale(x,sim_param):
+    res=0.
+    for Vecteur in sim_param["Vecteurs"]:
+        res+=x["conso_"+Vecteur]
+    return res
+
 #
-sim_param["f_Compute_conso"]={"Conso" : lambda x,sim_param: f_Compute_conso(x,sim_param,Vecteur ="total")}
 for Vecteur in sim_param["Vecteurs"]:
-    sim_param["f_Compute_conso_"+Vecteur]={"conso_"+Vecteur : lambda x,sim_param: f_Compute_conso(x,sim_param,Vecteur =Vecteur)}
+    sim_param["f_Compute_conso_"+Vecteur]={"conso_"+Vecteur : partial(f_Compute_conso,Vecteur =Vecteur)}
+sim_param["f_Compute_conso_totale"]={"Conso" : lambda x,sim_param: f_Compute_conso_totale(x,sim_param)}
 
 def f_Compute_besoin(x,sim_param): return x["energy_need_per_surface"] * x["surface"]*x["proportion_energy_need"]
 sim_param["f_Compute_besoin"]={"energy_need" : f_Compute_besoin}
@@ -73,19 +77,19 @@ sim_stock_df = pd.concat(sim_stock, axis=0).reset_index().\
 
 Var = "Conso"
 y_df = sim_stock_df.groupby(["year","Energy_source"])[Var].sum().to_frame().reset_index().\
-    pivot(index='year', columns='Energy_source').loc[[year for year in range(2021,2050)],Var]/10**9
+    pivot(index='year', columns='Energy_source').loc[[year for year in sim_param["years"][1:]],Var]/10**9
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Conso énergie finale par mode de chauffage (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 
 Var = "energy_need"
 y_df = sim_stock_df.groupby(["year","Energy_source"])[Var].sum().to_frame().reset_index().\
-    pivot(index='year', columns='Energy_source').loc[[year for year in range(2021,2050)],Var]/10**9
+    pivot(index='year', columns='Energy_source').loc[[year for year in sim_param["years"][1:]],Var]/10**9
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Besoin de chaleur par mode de chauffage (en TWh)", xaxis_title="Année",yaxis_title="Besoin [TWh]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 
-y_df = sim_stock_df.groupby(["year"])[ 'Conso_elec', 'Conso_gaz', 'Conso_fioul', 'Conso_bois'].sum().loc[[year for year in range(2021,2050)],:]/10**9
+y_df = sim_stock_df.groupby(["year"])[[ 'conso_'+Vecteur for Vecteur in sim_param["Vecteurs"]]].sum().loc[[year for year in sim_param["years"][1:]],:]/10**9
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Conso énergie finale par vecteur (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
