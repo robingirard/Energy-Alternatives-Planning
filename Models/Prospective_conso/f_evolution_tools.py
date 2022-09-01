@@ -18,8 +18,9 @@ def get_index_vals(data_set_from_excel,key):
         colnames = data_set_from_excel[tmp_key].columns
         res = []
         for col in colnames:
-            if col ==key : res=data_set_from_excel[tmp_key][key].unique()
-    return res
+            if col ==key :
+                res=data_set_from_excel[tmp_key][key].unique()
+                return res
 
 def extract_sim_param(data_set_from_excel,Index_names = ["Energy_source"],
                       dim_names=["Energy_source","year"],Energy_source_name="Energy_source"):
@@ -50,7 +51,7 @@ def extract_sim_param(data_set_from_excel,Index_names = ["Energy_source"],
         sim_param["years"]=list(range(int(sim_param["date_debut"]),int(sim_param["date_fin"]),int(sim_param["date_step"])))
     else:
         sim_param["years"]=list(range(int(sim_param["date_debut"]),int(sim_param["date_fin"])))
-    data_set_from_excel["years"]=sim_param["years"]
+    # data_set_from_excel["years"]=sim_param["years"]
 
     sim_param["base_index_year"] =  expand_grid_from_dict({**Index_val_dict,"year" : sim_param["years"]},as_MultiIndex=True)
     sim_param["base_index_year_new"] =  expand_grid_from_dict({**Index_val_dict,"year" : sim_param["years"],"old_new":"new"},as_MultiIndex=True)
