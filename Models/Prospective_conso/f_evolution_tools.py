@@ -18,8 +18,9 @@ def get_index_vals(data_set_from_excel,key):
         colnames = data_set_from_excel[tmp_key].columns
         res = []
         for col in colnames:
-            if col ==key : res=data_set_from_excel[tmp_key][key].unique()
-    return res
+            if col ==key :
+                res=data_set_from_excel[tmp_key][key].unique()
+                return res
 
 def extract_sim_param(data_set_from_excel,Index_names = ["Energy_source"],
                       dim_names=["Energy_source","year"],Energy_source_name="Energy_source"):
@@ -50,7 +51,7 @@ def extract_sim_param(data_set_from_excel,Index_names = ["Energy_source"],
         sim_param["years"]=list(range(int(sim_param["date_debut"]),int(sim_param["date_fin"]),int(sim_param["date_step"])))
     else:
         sim_param["years"]=list(range(int(sim_param["date_debut"]),int(sim_param["date_fin"])))
-    data_set_from_excel["years"]=sim_param["years"]
+    # data_set_from_excel["years"]=sim_param["years"]
 
     sim_param["base_index_year"] =  expand_grid_from_dict({**Index_val_dict,"year" : sim_param["years"]},as_MultiIndex=True)
     sim_param["base_index_year_new"] =  expand_grid_from_dict({**Index_val_dict,"year" : sim_param["years"],"old_new":"new"},as_MultiIndex=True)
@@ -217,7 +218,7 @@ def initialize_Simulation(sim_param):
     year=int(sim_param["date_debut"])
     sim_stock[year]=pd.concat( [ sim_param["init_sim_stock"].assign(old_new="old"),
                                     sim_param["init_sim_stock"].assign(old_new="new")]).set_index(['old_new'], append=True).sort_index()
-    sim_stock[year].loc[(*sim_param["base_index_tuple"],"new"),"Surface"]=0 ## on commence sans "neuf"
+    sim_stock[year].loc[(*sim_param["base_index_tuple"],"new"),"surface"]=0 ## on commence sans "neuf"
 
     return sim_stock
 
@@ -249,7 +250,7 @@ def launch_simulation(sim_param):
             sim_stock[year] = sim_stock[year-1].copy()
 
             #destruction
-            if "old_taux_disp" in sim_param:
+            if "oldtaux_disp" in sim_param:
                 sim_stock[year].loc[:,sim_param["volume_variable_name"]] -= \
                     sim_param["old_taux_disp"][year] * sim_stock[year].loc[:, sim_param["volume_variable_name"]]
 
@@ -355,7 +356,7 @@ def Create_0D_df(variable_dict,sim_param):
             ds = sim_param[key]
         else :
             if variable_dict[key]=="wmean":
-                ds = sim_param["init_sim_stock"][[key,"Surface"]]
+                ds = sim_param["init_sim_stock"][[key,"surface"]]
             else:
                 ds = sim_param["init_sim_stock"][key]
         if len(variable_dict[key])==0:
@@ -372,8 +373,8 @@ def Create_XD_df(variable_dict,sim_param,group_along = ["Energy_source"]):
             ds = sim_param[key]
         else :
             if variable_dict[key]=="wmean":
-                weightedMean_weight=["Surface"]
-                ds = sim_param["init_sim_stock"][[key,"Surface"]]
+                weightedMean_weight=["surface"]
+                ds = sim_param["init_sim_stock"][[key,"surface"]]
             else:
                 weightedMean_weight =None
                 ds = sim_param["init_sim_stock"][key]
