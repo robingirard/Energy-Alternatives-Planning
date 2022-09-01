@@ -36,7 +36,7 @@ def Error_function(alpha,sim_param):
     total_change_target = sim_param["retrofit_change_total_proportion_surface"] * sim_param["init_sim_stock"]["surface"]
     Total_change = pd.Series(0.,index=sim_param["base_index"])
     for year in range(int(sim_param["date_debut"])+1,int(sim_param["date_fin"])):
-        Total_change+=alpha *  sim_param["init_sim_stock"].loc[:, "Surface"]
+        Total_change+=alpha *  sim_param["init_sim_stock"].loc[:, "surface"]
     return  ((Total_change-total_change_target)**2).sum()
 
 alpha = scop.minimize(Error_function, x0=1, method='BFGS',args=(sim_param))["x"][0]

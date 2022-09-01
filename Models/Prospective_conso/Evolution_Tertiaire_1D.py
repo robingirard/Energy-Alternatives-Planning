@@ -39,8 +39,7 @@ def Error_function(alpha,sim_param):
 alpha = scop.minimize(Error_function, x0=1, method='BFGS',args=(sim_param))["x"][0]
 sim_param["retrofit_change_surface"] = alpha * sim_param["init_sim_stock"]["surface"]
 
-Pameter_to_fill_along_index_year = {param : sim_param["base_index_year"] for param in ["retrofit_improvement","retrofit_change_surface","retrofit_Transition",
-                                                                                                   "new_energy","new_yearly_repartition_per_Energy_source"]}
+Pameter_to_fill_along_index_year = {param : sim_param["base_index_year"] for param in ["retrofit_improvement","retrofit_change_surface","retrofit_Transition"]}
 sim_param   =   complete_parameters(sim_param,Para_2_fill=Pameter_to_fill_along_index_year)
 
 ## initialize all "new_yearly_surface"
