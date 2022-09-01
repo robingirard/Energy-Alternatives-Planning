@@ -21,7 +21,7 @@ pd.set_option('display.width', 1000)
 start = time.process_time()
 
 data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_tertiaire_1D.xlsx", None);
-data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_tertiary_BASIC.xlsx", None);
+#data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_tertiary_BASIC.xlsx", None);
 sim_param = extract_sim_param(data_set_from_excel,Index_names = ["Energy_source"],
                               dim_names=["Energy_source","year"])
 sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
@@ -41,7 +41,7 @@ sim_param["retrofit_change_surface"] = alpha * sim_param["init_sim_stock"]["surf
 
 Pameter_to_fill_along_index_year = {param : sim_param["base_index_year"] for param in ["retrofit_improvement","retrofit_change_surface","retrofit_Transition"]}
 sim_param   =   complete_parameters(sim_param,Para_2_fill=Pameter_to_fill_along_index_year)
-
+sim_param["old_taux_disp"]
 ## initialize all "new_yearly_surface"
 sim_param["new_yearly_surface"]=sim_param["new_yearly_surface"]*sim_param["new_yearly_repartition_per_Energy_source"]
 
@@ -89,3 +89,25 @@ plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 #fig.show()
 
 #endregion
+
+
+data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_tertiary_BASIC.xlsx", None);
+sim_param = extract_sim_param(data_set_from_excel,Index_names = ["Energy_source"],
+                              dim_names=["Energy_source","year"])
+sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
+sim_param["volume_variable_name"] = "surface"
+
+Pameter_to_fill_along_index_year = {param : sim_param["base_index_year"] for param in ["retrofit_improvement","retrofit_change_surface","retrofit_Transition"]}
+sim_param   =   complete_parameters(sim_param,Para_2_fill=Pameter_to_fill_along_index_year)
+
+def f_Compute_conso(x,Vecteur = "total"):
+    if Vecteur=="total":
+        conso_unitaire = x["conso_unitaire_elec"]+x["conso_unitaire_gaz"]+x["conso_unitaire_fioul"]+x["conso_unitaire_bois"]
+    else: conso_unitaire = x["conso_unitaire_"+Vecteur]
+    return x["energy_need_per_surface"] * x["surface"]*x["proportion_besoin_chauffage"]*conso_unitaire
+sim_param["f_Compute_conso"]=f_Compute_conso
+
+def f_Compute_besoin(x): return x["energy_need_per_surface"] * x["surface"]*x["proportion_besoin_chauffage"]
+sim_param["f_Compute_besoin"]=f_Compute_besoin
+sim_param.keys()
+sim_stock = launch_simulation(sim_param)

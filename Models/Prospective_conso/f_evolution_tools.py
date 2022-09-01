@@ -13,13 +13,23 @@ def get_colnames_in_dim_names(df,dim_names):
         if col in dim_names : res=res+[col]
     return res
 
+def get_index_vals(data_set_from_excel,key):
+    for tmp_key in data_set_from_excel.keys():
+        colnames = data_set_from_excel[tmp_key].columns
+        res = []
+        for col in colnames:
+            if col ==key : res=data_set_from_excel[tmp_key][key].unique()
+    return res
+
 def extract_sim_param(data_set_from_excel,Index_names = ["Energy_source"],
                       dim_names=["Energy_source","year"],Energy_source_name="Energy_source"):
 
     sheet_name_and_dim = {key : get_colnames_in_dim_names(data_set_from_excel[key],dim_names) for key in data_set_from_excel.keys()}
     sheet_name = list(sheet_name_and_dim.keys())
-
     sim_param={}
+
+
+
     for key in sheet_name_and_dim.keys():
         if ~(key == "retrofit_Transition"):
             if len(sheet_name_and_dim[key])>0:
@@ -34,19 +44,25 @@ def extract_sim_param(data_set_from_excel,Index_names = ["Energy_source"],
     Complementary_Index_names=Index_names.copy(); Complementary_Index_names.remove(Energy_source_name)
     sim_param["Energy_source_name"]=Energy_source_name
     sim_param["Complementary_Index_names"]=Complementary_Index_names
-    data_set_from_excel["years"]=list(range(int(sim_param["date_debut"]),int(sim_param["date_fin"])))
-    sim_param["years"]=data_set_from_excel["years"]
-    My_dict = {key: data_set_from_excel[key][key] for key in Index_names}
-    sim_param["base_index_year"] =  expand_grid_from_dict({**My_dict,"year" : sim_param["years"]},as_MultiIndex=True)
-    sim_param["base_index_year_new"] =  expand_grid_from_dict({**My_dict,"year" : sim_param["years"],"old_new":"new"},as_MultiIndex=True)
-    sim_param["base_index_year_old"] =  expand_grid_from_dict({**My_dict,"year" : sim_param["years"],"old_new":"old"},as_MultiIndex=True)
+
+    Index_val_dict = {key: get_index_vals(data_set_from_excel,key) for key in Index_names}
+    if "date_step" in sim_param:
+        sim_param["years"]=list(range(int(sim_param["date_debut"]),int(sim_param["date_fin"]),int(sim_param["date_step"])))
+    else:
+        sim_param["years"]=list(range(int(sim_param["date_debut"]),int(sim_param["date_fin"])))
+    data_set_from_excel["years"]=sim_param["years"]
+
+    sim_param["base_index_year"] =  expand_grid_from_dict({**Index_val_dict,"year" : sim_param["years"]},as_MultiIndex=True)
+    sim_param["base_index_year_new"] =  expand_grid_from_dict({**Index_val_dict,"year" : sim_param["years"],"old_new":"new"},as_MultiIndex=True)
+    sim_param["base_index_year_old"] =  expand_grid_from_dict({**Index_val_dict,"year" : sim_param["years"],"old_new":"old"},as_MultiIndex=True)
     if len(sim_param["Index_names"]) == 1:
         sim_param["base_index"]=data_set_from_excel[sim_param["Index_names"][0]][sim_param["Index_names"][0]]
-    else:     sim_param["base_index"] = expand_grid_from_dict(My_dict={ key :  data_set_from_excel[key][key] for key in Index_names },as_MultiIndex=True)
+    else:     sim_param["base_index"] = expand_grid_from_dict(Index_val_dict,as_MultiIndex=True)
+
 
     sim_param["Energy_source_index"] = data_set_from_excel[Energy_source_name][Energy_source_name]
     if len(sim_param["Complementary_Index_names"])>0:
-        sim_param["Complementary_index"] = expand_grid_from_dict(My_dict={ key :  data_set_from_excel[key][key] for key in sim_param["Complementary_Index_names"] },as_MultiIndex=True)
+        sim_param["Complementary_index"] = expand_grid_from_dict(My_dict={ key :  Index_val_dict[key] for key in sim_param["Complementary_Index_names"] },as_MultiIndex=True)
         sim_param["Complementary_index_tuple"] = tuple([slice(None)] * len(list(sim_param["Complementary_index"].to_frame().columns)))
     sim_param["base_index_tuple"] = tuple([slice(None)] * len(list(sim_param["base_index"].to_frame().columns)))
 
@@ -108,15 +124,13 @@ def interpolate_sim_param(sim_param):
     for key in sim_param.keys():
         if isinstance(sim_param[key], pd.Series):
             if sim_param[key].index.name == "year":
-                sim_param[key] = sim_param[key].interpolate()
+                sim_param[key] = sim_param[key].interpolate_along_one_index_column(new_x_values = sim_param["years"],x_columns_for_interpolation = "year")
             elif len(sim_param[key].index.names)>1:
                 if ("year" in list(sim_param[key].index.to_frame().columns)):
-                    years = range(int(sim_param["date_debut"]), int(sim_param["date_fin"]))
-                    sim_param[key] = sim_param[key].interpolate_along_one_index_column(new_x_values = years,x_columns_for_interpolation = "year")
+                    sim_param[key] = sim_param[key].interpolate_along_one_index_column(new_x_values = sim_param["years"],x_columns_for_interpolation = "year")
         elif isinstance(sim_param[key], pd.DataFrame):
             if ("year" in list(sim_param[key].index.to_frame().columns)):
-                years = range(int(sim_param["date_debut"]), int(sim_param["date_fin"]))
-                sim_param[key] = sim_param[key].interpolate_along_one_index_column(new_x_values = years,x_columns_for_interpolation = "year")
+                sim_param[key] = sim_param[key].interpolate_along_one_index_column(new_x_values = sim_param["years"],x_columns_for_interpolation = "year")
     return sim_param
 
 def interpolate_along_one_index_column(df,new_x_values,x_columns_for_interpolation = "year"):
@@ -140,7 +154,12 @@ def interpolate_along_one_index_column(df,new_x_values,x_columns_for_interpolati
             df.loc[cat_tuple(tuple(len(Index_set.columns) * [slice(None)]), new_x_values[-1]),col] = df.loc[cat_tuple(tuple(len(Index_set.columns) * [slice(None)]), float(x_columns_for_interpolation_input_values)),col]
     for key in df.columns:
         f_out = {}
-        if len(Index_set.columns) == 1:
+        if len(Index_name) == 0:
+            f_in = [df.loc[(year, key)] for year in x_columns_for_interpolation_input_values]
+            res[key] = pd.DataFrame.from_dict(
+                {key: np.interp(new_x_values, x_columns_for_interpolation_input_values, f_in),
+                 x_columns_for_interpolation: new_x_values}).set_index(["year"])[key]
+        elif len(Index_set.columns) == 1:
             for index, value in Index_set.iterrows():
                 My_index = value.values[0]
                 f_in = [df.loc[(My_index, year),key] for year in x_columns_for_interpolation_input_values]
@@ -151,9 +170,13 @@ def interpolate_along_one_index_column(df,new_x_values,x_columns_for_interpolati
                 My_index = value.values
                 f_in = [df.loc[(*My_index, year),key] for year in x_columns_for_interpolation_input_values]
                 TMP_d = {Index_name[i]: My_index[i] for i in range(len(My_index))}
+
                 f_out[tuple(My_index)] = pd.DataFrame.from_dict(
-                    {key: np.interp(new_x_values, x_columns_for_interpolation_input_values, f_in), x_columns_for_interpolation: new_x_values, **TMP_d})
-        res[key] = pd.concat(f_out, axis=0).set_index(Index_name + [x_columns_for_interpolation])[[key]]
+                        {key: np.interp(new_x_values, x_columns_for_interpolation_input_values, f_in),
+                         x_columns_for_interpolation: new_x_values, **TMP_d})
+
+        if not (len(Index_name)==0):
+            res[key] = pd.concat(f_out, axis=0).set_index(Index_name + [x_columns_for_interpolation])[[key]]
     if isSeries: return res[key]
     else: return res
 pd.DataFrame.interpolate_along_one_index_column = interpolate_along_one_index_column
@@ -198,45 +221,63 @@ def initialize_Simulation(sim_param):
 
     return sim_stock
 
+def non_valid_data(sim_param):
+    is_there_a_problem = False
+    Index_names_year =sim_param["Index_names"] + ["year"]
+
+    keys =[sim_param["retrofit_change_variable_name"],sim_param["new_yearly_variable_name"],"retrofit_improvement"]
+    for key in keys:
+        if key in sim_param:
+            My_index_name = list(sim_param[key].index.to_frame().columns)
+            if not (My_index_name == Index_names_year):
+                print("sim_param[\""+key+"\"] should have dimensions : "+ str(Index_names_year) +", \n but dimensions are : "+ str(My_index_name))
+                is_there_a_problem = True
+
+    return is_there_a_problem
+
+
 def launch_simulation(sim_param):
     sim_param["energy_need_variable_name"]= "energy_need_per_"+sim_param["volume_variable_name"]
     sim_param["new_yearly_variable_name"]=  "new_yearly_"+sim_param["volume_variable_name"]
     sim_param["retrofit_change_variable_name"]="retrofit_change_"+sim_param["volume_variable_name"]
+    if non_valid_data(sim_param):
+        print("Error")
+        sim_stock=0
+    else:
+        sim_stock = initialize_Simulation(sim_param)
+        for year in progressbar(range(int(sim_param["date_debut"]) + 1, int(sim_param["date_fin"])), "Computing: ", 40):
+            sim_stock[year] = sim_stock[year-1].copy()
 
-    sim_stock = initialize_Simulation(sim_param)
-    for year in progressbar(range(int(sim_param["date_debut"]) + 1, int(sim_param["date_fin"])), "Computing: ", 40):
-        sim_stock[year] = sim_stock[year-1].copy()
+            #destruction
+            if "old_taux_disp" in sim_param:
+                sim_stock[year].loc[:,sim_param["volume_variable_name"]] -= \
+                    sim_param["old_taux_disp"][year] * sim_stock[year].loc[:, sim_param["volume_variable_name"]]
 
-        #destruction
-        if "old_taux_disp" in sim_param:
-            sim_stock[year].loc[:,sim_param["volume_variable_name"]] -= \
-                sim_param["old_taux_disp"][year] * sim_stock[year].loc[:, sim_param["volume_variable_name"]]
-
-        #renovation
-        base_index_old =(*sim_param["base_index_tuple"], "old")
-        base_index_year_new =(*sim_param["base_index_tuple"], year, "new")
-        Surf_2_retrofit = sim_param[sim_param["retrofit_change_variable_name"]].loc[(*sim_param["base_index_tuple"], year)]
-        Surf_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],Surf_2_retrofit)
-        Surf_2_retrofit = (sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] - Surf_remain.rm_index("old_new"))
-        Transition = sim_param["retrofit_Transition"].loc[base_index_year_new, :].rm_index("year").rm_index("old_new")
-        sim_stock = update_heat_need(sim_stock=sim_stock,year=year,
-                  Nouvelles_surfaces=apply_transition(Surf_2_retrofit,Transition,sim_param),
-                  Nouveau_besoin=(1 -sim_param["retrofit_improvement"].loc[(*sim_param["base_index_tuple"],year)]) * \
-                                 sim_stock[year - 1][sim_param["energy_need_variable_name"]].loc[(*sim_param["base_index_tuple"],"old")],
-                  sim_param=sim_param)
-        sim_stock[year].loc[(*sim_param["base_index_tuple"], "old"), sim_param["volume_variable_name"]] = Surf_remain
-
-        #neuf
-        if sim_param["new_yearly_variable_name"] in sim_param:
+            #renovation
+            base_index_old =(*sim_param["base_index_tuple"], "old")
+            base_index_year_new =(*sim_param["base_index_tuple"], year, "new")
+            Surf_2_retrofit = sim_param[sim_param["retrofit_change_variable_name"]].loc[(*sim_param["base_index_tuple"], year)]
+            Surf_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],Surf_2_retrofit)
+            Surf_2_retrofit = (sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] - Surf_remain.rm_index("old_new"))
+            Transition = sim_param["retrofit_Transition"].loc[base_index_year_new, :].rm_index("year").rm_index("old_new")
             sim_stock = update_heat_need(sim_stock=sim_stock,year=year,
-                Nouvelles_surfaces=sim_param[sim_param["new_yearly_variable_name"]].loc[(*sim_param["base_index_tuple"], year)],
-                Nouveau_besoin=sim_param["new_energy"].loc[(*sim_param["base_index_tuple"], year)],
-                sim_param=sim_param)
+                      Nouvelles_surfaces=apply_transition(Surf_2_retrofit,Transition,sim_param),
+                      Nouveau_besoin=(1 -sim_param["retrofit_improvement"].loc[(*sim_param["base_index_tuple"],year)]) * \
+                                     sim_stock[year - 1][sim_param["energy_need_variable_name"]].loc[(*sim_param["base_index_tuple"],"old")],
+                      sim_param=sim_param)
+            sim_stock[year].loc[(*sim_param["base_index_tuple"], "old"), sim_param["volume_variable_name"]] = Surf_remain
 
-        sim_stock[year]  = sim_stock[year].assign(Conso=lambda x: sim_param["f_Compute_conso"](x)).fillna(0)
-        sim_stock[year]  = sim_stock[year].assign(Besoin=lambda x: sim_param["f_Compute_besoin"](x)).fillna(0)
-        for vecteur in ["elec", "gaz", "fioul", "bois"]:
-            sim_stock[year]["Conso_"+vecteur]=sim_stock[year].apply(lambda x: sim_param["f_Compute_conso"](x,vecteur), axis = 1).fillna(0)
+            #neuf
+            if sim_param["new_yearly_variable_name"] in sim_param:
+                sim_stock = update_heat_need(sim_stock=sim_stock,year=year,
+                    Nouvelles_surfaces=sim_param[sim_param["new_yearly_variable_name"]].loc[(*sim_param["base_index_tuple"], year)],
+                    Nouveau_besoin=sim_param["new_energy"].loc[(*sim_param["base_index_tuple"], year)],
+                    sim_param=sim_param)
+
+            sim_stock[year]  = sim_stock[year].assign(Conso=lambda x: sim_param["f_Compute_conso"](x)).fillna(0)
+            sim_stock[year]  = sim_stock[year].assign(Besoin=lambda x: sim_param["f_Compute_besoin"](x)).fillna(0)
+            for vecteur in ["elec", "gaz", "fioul", "bois"]:
+                sim_stock[year]["Conso_"+vecteur]=sim_stock[year].apply(lambda x: sim_param["f_Compute_conso"](x,vecteur), axis = 1).fillna(0)
     return sim_stock
 #lorsque l'on met à jour l'ensemble des surfaces et le besoin associé
 
