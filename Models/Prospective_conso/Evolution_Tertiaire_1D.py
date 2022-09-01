@@ -19,11 +19,9 @@ pd.set_option('display.width', 1000)
 
 #region chargement des données
 start = time.process_time()
-
+dim_names=["Energy_source","year"];Index_names = ["Energy_source"];Energy_source_name="Energy_source"
 data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_tertiaire_1D.xlsx", None);
-#data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_tertiary_BASIC.xlsx", None);
-sim_param = extract_sim_param(data_set_from_excel,Index_names = ["Energy_source"],
-                              dim_names=["Energy_source","year"])
+sim_param = extract_sim_param(data_set_from_excel,Index_names = Index_names,dim_names=dim_names,Energy_source_name=Energy_source_name)
 sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
 sim_param["volume_variable_name"] = "surface"
 ### example (un peu trop simpliste car ici on pourrait le faire formellement) de callage de paramètre
@@ -46,14 +44,18 @@ sim_param["old_taux_disp"]
 ## initialize all "new_yearly_surface"
 sim_param["new_yearly_surface"]=sim_param["new_yearly_surface"]*sim_param["new_yearly_repartition_per_Energy_source"]
 
-def f_Compute_conso(x,Vecteur = "total"):
+def f_Compute_conso(x,sim_param,Vecteur = "total"):
     if Vecteur=="total":
-        conso_unitaire = x["conso_unitaire_elec"]+x["conso_unitaire_gaz"]+x["conso_unitaire_fioul"]+x["conso_unitaire_bois"]
+        conso_unitaire=0
+        for Vecteur_ in sim_param["Vecteurs"]: conso_unitaire+=f_Compute_conso(x,sim_param,Vecteur =Vecteur_)
     else: conso_unitaire = x["conso_unitaire_"+Vecteur]
-    return x["energy_need_per_surface"] * x["surface"]*x["proportion_besoin_chauffage"]*conso_unitaire
-sim_param["f_Compute_conso"]=f_Compute_conso
+    return x["energy_need_per_"+sim_param["volume_variable_name"]] * x[sim_param["volume_variable_name"]]*x["proportion_energy_need"]*conso_unitaire
+#
+sim_param["f_Compute_conso"]={"Conso" : lambda x,sim_param: f_Compute_conso(x,sim_param,Vecteur ="total")}
+for Vecteur in sim_param["Vecteurs"]:
+    sim_param["f_Compute_conso_"+Vecteur]={"conso_"+Vecteur : lambda x,sim_param: f_Compute_conso(x,sim_param,Vecteur =Vecteur)}
 
-def f_Compute_besoin(x): return x["energy_need_per_surface"] * x["surface"]*x["proportion_besoin_chauffage"]
+def f_Compute_besoin(x): return x["energy_need_per_surface"] * x["surface"]*x["proportion_energy_need"]
 sim_param["f_Compute_besoin"]=f_Compute_besoin
 
 end = time.process_time()
@@ -105,10 +107,10 @@ def f_Compute_conso(x,Vecteur = "total"):
     if Vecteur=="total":
         conso_unitaire = x["conso_unitaire_elec"]+x["conso_unitaire_gaz"]+x["conso_unitaire_fioul"]+x["conso_unitaire_bois"]
     else: conso_unitaire = x["conso_unitaire_"+Vecteur]
-    return x["energy_need_per_surface"] * x["surface"]*x["proportion_besoin_chauffage"]*conso_unitaire
+    return x["energy_need_per_surface"] * x["surface"]*x["proportion_energy_need"]*conso_unitaire
 sim_param["f_Compute_conso"]=f_Compute_conso
 
-def f_Compute_besoin(x): return x["energy_need_per_surface"] * x["surface"]*x["proportion_besoin_chauffage"]
+def f_Compute_besoin(x): return x["energy_need_per_surface"] * x["surface"]*x["proportion_energy_need"]
 sim_param["f_Compute_besoin"]=f_Compute_besoin
 sim_param.keys()
 sim_stock = launch_simulation(sim_param)

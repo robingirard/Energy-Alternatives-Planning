@@ -66,25 +66,44 @@ def extract_sim_param(data_set_from_excel,Index_names = ["Energy_source"],
         sim_param["Complementary_index_tuple"] = tuple([slice(None)] * len(list(sim_param["Complementary_index"].to_frame().columns)))
     sim_param["base_index_tuple"] = tuple([slice(None)] * len(list(sim_param["base_index"].to_frame().columns)))
 
+    sim_param["Vecteurs_"] = []
+    for key in sim_param:
+        if len(key) > len("init_conso_unitaire_"):
+            if key[0:len("init_conso_unitaire_")] == "init_conso_unitaire_":
+                sim_param["Vecteurs_"] += [key[len("init_conso_unitaire_"):len(key)]]
+    if not ("Vecteurs" in sim_param):
+        sim_param["Vecteurs"]=sim_param["Vecteurs_"]
+    if not (sim_param["Vecteurs_"] == sim_param["Vecteurs"]):
+        print("Attention, la liste des vecteurs de la table Vecteurs doit correspondre aux colonnes de la table contenant les consos unitaires")
+
     return sim_param
+
+def get_function_list(sim_param):
+    res=[]
+    for key in sim_param:
+        if len(key) > len("f_"):
+            if key[0:len("f_")] == "f_":
+                res += [key]
+    return res
 
 def fill_sim_param(sim_param,Para_2_fill):
     for key in Para_2_fill:
-        if type(sim_param[key]) in [float,int,str]: sim_param[key] = pd.Series([sim_param[key]] * len(Para_2_fill[key]),index=Para_2_fill[key],name=key)
-        else :
-            initial_type = type(sim_param[key])
-            sim_param[key] = pd.DataFrame(None, index=Para_2_fill[key]). \
-                merge(sim_param[key], how='outer', left_index=True, right_index=True)
-            TMP = pd.DataFrame(None, index=Para_2_fill[key])
-            new_cols = Para_2_fill[key].to_frame(index=False).columns.reindex(list(sim_param[key].index.names))
-            re_indexed_multi_index = pd.MultiIndex.from_frame(Para_2_fill[key].to_frame(index=False).reindex(columns=new_cols[0]))
-            for col in sim_param[key].columns:
-                TMP[col] = sim_param[key][col].loc[re_indexed_multi_index].to_numpy()
-            sim_param[key] = TMP
-            if initial_type == pd.Series:
-                ## complete NAs
-                sim_param[key]=sim_param[key].fillna(0)
-                sim_param[key]=sim_param[key].iloc[:,0]
+        if key in sim_param:
+            if type(sim_param[key]) in [float,int,str]: sim_param[key] = pd.Series([sim_param[key]] * len(Para_2_fill[key]),index=Para_2_fill[key],name=key)
+            else :
+                initial_type = type(sim_param[key])
+                sim_param[key] = pd.DataFrame(None, index=Para_2_fill[key]). \
+                    merge(sim_param[key], how='outer', left_index=True, right_index=True)
+                TMP = pd.DataFrame(None, index=Para_2_fill[key])
+                new_cols = Para_2_fill[key].to_frame(index=False).columns.reindex(list(sim_param[key].index.names))
+                re_indexed_multi_index = pd.MultiIndex.from_frame(Para_2_fill[key].to_frame(index=False).reindex(columns=new_cols[0]))
+                for col in sim_param[key].columns:
+                    TMP[col] = sim_param[key][col].loc[re_indexed_multi_index].to_numpy()
+                sim_param[key] = TMP
+                if initial_type == pd.Series:
+                    ## complete NAs
+                    sim_param[key]=sim_param[key].fillna(0)
+                    sim_param[key]=sim_param[key].iloc[:,0]
     return sim_param
 #key="retrofit_improvement"
 def complete_parameters(sim_param,Para_2_fill={}):
@@ -217,7 +236,7 @@ def initialize_Simulation(sim_param):
     year=int(sim_param["date_debut"])
     sim_stock[year]=pd.concat( [ sim_param["init_sim_stock"].assign(old_new="old"),
                                     sim_param["init_sim_stock"].assign(old_new="new")]).set_index(['old_new'], append=True).sort_index()
-    sim_stock[year].loc[(*sim_param["base_index_tuple"],"new"),"Surface"]=0 ## on commence sans "neuf"
+    sim_stock[year].loc[(*sim_param["base_index_tuple"],"new"),sim_param["volume_variable_name"] ]=0 ## on commence sans "neuf"
 
     return sim_stock
 
@@ -274,10 +293,11 @@ def launch_simulation(sim_param):
                     Nouveau_besoin=sim_param["new_energy"].loc[(*sim_param["base_index_tuple"], year)],
                     sim_param=sim_param)
 
-            sim_stock[year]  = sim_stock[year].assign(Conso=lambda x: sim_param["f_Compute_conso"](x)).fillna(0)
-            sim_stock[year]  = sim_stock[year].assign(Besoin=lambda x: sim_param["f_Compute_besoin"](x)).fillna(0)
-            for vecteur in ["elec", "gaz", "fioul", "bois"]:
-                sim_stock[year]["Conso_"+vecteur]=sim_stock[year].apply(lambda x: sim_param["f_Compute_conso"](x,vecteur), axis = 1).fillna(0)
+            Functions_ = get_function_list(sim_param)
+            for func in Functions_:
+                for key in sim_param[func]:
+                    sim_stock[year][key] = sim_stock[year].apply(lambda x: sim_param[func][key](x,sim_param) ,axis =1).fillna(0)
+
     return sim_stock
 #lorsque l'on met à jour l'ensemble des surfaces et le besoin associé
 
@@ -355,7 +375,7 @@ def Create_0D_df(variable_dict,sim_param):
             ds = sim_param[key]
         else :
             if variable_dict[key]=="wmean":
-                ds = sim_param["init_sim_stock"][[key,"Surface"]]
+                ds = sim_param["init_sim_stock"][[key,sim_param["volume_variable_name"] ]]
             else:
                 ds = sim_param["init_sim_stock"][key]
         if len(variable_dict[key])==0:
@@ -372,8 +392,8 @@ def Create_XD_df(variable_dict,sim_param,group_along = ["Energy_source"]):
             ds = sim_param[key]
         else :
             if variable_dict[key]=="wmean":
-                weightedMean_weight=["Surface"]
-                ds = sim_param["init_sim_stock"][[key,"Surface"]]
+                weightedMean_weight=[sim_param["volume_variable_name"] ]
+                ds = sim_param["init_sim_stock"][[key,sim_param["volume_variable_name"] ]]
             else:
                 weightedMean_weight =None
                 ds = sim_param["init_sim_stock"][key]
