@@ -21,7 +21,7 @@ pd.set_option('display.width', 1000)
 #region chargement des données
 start = time.process_time()
 dim_names=["Production_system","year","Vecteurs"];Index_names = ["Production_system"];Energy_system_name="Production_system"
-data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_acier_1D_QR.xlsx", None);
+data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_acier_1D_2030.xlsx", None);
 sim_param = extract_sim_param(data_set_from_excel,Index_names = Index_names,dim_names=dim_names,Energy_system_name=Energy_system_name)
 sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
 sim_param["volume_variable_name"] = "unite_prod"
@@ -49,9 +49,10 @@ sim_param   =   complete_parameters(sim_param,Para_2_fill=Para_2_fill)
 def f_Compute_conso(x,sim_param,Vecteur = "total"):
     if Vecteur=="total":
         conso_unitaire=0
-        for Vecteur_ in sim_param["Vecteurs"]: conso_unitaire+=f_Compute_conso(x,sim_param,Vecteur =Vecteur_)
+        for Vecteur_ in sim_param["Vecteurs"]: conso_unitaire+=x["conso_unitaire_"+Vecteur]
     else: conso_unitaire = x["conso_unitaire_"+Vecteur]
     return x[sim_param["volume_variable_name"]]*conso_unitaire
+
 #
 sim_param["f_Compute_conso"]={"Conso" : lambda x,sim_param: f_Compute_conso(x,sim_param,Vecteur ="total")}
 for Vecteur in sim_param["Vecteurs"]:
@@ -101,3 +102,7 @@ plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 
 #endregion
 
+test_df = pd.DataFrame([[1,0,0,0,1,1],[0,1,0,0,1,1],[0,0,1,0,1,1],[0,0,0,1,1,1]],
+                       columns = ["conso_unitaire_elec","conso_unitaire_gaz","conso_unitaire_fioul","conso_unitaire_bois",'energy_need_per_surface',"surface"])
+print(test_df.apply(lambda x: sim_param['f_Compute_conso_bois']['conso_bois'](x,sim_param) ,axis =1))
+print(test_df.apply(lambda x: sim_param['f_Compute_conso_elec']['conso_elec'](x,sim_param) ,axis =1))

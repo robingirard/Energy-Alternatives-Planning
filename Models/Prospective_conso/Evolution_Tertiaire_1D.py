@@ -1,3 +1,4 @@
+
 #region Chargement des packages
 #from IPython import get_ipython;
 #get_ipython().magic('reset -sf')
@@ -37,7 +38,7 @@ def Error_function(alpha,sim_param):
 alpha = scop.minimize(Error_function, x0=1, method='BFGS',args=(sim_param))["x"][0]
 sim_param["retrofit_change_surface"] = alpha * sim_param["init_sim_stock"]["surface"]
 
-Pameter_to_fill_along_index_year = {param : sim_param["base_index_year"] for param in ["retrofit_improvement","retrofit_change_surface","retrofit_Transition"]}
+Pameter_to_fill_along_index_year = {param : sim_param["base_index_year"] for param in ["new_energy","retrofit_improvement","retrofit_change_surface","retrofit_Transition"]}
 sim_param   =   complete_parameters(sim_param,Para_2_fill=Pameter_to_fill_along_index_year)
 sim_param["old_taux_disp"]
 ## initialize all "new_yearly_surface"
@@ -54,8 +55,8 @@ sim_param["f_Compute_conso"]={"Conso" : lambda x,sim_param: f_Compute_conso(x,si
 for Vecteur in sim_param["Vecteurs"]:
     sim_param["f_Compute_conso_"+Vecteur]={"conso_"+Vecteur : lambda x,sim_param: f_Compute_conso(x,sim_param,Vecteur =Vecteur)}
 
-def f_Compute_besoin(x): return x["energy_need_per_surface"] * x["surface"]*x["proportion_energy_need"]
-sim_param["f_Compute_besoin"]=f_Compute_besoin
+def f_Compute_besoin(x,sim_param): return x["energy_need_per_surface"] * x["surface"]*x["proportion_energy_need"]
+sim_param["f_Compute_besoin"]={"energy_need" : f_Compute_besoin}
 
 end = time.process_time()
 print("Chargement des données, des modèles et interpolation terminés en : "+str(end-start)+" secondes")
@@ -77,7 +78,7 @@ fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Conso énergie finale par mode de chauffage (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 
-Var = "Besoin"
+Var = "energy_need"
 y_df = sim_stock_df.groupby(["year","Energy_source"])[Var].sum().to_frame().reset_index().\
     pivot(index='year', columns='Energy_source').loc[[year for year in range(2021,2050)],Var]/10**9
 fig = MyStackedPlotly(y_df=y_df)
@@ -93,23 +94,4 @@ plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 #endregion
 
 
-data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_tertiary_BASIC.xlsx", None);
-sim_param = extract_sim_param(data_set_from_excel,Index_names = ["Energy_source"],
-                              dim_names=["Energy_source","year"])
-sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
-sim_param["volume_variable_name"] = "surface"
-
-Pameter_to_fill_along_index_year = {param : sim_param["base_index_year"] for param in ["retrofit_improvement","retrofit_change_surface","retrofit_Transition"]}
-sim_param   =   complete_parameters(sim_param,Para_2_fill=Pameter_to_fill_along_index_year)
-
-def f_Compute_conso(x,Vecteur = "total"):
-    if Vecteur=="total":
-        conso_unitaire = x["conso_unitaire_elec"]+x["conso_unitaire_gaz"]+x["conso_unitaire_fioul"]+x["conso_unitaire_bois"]
-    else: conso_unitaire = x["conso_unitaire_"+Vecteur]
-    return x["energy_need_per_surface"] * x["surface"]*x["proportion_energy_need"]*conso_unitaire
-sim_param["f_Compute_conso"]=f_Compute_conso
-
-def f_Compute_besoin(x): return x["energy_need_per_surface"] * x["surface"]*x["proportion_energy_need"]
-sim_param["f_Compute_besoin"]=f_Compute_besoin
-sim_param.keys()
-sim_stock = launch_simulation(sim_param)
+sim_param["new_energy"]

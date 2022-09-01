@@ -276,15 +276,24 @@ def launch_simulation(sim_param):
             #renovation
             base_index_old =(*sim_param["base_index_tuple"], "old")
             base_index_year_new =(*sim_param["base_index_tuple"], year, "new")
-            Surf_2_retrofit = sim_param[sim_param["retrofit_change_variable_name"]].loc[(*sim_param["base_index_tuple"], year)]
-            Surf_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],Surf_2_retrofit)
+            Surf_2_retrofit_TMP = sim_param[sim_param["retrofit_change_variable_name"]].loc[(*sim_param["base_index_tuple"], year)]
+            Surf_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],Surf_2_retrofit_TMP)
             Surf_2_retrofit = (sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] - Surf_remain.rm_index("old_new"))
+            if ((Surf_2_retrofit_TMP-Surf_2_retrofit).sum()>0.005*Surf_2_retrofit_TMP.sum()):
+                print("warning, too much retrofit")
+
             Transition = sim_param["retrofit_Transition"].loc[base_index_year_new, :].rm_index("year").rm_index("old_new")
+            Nouvelles_surfaces = apply_transition(Surf_2_retrofit,Transition,sim_param)
+            if ((Surf_2_retrofit.sum()-Nouvelles_surfaces.sum())>0.005*Surf_2_retrofit_TMP.sum()):
+                print("warning, Transition does not sum to one")
+            Nouveau_besoin = (1 - sim_param["retrofit_improvement"].loc[(*sim_param["base_index_tuple"], year)]) * \
+                             sim_stock[year - 1][sim_param["energy_need_variable_name"]].loc[
+                                 (*sim_param["base_index_tuple"], "old")]
             sim_stock = update_heat_need(sim_stock=sim_stock,year=year,
-                      Nouvelles_surfaces=apply_transition(Surf_2_retrofit,Transition,sim_param),
-                      Nouveau_besoin=(1 -sim_param["retrofit_improvement"].loc[(*sim_param["base_index_tuple"],year)]) * \
-                                     sim_stock[year - 1][sim_param["energy_need_variable_name"]].loc[(*sim_param["base_index_tuple"],"old")],
+                      Nouvelles_surfaces=Nouvelles_surfaces,
+                      Nouveau_besoin=Nouveau_besoin,
                       sim_param=sim_param)
+
             sim_stock[year].loc[(*sim_param["base_index_tuple"], "old"), sim_param["volume_variable_name"]] = Surf_remain
 
             #neuf
@@ -297,7 +306,7 @@ def launch_simulation(sim_param):
             Functions_ = get_function_list(sim_param)
             for func in Functions_:
                 for key in sim_param[func]:
-                    sim_stock[year][key] = sim_stock[year].apply(lambda x: sim_param[func][key](x,sim_param) ,axis =1).fillna(0)
+                    sim_stock[year].loc[:,key] = sim_stock[year].apply(lambda x: sim_param[func][key](x,sim_param) ,axis =1).fillna(0)
 
     return sim_stock
 #lorsque l'on met à jour l'ensemble des surfaces et le besoin associé
