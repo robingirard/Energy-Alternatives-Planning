@@ -278,7 +278,7 @@ def launch_simulation(sim_param):
             base_index_year_new =(*sim_param["base_index_tuple"], year, "new")
             Surf_2_retrofit = sim_param[sim_param["retrofit_change_variable_name"]].loc[(*sim_param["base_index_tuple"], year)]
             Surf_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],Surf_2_retrofit)
-            Surf_2_retrofit = (sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] - Surf_remain.rm_index("old_new"))
+            Surf_2_retrofit = (sim_stock[year].loc[base_index_old,sim_param["volume_variable_name"]] - Surf_remain.rm_index("old_new"))
             Transition = sim_param["retrofit_Transition"].loc[base_index_year_new, :].rm_index("year").rm_index("old_new")
             sim_stock = update_heat_need(sim_stock=sim_stock,year=year,
                       Nouvelles_surfaces=apply_transition(Surf_2_retrofit,Transition,sim_param),
@@ -444,3 +444,6 @@ def find_alpha(age_moy, duree_vie):
     return alpha0
 
 #find_alpha(1,40)
+# tmp=sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]]-Surf_2_retrofit
+# tmp2=sim_stock[year].loc[base_index_old,sim_param["volume_variable_name"]]-tmp
+# Surf_2_retrofit-tmp2==0
