@@ -1,5 +1,5 @@
 from math import gamma
-
+import inspect
 import pandas as pd
 
 from functions.f_tools import *
@@ -86,6 +86,7 @@ def get_function_list(sim_param):
             if key[0:len("f_")] == "f_":
                 res += [key]
     return res
+
 
 def fill_sim_param(sim_param,Para_2_fill):
     for key in Para_2_fill:
@@ -276,28 +277,58 @@ def launch_simulation(sim_param):
             #renovation
             base_index_old =(*sim_param["base_index_tuple"], "old")
             base_index_year_new =(*sim_param["base_index_tuple"], year, "new")
+<<<<<<< HEAD
             Surf_2_retrofit = sim_param[sim_param["retrofit_change_variable_name"]].loc[(*sim_param["base_index_tuple"], year)]
             Surf_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],Surf_2_retrofit)
             Surf_2_retrofit = (sim_stock[year].loc[base_index_old,sim_param["volume_variable_name"]] - Surf_remain.rm_index("old_new"))
+||||||| b982435
+            Surf_2_retrofit = sim_param[sim_param["retrofit_change_variable_name"]].loc[(*sim_param["base_index_tuple"], year)]
+            Surf_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],Surf_2_retrofit)
+            Surf_2_retrofit = (sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] - Surf_remain.rm_index("old_new"))
+=======
+            Unit_2_retrofit_TMP = sim_param[sim_param["retrofit_change_variable_name"]].loc[(*sim_param["base_index_tuple"], year)]
+            Unit_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],Unit_2_retrofit_TMP)
+            Unit_2_retrofit = (sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] - Unit_remain.rm_index("old_new"))
+            if ((Unit_2_retrofit_TMP-Unit_2_retrofit).sum()>0.005*Unit_2_retrofit_TMP.sum()):
+                print("warning, too much retrofit, excess of "+str((Unit_2_retrofit_TMP-Unit_2_retrofit).sum()/Unit_2_retrofit_TMP.sum()*100)+" %")
+
+>>>>>>> e71dcc74ce51e8dbe805bb5c6e4531a46223f93c
             Transition = sim_param["retrofit_Transition"].loc[base_index_year_new, :].rm_index("year").rm_index("old_new")
+            New_units = apply_transition(Unit_2_retrofit,Transition,sim_param)
+            if ((Unit_2_retrofit.sum()-New_units.sum())>0.005*Unit_2_retrofit_TMP.sum()):
+                print("warning, Transition does not sum to one")
+            New_energy_need = (1 - sim_param["retrofit_improvement"].loc[(*sim_param["base_index_tuple"], year)]) * \
+                             sim_stock[year - 1][sim_param["energy_need_variable_name"]].loc[
+                                 (*sim_param["base_index_tuple"], "old")]
             sim_stock = update_heat_need(sim_stock=sim_stock,year=year,
-                      Nouvelles_surfaces=apply_transition(Surf_2_retrofit,Transition,sim_param),
-                      Nouveau_besoin=(1 -sim_param["retrofit_improvement"].loc[(*sim_param["base_index_tuple"],year)]) * \
-                                     sim_stock[year - 1][sim_param["energy_need_variable_name"]].loc[(*sim_param["base_index_tuple"],"old")],
+                      New_units=New_units,
+                      New_energy_need=New_energy_need,
                       sim_param=sim_param)
-            sim_stock[year].loc[(*sim_param["base_index_tuple"], "old"), sim_param["volume_variable_name"]] = Surf_remain
+
+            sim_stock[year].loc[(*sim_param["base_index_tuple"], "old"), sim_param["volume_variable_name"]] = Unit_remain
 
             #neuf
             if sim_param["new_yearly_variable_name"] in sim_param:
                 sim_stock = update_heat_need(sim_stock=sim_stock,year=year,
-                    Nouvelles_surfaces=sim_param[sim_param["new_yearly_variable_name"]].loc[(*sim_param["base_index_tuple"], year)],
-                    Nouveau_besoin=sim_param["new_energy"].loc[(*sim_param["base_index_tuple"], year)],
+                    New_units=sim_param[sim_param["new_yearly_variable_name"]].loc[(*sim_param["base_index_tuple"], year)],
+                    New_energy_need=sim_param["new_energy"].loc[(*sim_param["base_index_tuple"], year)],
                     sim_param=sim_param)
 
             Functions_ = get_function_list(sim_param)
             for func in Functions_:
                 for key in sim_param[func]:
-                    sim_stock[year][key] = sim_stock[year].apply(lambda x: sim_param[func][key](x,sim_param) ,axis =1).fillna(0)
+                    args = inspect.getfullargspec(sim_param[func][key]).args
+                    if args==['x']:
+                        sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                            lambda x: sim_param[func][key](x), axis=1).fillna(0)
+                    elif args==['x','sim_param']:
+                        sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                            lambda x: sim_param[func][key](x, sim_param), axis=1).fillna(0)
+                    elif args==['x','sim_param','year']:
+                        sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                            lambda x: sim_param[func][key](x, sim_param, year), axis=1).fillna(0)
+                    else: print("Warnings, function func defined with arguments "+str(args)+" only x | x,sim_param | x,sim_param,year implemented")
+
 
     return sim_stock
 #lorsque l'on met à jour l'ensemble des surfaces et le besoin associé
@@ -311,36 +342,36 @@ def get_index_name(xx):
     else : res = xx.names
     return res
 
-def update_heat_need(sim_stock,year,Nouvelles_surfaces,Nouveau_besoin,sim_param):
+def update_heat_need(sim_stock,year,New_units,New_energy_need,sim_param):
 
     #mise à jour des surfaces
-    old_col_names=Nouvelles_surfaces.name
+    old_col_names=New_units.name
     if type(old_col_names) == type(None): old_col_names = 0
-    Nouvelles_unite_neuf = Nouvelles_surfaces.loc[sim_param["base_index_tuple"]]
+    Nouvelles_unite_neuf = New_units.loc[sim_param["base_index_tuple"]]
     My_index_names = get_index_name(sim_param["base_index"])
     if 'Efficiency_class' in My_index_names:
-        Nouvelles_unite_neuf=Nouvelles_unite_neuf.update_Efficiency_class(Nouveau_besoin,sim_param)
-        Nouveau_besoin=Nouveau_besoin.update_Efficiency_class(Nouveau_besoin,sim_param)
+        Nouvelles_unite_neuf=Nouvelles_unite_neuf.update_Efficiency_class(New_energy_need,sim_param)
+        New_energy_need=New_energy_need.update_Efficiency_class(New_energy_need,sim_param)
     #mise à jouro du besoin
-    Ancien_besoin_neuf = sim_stock[year][sim_param["energy_need_variable_name"]].loc[(*sim_param["base_index_tuple"], "new")]
+    Old_energy_need_new = sim_stock[year][sim_param["energy_need_variable_name"]].loc[(*sim_param["base_index_tuple"], "new")]
     Anciennes_unite= sim_stock[year][sim_param["volume_variable_name"]].loc[(*sim_param["base_index_tuple"], "new")]
-    Nouveau_besoin_neuf = sim_stock[year][sim_param["energy_need_variable_name"]].loc[(*sim_param["base_index_tuple"], "new")].copy()
+    New_energy_need_new = sim_stock[year][sim_param["energy_need_variable_name"]].loc[(*sim_param["base_index_tuple"], "new")].copy()
     sub_index = Nouvelles_unite_neuf > 0
-    Nouveau_besoin_neuf.loc[sub_index] = (Ancien_besoin_neuf.loc[sub_index] * Anciennes_unite.loc[sub_index] + Nouveau_besoin.loc[sub_index] *Nouvelles_unite_neuf.loc[sub_index]) / \
+    New_energy_need_new.loc[sub_index] = (Old_energy_need_new.loc[sub_index] * Anciennes_unite.loc[sub_index] + New_energy_need.loc[sub_index] *Nouvelles_unite_neuf.loc[sub_index]) / \
                                                                 (Anciennes_unite.loc[sub_index]+Nouvelles_unite_neuf.loc[sub_index])
-    Nouveau_besoin_neuf=Nouveau_besoin_neuf.to_frame().assign(old_new="new").set_index(["old_new"],append=True)[sim_param["energy_need_variable_name"]]
+    New_energy_need_new=New_energy_need_new.to_frame().assign(old_new="new").set_index(["old_new"],append=True)[sim_param["energy_need_variable_name"]]
 
     sim_stock[year].loc[(*sim_param["base_index_tuple"], "new"), sim_param["volume_variable_name"]] +=Nouvelles_unite_neuf.to_frame().assign(old_new="new").set_index(["old_new"],append=True)[old_col_names]
-    sim_stock[year].loc[(*sim_param["base_index_tuple"], "new"),sim_param["energy_need_variable_name"]] =Nouveau_besoin_neuf
+    sim_stock[year].loc[(*sim_param["base_index_tuple"], "new"),sim_param["energy_need_variable_name"]] =New_energy_need_new
 
     return sim_stock
 
-def update_Efficiency_class(df,Nouveau_besoin,sim_param,Efficiency_class_name = "Efficiency_class"):
+def update_Efficiency_class(df,New_energy_need,sim_param,Efficiency_class_name = "Efficiency_class"):
     Name = df.name
     if type(Name)==type(None): Name = 0
     Index_names = df.index.names
-    TMP=pd.DataFrame(None,index = Nouveau_besoin.index)
-    TMP[Efficiency_class_name] = Nouveau_besoin.apply(lambda x: sim_param["f_energy_to_class"](x,sim_param["energy_class_dictionnary" ]))
+    TMP=pd.DataFrame(None,index = New_energy_need.index)
+    TMP[Efficiency_class_name] = New_energy_need.apply(lambda x: sim_param["_f_energy_to_class"](x,sim_param["energy_class_dictionnary" ]))
     df_TMP = df.copy().reset_index()
     df_TMP[Efficiency_class_name] = TMP[Efficiency_class_name].to_numpy()
     df_TMP = df_TMP.groupby(Index_names).sum()
