@@ -259,6 +259,7 @@ def non_valid_data(sim_param):
 
 def launch_simulation(sim_param):
     sim_param["energy_need_variable_name"]= "energy_need_per_"+sim_param["volume_variable_name"]
+    sim_param["energy_consumption_variable_name"] = "energy_consumption_per_" + sim_param["volume_variable_name"]
     sim_param["new_yearly_variable_name"]=  "new_yearly_"+sim_param["volume_variable_name"]
     sim_param["retrofit_change_variable_name"]="retrofit_change_"+sim_param["volume_variable_name"]
     if non_valid_data(sim_param):
@@ -277,6 +278,7 @@ def launch_simulation(sim_param):
             #renovation
             base_index_old =(*sim_param["base_index_tuple"], "old")
             base_index_year_new =(*sim_param["base_index_tuple"], year, "new")
+
             Unit_2_retrofit_TMP = sim_param[sim_param["retrofit_change_variable_name"]].loc[(*sim_param["base_index_tuple"], year)]
             Unit_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],Unit_2_retrofit_TMP)
             Unit_2_retrofit = (sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] - Unit_remain.rm_index("old_new"))
@@ -465,3 +467,6 @@ def find_alpha(age_moy, duree_vie):
     return alpha0
 
 #find_alpha(1,40)
+# tmp=sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]]-Surf_2_retrofit
+# tmp2=sim_stock[year].loc[base_index_old,sim_param["volume_variable_name"]]-tmp
+# Surf_2_retrofit-tmp2==0
