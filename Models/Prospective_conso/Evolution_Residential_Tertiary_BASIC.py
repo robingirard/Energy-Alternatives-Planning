@@ -19,7 +19,7 @@ pd.set_option('display.width', 1000)
 
 #region chargement des données
 start = time.process_time()
-dim_names=["Energy_source","building_type","year"];Index_names = ["Energy_source","building_type"];Energy_system_name="Energy_source"
+dim_names=["Energy_source","building_type","year","Vecteur"];Index_names = ["Energy_source","building_type"];Energy_system_name="Energy_source"
 data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_residential_tertiary_BASIC.xlsx", None);
 sim_param = extract_sim_param(data_set_from_excel,Index_names = Index_names,dim_names=dim_names,Energy_system_name=Energy_system_name)
 sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
@@ -39,10 +39,19 @@ def f_Compute_conso_totale(x,sim_param):
     for Vecteur in sim_param["Vecteurs"]:
         res+=x["conso_"+Vecteur]
     return res
+def f_compute_emissions(x,sim_param,year,Vecteur):
+    return sim_param["direct_emissions"].loc[Vecteur,year]*x["conso_"+Vecteur]
+def f_Compute_emissions_totale(x,sim_param):
+    res=0.
+    for Vecteur in sim_param["Vecteurs"]:
+        res+=x["emissions_"+Vecteur]
+    return res
 #
 for Vecteur in sim_param["Vecteurs"]:
     sim_param["f_Compute_conso_"+Vecteur]={"conso_"+Vecteur : partial(f_Compute_conso,Vecteur =Vecteur)}
+    sim_param["f_Compute_emissions_" + Vecteur] = {"emissions_" + Vecteur: partial(f_compute_emissions, Vecteur=Vecteur)}
 sim_param["f_Compute_conso_totale"]={"Conso" : lambda x,sim_param: f_Compute_conso_totale(x,sim_param)}
+sim_param["f_Compute_emissions_totale"]={"emissions" : lambda x,sim_param: f_Compute_emissions_totale(x,sim_param)}
 
 
 end = time.process_time()
@@ -63,6 +72,13 @@ y_df = sim_stock_df.groupby(["year","Energy_source"])[Var].sum().to_frame().rese
     pivot(index=['year'], columns='Energy_source').loc[[year for year in sim_param["years"][1:]],Var]/10**9
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Conso énergie finale par mode de chauffage (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")
+plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
+
+Var = "emissions"
+y_df = sim_stock_df.groupby(["year","Energy_source"])[Var].sum().to_frame().reset_index().\
+    pivot(index=['year'], columns='Energy_source').loc[[year for year in sim_param["years"][1:]],Var]/10**12
+fig = MyStackedPlotly(y_df=y_df)
+fig=fig.update_layout(title_text="Emissions de GES par mode de chauffage (en MtCO2e)", xaxis_title="Année",yaxis_title="Conso [MtCO2e]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 
 Var = "surface"

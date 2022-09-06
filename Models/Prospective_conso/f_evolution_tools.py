@@ -259,6 +259,7 @@ def non_valid_data(sim_param):
 
 def launch_simulation(sim_param):
     sim_param["energy_need_variable_name"]= "energy_need_per_"+sim_param["volume_variable_name"]
+    sim_param["energy_consumption_variable_name"] = "energy_consumption_per_" + sim_param["volume_variable_name"]
     sim_param["new_yearly_variable_name"]=  "new_yearly_"+sim_param["volume_variable_name"]
     sim_param["retrofit_change_variable_name"]="retrofit_change_"+sim_param["volume_variable_name"]
     if non_valid_data(sim_param):
@@ -277,22 +278,13 @@ def launch_simulation(sim_param):
             #renovation
             base_index_old =(*sim_param["base_index_tuple"], "old")
             base_index_year_new =(*sim_param["base_index_tuple"], year, "new")
-<<<<<<< HEAD
-            Surf_2_retrofit = sim_param[sim_param["retrofit_change_variable_name"]].loc[(*sim_param["base_index_tuple"], year)]
-            Surf_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],Surf_2_retrofit)
-            Surf_2_retrofit = (sim_stock[year].loc[base_index_old,sim_param["volume_variable_name"]] - Surf_remain.rm_index("old_new"))
-||||||| b982435
-            Surf_2_retrofit = sim_param[sim_param["retrofit_change_variable_name"]].loc[(*sim_param["base_index_tuple"], year)]
-            Surf_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],Surf_2_retrofit)
-            Surf_2_retrofit = (sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] - Surf_remain.rm_index("old_new"))
-=======
+
             Unit_2_retrofit_TMP = sim_param[sim_param["retrofit_change_variable_name"]].loc[(*sim_param["base_index_tuple"], year)]
             Unit_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],Unit_2_retrofit_TMP)
             Unit_2_retrofit = (sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] - Unit_remain.rm_index("old_new"))
             if ((Unit_2_retrofit_TMP-Unit_2_retrofit).sum()>0.005*Unit_2_retrofit_TMP.sum()):
                 print("warning, too much retrofit, excess of "+str((Unit_2_retrofit_TMP-Unit_2_retrofit).sum()/Unit_2_retrofit_TMP.sum()*100)+" %")
 
->>>>>>> e71dcc74ce51e8dbe805bb5c6e4531a46223f93c
             Transition = sim_param["retrofit_Transition"].loc[base_index_year_new, :].rm_index("year").rm_index("old_new")
             New_units = apply_transition(Unit_2_retrofit,Transition,sim_param)
             if ((Unit_2_retrofit.sum()-New_units.sum())>0.005*Unit_2_retrofit_TMP.sum()):
