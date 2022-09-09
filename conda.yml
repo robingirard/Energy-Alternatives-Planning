@@ -2,19 +2,18 @@ name : energyalternatives
 channels:
   - conda-forge
   - defaults
-  - conda-forge/label/broken
 dependencies :
     - python>=3.10
     - pandas
     - jupyter
     - numpy
-    - cython
     - pytest
     - pip
     - glpk
     - seaborn
     - qgrid
     - openpyxl
+    - nbconda
     - pip :
       - pyomo
       - Mosek
