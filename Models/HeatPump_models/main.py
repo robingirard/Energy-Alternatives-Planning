@@ -9,7 +9,7 @@ GraphicalResultsFolder = "Models/HeatPump_models/graphics/"
 #endregion
 
 
-Zone = "AL02"
+Zone = "AL01"
 temp_ts=pd.read_csv(Data_Folder+"era-nuts-t2m-nuts2-hourly-singleindex.csv",parse_dates=['time']).set_index(["time"])
 temp_ts_Zone=temp_ts.loc[temp_ts.index.year>2000,[Zone]].rename(columns={Zone : "temp"})
 temp_ts_Zone.head()
