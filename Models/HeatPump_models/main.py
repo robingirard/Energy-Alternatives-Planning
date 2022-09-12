@@ -35,7 +35,7 @@ Power_Ratio={}
 Energy_Ratio={}
 Consumption_Ratio={}
 T_biv={}
-for Value in np.linspace(0.1,3,100):
+for Value in np.linspace(0.1,0.6,100):
     Simulation_PAC_input_parameter['Share_Power']=Value
     SCOP=estim_SCOP(meteo_data_heating_period=meteo_data_heating_period,
                     Simulation_PAC_input_parameter=Simulation_PAC_input_parameter)
