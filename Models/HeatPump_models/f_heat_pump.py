@@ -15,9 +15,9 @@ TemperatureValues = {
 # equation (3.7) (3.8) p78
 nominal_COP_curve_Coefficients = {
     "A/A HP": {"a1": 7.177, "b1": -0.156, "c1": 0.0005,"d1":-0.066,
-           "a2": 5.6, "b2": -0.09, "c2": 0.0005},
-    "A/W HP": {"a1": 8.507, "b1": -0.156, "c1": 0.0005,"d1":-0.066,
            "a2": 4.27, "b2": -0.09, "c2": 0.0005},
+    "A/W HP": {"a1": 8.507, "b1": -0.156, "c1": 0.0005,"d1":-0.066,
+           "a2": 5.6, "b2": -0.09, "c2": 0.0005},
     "W/W HP": {"a1": 10.29, "b1": -0.21, "c1": 0.0012,"d1":0,
                "a2": 10.29, "b2": -0.21, "c2": 0.0012}
 }
@@ -104,7 +104,7 @@ def compute_T_biv2(COP_biv,T_biv,a,b,Simulation_PAC_input_parameter):
     else: T_biv2_degiv = np.nan
     ## IDEM POUR LA DEUXIEME COURBES DE COP (AVEC DEGIVRAGE)
     A1_nodegiv=float(Omega* COP_biv / (T_target - T_biv) * T_target-(a1+(b1+d1) * b+c1 * b ** 2))
-    A2_nodegiv=float(-Omega * COP_biv / (T_target - T_biv)+(b1+2 * c1 * b) * (1-a)+d1*a)
+    A2_nodegiv=float(-Omega * COP_biv / (T_target - T_biv)+(b1+2 * c1 * b) * (1-a)-d1*a)
     A3_nodegiv=float(-c1 * (1-a) ** 2)
 
     delta_nodegiv=A2_nodegiv ** 2-4 * A1_nodegiv * A3_nodegiv
@@ -139,15 +139,23 @@ def compute_T_biv2(COP_biv,T_biv,a,b,Simulation_PAC_input_parameter):
     A3_partdegiv=coeff_X2
     A4_partdegiv=coeff_X3
 
-    ## ON RESOUD LEQUATION DU 3EME DEGRE A LAIDE DE LA MATRICE ET DES EIGENVALUES DE LA MATRICE
-    ## IL Y A SUREMENT DES METHODES PLUS SIMPLES AVEC LES BONS PACKAGES
-    m = np.matrix([[0, 0, float(-A1_partdegiv / A4_partdegiv)],
-                   [1, 0, float(-A2_partdegiv / A4_partdegiv)],
-                   [0, 1, float(-A3_partdegiv / A4_partdegiv)]])
-    roots = LA.eigvals(m)
-    if all(np.imag(roots) == 0):
-        T_biv2_partdegiv=float(roots[roots > -3 & roots < 6])
-    else: T_biv2_partdegiv=float(np.real(roots[np.imag(roots) == 0]))
+    ## SI LE COEFF DU CUBE EST NUL, ON RESOUD L'EQUATION DU 2ND DEGRE
+    if A4_partdegiv == 0:
+        delta_partdegiv = A2_partdegiv ** 2 - 4 * A1_partdegiv * A3_partdegiv
+        if delta_partdegiv >= 0:
+            T_biv2_partdegiv = (-A2_partdegiv - math.sqrt(delta_partdegiv)) / (2 * A3_partdegiv)
+        else:
+            T_biv2_partdegiv = np.nan
+    else :
+        ## ON RESOUD LEQUATION DU 3EME DEGRE A LAIDE DE LA MATRICE ET DES EIGENVALUES DE LA MATRICE
+        ## IL Y A SUREMENT DES METHODES PLUS SIMPLES AVEC LES BONS PACKAGES
+        m = np.matrix([[0, 0, float(-A1_partdegiv / A4_partdegiv)],
+                       [1, 0, float(-A2_partdegiv / A4_partdegiv)],
+                       [0, 1, float(-A3_partdegiv / A4_partdegiv)]])
+        roots = LA.eigvals(m)
+        if all(np.imag(roots) == 0):
+            T_biv2_partdegiv=float(roots[roots > -3 & roots < 6])
+        else: T_biv2_partdegiv=float(np.real(roots[np.imag(roots) == 0]))
 
     ## ON GARDE LA RACINE QUI SE TROUVE SUR LA BONNE PORTION DE LA COURBE (QUI CORRESPOND A CELLE SUR LAQUELLE ELLE EST CALCULEE)
     if ((not np.isnan(T_biv2_degiv))&(T_biv2_degiv < (-3))):
@@ -166,7 +174,7 @@ def estim_T_biv(T_base,Simulation_PAC_input_parameter):
         return max(T_base, Simulation_PAC_input_parameter["Temperature_limit"])
     else: #bivalent
         COP_base = estim_COP(T_ext=T_base,
-                             T_fluid=TemperatureValues[Simulation_PAC_input_parameter["Emitters"]])
+                             T_fluid=TemperatureValues[Simulation_PAC_input_parameter["Emitters"]],type=Simulation_PAC_input_parameter["System"])
         ab = coeffs_T_fluid(T_base,Simulation_PAC_input_parameter)
         T_target = Simulation_PAC_input_parameter["T_target"]
         T_dim = T_target+(T_base-T_target)*Simulation_PAC_input_parameter['Share_Power']
