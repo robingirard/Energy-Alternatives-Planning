@@ -320,7 +320,7 @@ def launch_simulation(sim_param):
                         sim_stock[year].loc[:, key] = sim_stock[year].apply(
                             lambda x: sim_param[func][key](x, sim_param, year), axis=1).fillna(0)
                     else: print("Warnings, function func defined with arguments "+str(args)+" only x | x,sim_param | x,sim_param,year implemented")
-
+            sim_stock[year]=sim_stock[year].fillna(0)
 
     return sim_stock
 #lorsque l'on met à jour l'ensemble des surfaces et le besoin associé
