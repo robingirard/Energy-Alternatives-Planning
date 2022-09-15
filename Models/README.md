@@ -10,5 +10,5 @@ TODO : add short descriptions here
 
 
 If you are interested in consumption modeling, you can have a look  at
- - prospective models for different sectors (building, industry, transport) you can jump to [Prospective_conso](Prospective_conso/README.md) 
- - consumption time series modeling 
+ - prospective models for different sectors (building, industry, transport) you can use [Prospective_conso](Models/Prospective_conso/README.md) 
+ - consumption time series modeling, you can discovered dedicated tools explained in [consumption jupyter notebook](Models/Basic_France_models/Consumption/Consumption_TS_manipulation_examples.ipynb) 
