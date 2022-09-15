@@ -1,6 +1,7 @@
 from math import gamma
 import inspect
 import pandas as pd
+from functools import partial
 
 from functions.f_tools import *
 # from scipy.optimize import minimize, rosen, rosen_der
@@ -370,14 +371,45 @@ def launch_simulation(sim_param):
                     elif args == ['x', 'sim_param', 'year']:
                         sim_stock[year].loc[:, key] = sim_stock[year].apply(
                             lambda x: sim_param[func][key](x, sim_param, year), axis=1).fillna(0)
+<<<<<<< HEAD
                     else:
                         print("Warnings, function func defined with arguments " + str(
                             args) + " only x | x,sim_param | x,sim_param,year implemented")
+||||||| 09868cf
+                    else: print("Warnings, function func defined with arguments "+str(args)+" only x | x,sim_param | x,sim_param,year implemented")
+
+=======
+                    else: print("Warnings, function func defined with arguments "+str(args)+" only x | x,sim_param | x,sim_param,year implemented")
+            sim_stock[year]=sim_stock[year].fillna(0)
+>>>>>>> 62733d0f800ba26ebf9e92f30352018399b293d1
 
     return sim_stock
 
 
 # lorsque l'on met à jour l'ensemble des surfaces et le besoin associé
+
+def set_model_functions(sim_param):
+    def f_Compute_conso(x,sim_param,Vecteur):
+        return x[sim_param["volume_variable_name"]]*x["conso_unitaire_" + Vecteur]*x[sim_param["energy_need_variable_name"]]
+    def f_Compute_conso_totale(x,sim_param):
+        res=0.
+        for Vecteur in sim_param["Vecteurs"]:
+            res+=x["conso_"+Vecteur]
+        return res
+    def f_compute_emissions(x,sim_param,year,Vecteur):
+        return sim_param["direct_emission"].loc[Vecteur,year]*x["conso_"+Vecteur]
+    def f_Compute_emissions_totale(x,sim_param):
+        res=0.
+        for Vecteur in sim_param["Vecteurs"]:
+            res+=x["emissions_"+Vecteur]
+        return res
+    #
+    for Vecteur in sim_param["Vecteurs"]:
+        sim_param["f_Compute_conso_"+Vecteur]={"conso_"+Vecteur : partial(f_Compute_conso,Vecteur =Vecteur)}
+        sim_param["f_Compute_emissions_" + Vecteur] = {"emissions_" + Vecteur: partial(f_compute_emissions, Vecteur=Vecteur)}
+    sim_param["f_Compute_conso_totale"]={"Conso" : lambda x,sim_param: f_Compute_conso_totale(x,sim_param)}
+    sim_param["f_Compute_emissions_totale"]={"emissions" : lambda x,sim_param: f_Compute_emissions_totale(x,sim_param)}
+    return sim_param
 
 def get_index_name(xx):
     if type(xx) == pd.Series:

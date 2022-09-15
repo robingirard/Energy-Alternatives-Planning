@@ -75,8 +75,16 @@ def estim_COP(T_ext, T_fluid, type="A/W HP"):
                 a1 + b1 * Delta_T + c1 * Delta_T ** 2 + d1 * T_fluid)
     return res
 
+<<<<<<< HEAD
 
 def compute_T_biv2(COP_biv, T_biv, a, b, Simulation_PAC_input_parameter):
+||||||| 09868cf
+def compute_T_biv2(COP_biv,T_biv,a,b,Simulation_PAC_input_parameter):
+
+=======
+def compute_T_biv2(COP_biv,T_biv,a,b,Simulation_PAC_input_parameter):
+    #COP_biv=COP_base ;T_biv=T_dim; a=ab["a"]; b=ab["b"]
+>>>>>>> 62733d0f800ba26ebf9e92f30352018399b293d1
     type = Simulation_PAC_input_parameter["System"]
     T_target = Simulation_PAC_input_parameter["T_target"]
     # DEFINITION DES COEFFICIENTS DE LA COURBE DE COP
