@@ -142,8 +142,9 @@ cython_debug/
 
 #mac stuff
 .DS_Store
-/Data/input/Dimanche.csv
-/Data/input/Samedi.csv
-/Data/input/Semaine.csv
+/Models/Basic_France_models/Consumption/Data/Dimanche.csv
+/Models/Basic_France_models/Consumption/Data/Samedi.csv
+/Models/Basic_France_models/Consumption/Data/Semaine.csv
 /Data/input/MultiRessource_RESSOURCES.csv
 /ampl.mswin64/
+/Models/HeatPump_models/data/era-nuts-t2m-nuts2-hourly-singleindex.csv

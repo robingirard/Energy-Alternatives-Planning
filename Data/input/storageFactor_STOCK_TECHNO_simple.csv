@@ -1,9 +1,0 @@
-RESOURCES,STOCK_TECHNO,storageFactorIn,dissipation,storageFactorOut
-electricity,Battery,1,0,1
-electricity,tankH2_G,0,0,0
-hydrogen,Battery,0,0,0
-hydrogen,tankH2_G,1,0,1
-gaz,tankH2_G,0,0,0
-gaz,Battery,0,0,0
-uranium,tankH2_G,0,0,0
-uranium,Battery,0,0,0
