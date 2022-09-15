@@ -22,7 +22,7 @@ start = time.process_time()
 dim_names = ["Energy_source", "building_type", "Vecteur", "year"];
 Index_names = ["Energy_source", "building_type"];
 Energy_system_name = "Energy_source"
-data_set_from_excel = pd.read_excel(Data_folder + "Hypotheses_residential_tertiary_BASIC_test.xlsx", None);
+data_set_from_excel = pd.read_excel(Data_folder + "Hypotheses_residential_tertiary_BASIC.xlsx", None);
 sim_param = extract_sim_param(data_set_from_excel, Index_names=Index_names, dim_names=dim_names,
                               Energy_system_name=Energy_system_name)
 sim_param["init_sim_stock"] = create_initial_parc(sim_param).sort_index()

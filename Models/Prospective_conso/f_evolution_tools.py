@@ -371,17 +371,8 @@ def launch_simulation(sim_param):
                     elif args == ['x', 'sim_param', 'year']:
                         sim_stock[year].loc[:, key] = sim_stock[year].apply(
                             lambda x: sim_param[func][key](x, sim_param, year), axis=1).fillna(0)
-<<<<<<< HEAD
-                    else:
-                        print("Warnings, function func defined with arguments " + str(
-                            args) + " only x | x,sim_param | x,sim_param,year implemented")
-||||||| 09868cf
-                    else: print("Warnings, function func defined with arguments "+str(args)+" only x | x,sim_param | x,sim_param,year implemented")
-
-=======
                     else: print("Warnings, function func defined with arguments "+str(args)+" only x | x,sim_param | x,sim_param,year implemented")
             sim_stock[year]=sim_stock[year].fillna(0)
->>>>>>> 62733d0f800ba26ebf9e92f30352018399b293d1
 
     return sim_stock
 
