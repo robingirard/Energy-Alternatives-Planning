@@ -13,7 +13,9 @@ The installation relies on the use of a conda environment. Instruction is below
 * [2. Models Folder](#CasDEtude)
 * [3. Repertoire functions](#functions)
 * [4. other folder](#CSV)
-
+* [5. Pycharm tips](#pycharm)
+* [6.Getting help](#GettingH)
+* [6.Getting involved](#GettingI)
 
 
 ## 1 - Installations  <a class="anchor" id="installations"></a>
@@ -23,10 +25,6 @@ Once you have downloaded the Energy-Alternatives-Planing folder, in the terminal
     conda env create conda.yml
     conda activate energyalternatives
 
-If you're using PyCharm you should fix the environement in settings by choosing the right "python interpreter"
-
-I strongly recommend to use the keyboard shortcut "crtl+enter" for action "Execute selection". This can be set in PyCharm Settings -> keymap
-This project also contains Jupyter Notebook. 
 
 ## 2- Models Folder <a class="anchor" id="CasDEtude"></a>
 Contains folders with Models. Each folder in Models Folder contains a set of Models and associated data and case studies. 
@@ -47,11 +45,17 @@ Contains:
 ## 4 other folder  <a class="anchor" id="CSV"></a>
 Other Folder (Data, SujetsDAnalyse)  should disappear soon. 
 
-## Getting help
+## 5 Pycharm tips  <a class="anchor" id="pycharm"></a>
+If you're using PyCharm you should fix the environement in settings by choosing the right "python interpreter"
+
+I strongly recommend to use the keyboard shortcut "crtl+enter" for action "Execute selection". This can be set in PyCharm Settings -> keymap
+This project also contains Jupyter Notebook. 
+
+## Getting help <a class="anchor" id="GettingH"></a>
 
 If you have questions, concerns, bug reports, etc, please file an issue in this repository's Issue Tracker.
 
-## Getting involved
+## Getting involved <a class="anchor" id="GettingI"></a>
 
 BuildingModel is looking for users to provide feedback and bug reports on the initial set of functionalities as well as
 developers to contribute to the next versions, with a focus on validation of models, cooling need simulation,
