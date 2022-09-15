@@ -2,6 +2,8 @@ import plotly.graph_objects as go
 import plotly
 import pandas as pd
 import numpy as np
+from mycolorpy import colorlist as mcp
+
 def extractCosts(Variables):
     if "AREAS" in Variables['energy'].columns:
         if 'capacityCosts' in Variables.keys():
@@ -77,7 +79,51 @@ def MyPlotly(x_df,y_df,Names="",fill=True):
     fig.update_xaxes(rangeslider_visible=True)
     return(fig)
 
-def MyStackedPlotly(y_df, Conso=-1,isModifyOrder=True,Names=-1):
+
+def lighten_color(color, amount=0.5):
+    """
+    Lightens the given color by multiplying (1-luminosity) by the given amount.
+    Input can be matplotlib color string, hex string, or RGB tuple.
+
+    Examples:
+    >> lighten_color('g', 0.3)
+    >> lighten_color('#F034A3', 0.6)
+    >> lighten_color((.3,.55,.1), 0.5)
+    """
+    import matplotlib.colors as mc
+    import colorsys
+    try:
+        c = mc.cnames[color]
+    except:
+        c = color
+    c = colorsys.rgb_to_hls(*mc.to_rgb(c))
+    c_rgb= colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])
+
+    return mc.to_hex(c_rgb)
+
+def gen_grouped_color_map(col_class_dict,cmap="Set1"):
+
+    if type(col_class_dict)==dict:
+        col_class_df= pd.DataFrame().from_dict(col_class_dict, orient='index')
+        col_class_df=col_class_df.reset_index()
+        col_class_df.columns=["col","Category"]
+    n = max(col_class_df.Category.unique())
+    base_color_codes = mcp.gen_color(cmap=cmap,n=n)
+    my_color_dict={}
+    col_class_df_grouped=col_class_df.groupby("Category")
+    for name, group in col_class_df_grouped:
+        i=0
+        gradient = np.linspace(0.3, 1, len(group.col))
+        for colname in group.col:
+            my_color_dict[colname]=lighten_color(base_color_codes[name-1],gradient[i])
+            i+=1
+    return my_color_dict
+
+
+
+
+
+def MyStackedPlotly(y_df, Conso=-1,isModifyOrder=True,Names=-1,color_dict=None):
     '''
     :param x: 
     :param y: 
@@ -90,15 +136,28 @@ def MyStackedPlotly(y_df, Conso=-1,isModifyOrder=True,Names=-1):
     x_df=y_df.index
     fig = go.Figure()
     i = 0
-    for col in y_df.columns:
+    if color_dict == None:
+        colnames = y_df.columns
+    else:
+        colnames = list(color_dict.keys())
+
+    for col in colnames:
         if i == 0:
-            fig.add_trace(go.Scatter(x=x_df, y=y_df[col], fill='tozeroy',
-                                     mode='none', name=Names[i]))  # fill down to xaxis
+            if color_dict==None:
+                fig.add_trace(go.Scatter(x=x_df, y=y_df[col], fill='tozeroy',
+                                         mode='none', name=Names[i]))  # fill down to xaxis
+            else:
+                fig.add_trace(go.Scatter(x=x_df, y=y_df[col], fill='tozeroy',fillcolor=color_dict[col],
+                                         mode='none', name=col))  # fill down to xaxis
             colNames = [col]
         else:
             colNames.append(col)
-            fig.add_trace(go.Scatter(x=x_df, y=y_df.loc[:, y_df.columns.isin(colNames)].sum(axis=1), fill='tonexty',
-                                     mode='none', name=Names[i]))  # fill to trace0 y
+            if color_dict==None:
+                fig.add_trace(go.Scatter(x=x_df, y=y_df.loc[:, y_df.columns.isin(colNames)].sum(axis=1), fill='tonexty',
+                                         mode='none', name=Names[i]))  # fill to trace0 y
+            else:
+                fig.add_trace(go.Scatter(x=x_df, y=y_df.loc[:, y_df.columns.isin(colNames)].sum(axis=1), fill='tonexty',
+                                         fillcolor=color_dict[col],mode='none', name=col))  # fill to trace0 y
         i = i + 1
 
     if (Conso.__class__ != int):
