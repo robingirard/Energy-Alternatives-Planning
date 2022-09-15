@@ -13,8 +13,8 @@ The installation relies on the use of a conda environment. Instruction is below
 * [2. Models Folder](#CasDEtude)
 * [3. Repertoire functions](#functions)
 * [4. Pycharm tips](#pycharm)
-* [5.Getting help](#GettingH)
-* [6.Getting involved](#GettingI)
+* [5. Getting help](#GettingH)
+* [6. Getting involved](#GettingI)
 
 
 ## 1 - Installations  <a class="anchor" id="installations"></a>
