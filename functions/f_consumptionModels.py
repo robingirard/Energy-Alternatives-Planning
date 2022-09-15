@@ -125,7 +125,19 @@ def Recompose(ConsoSeparee_df,Thermosensibilite,Newdata_df=-1, TemperatureThresh
     return(ConsoSepareeNew_df)
 
 
-
+def add_day_month_hour(df,TimeName="Date",French=True):
+    if French:
+        df = df.assign(
+            Jour=df.index.get_level_values(TimeName).to_series().dt.dayofweek,
+            Mois=df.index.get_level_values(TimeName).to_series().dt.month,
+            Heure=df.index.get_level_values(TimeName).to_series().dt.hour);
+        df.Jour=df.Jour.replace({0:"Lundi",1:"Mardi",2:"Mercredi",3:"Jeudi",4:"Vendredi",5:"Samedi",6:"Dimanche"})
+    else:
+        df = df.assign(
+            Day=df.index.get_level_values(TimeName).to_series().dt.weekday,
+            Month=df.index.get_level_values(TimeName).to_series().dt.month,
+            Hour=df.index.get_level_values(TimeName).to_series().dt.hour);
+    return df
 
 def Profile2Consumption(Profile_df,Temperature_df, TemperatureThreshold=14,
                         TemperatureMinimum=0,TemperatureName='Temperature',
@@ -156,7 +168,7 @@ def Profile2Consumption(Profile_df,Temperature_df, TemperatureThreshold=14,
 
     for index, row in PivotedProfile_df.iterrows():
         indexesWD=ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.weekday   == (PivotedProfile_df.loc[index,'Jour']-1)
-        indexesHours= ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.hour   == (PivotedProfile_df.loc[index,'Heure']-1)
+        indexesHours= ConsoSepareeNew_df.index.get_level_values(TimeName).to_series().dt.hour   == (PivotedProfile_df.loc[index,'Heure'])
         ConsoSepareeNew_df.loc[indexesWD&indexesHours, 'NTS_C']=PivotedProfile_df.loc[index,'Ete']
 
     PivotedProfile_df['NDifference'] = (PivotedProfile_df['Ete'] - PivotedProfile_df['Hiver'])
@@ -164,7 +176,7 @@ def Profile2Consumption(Profile_df,Temperature_df, TemperatureThreshold=14,
     ConsoSepareeNew_df=Recompose(ConsoSepareeNew_df,Thermosensibilite)
     return(ConsoSepareeNew_df)
 
-
+#Temperature_df=Conso_non_thermosensible
 #Profile_df_Week,Profile_df_Sat,Profile_df_Sun,ConsoTempeYear_df
 #Temperature_df=ConsoTempeYear_decomposed_df.loc[:,"NTS_C"]
 #Profile_df=NTS_profil

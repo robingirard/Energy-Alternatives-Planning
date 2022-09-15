@@ -15,7 +15,11 @@ pd.set_option('display.width', 1000)
 #endregion
 
 #region creation des données résidentielles 2D simples vers Hypotheses_residentiel_2D_bis
-base_dpe_residentiel_df=pd.read_csv(Data_folder+'base_logement_agregee.csv', sep=';', decimal='.')
+base_dpe_residentiel_df=pd.read_hdf(Data_folder+'district_level_census_latest.hdf')
+NEW_DATA=True
+base_dpe_residentiel_df=base_dpe_residentiel_df.rename(columns={"ipondl":"IPONDL",
+                                                                "occupant_status":"occupancy_status"})
+#base_dpe_residentiel_df=pd.read_csv(Data_folder+'base_logement_agregee.csv', sep=';', decimal='.')
 index= base_dpe_residentiel_df["occupancy_status"].isin(['free accomodation', 'low rent housing','owner', 'renter'])
 base_dpe_residentiel_df=base_dpe_residentiel_df[index]
 base_dpe_residentiel_df.IPONDL.sum()
@@ -23,19 +27,37 @@ Fraction_PACS ={    "Pompes à chaleur air-air": 6.5 / 8,
                     "Pompes à chaleur air-eau": 1.5 / 8,
                     "Pompes à chaleur hybride": 0.}
 
+
+
 #### attention !!! ce que je fais ci-dessous est faux, les données ne sont pas bonnes et on ne
 #### peut pas concidérer que tout ça c'est du bois
 #### https://www.connaissancedesenergies.org/transition-energetique-le-chauffage-domestique-au-bois-incontournable-220218
 #### L’Ademe fait état de 6,8 millions d’utilisateurs d’appareils de chauffage au bois - les utilisant comme chauffage principal dans 48% des cas
 #### là ça fait presque 10 millions de chauffage principal bois, avec 3 millions d'appartements ...
-base_dpe_residentiel_df['heating_system']=base_dpe_residentiel_df['heating_system'].replace({"Chaudière - autres":"Biomasse",
+print(base_dpe_residentiel_df['heating_system'].unique().astype("str"))
+
+if NEW_DATA:
+    change_dict = {'oil boiler' : "Chaudière fioul",'electric heater' : 'Chauffage électrique',
+     'biomass/coal stove' : 'Biomasse','liquified petroleum gas boiler': 'Chaudière gaz',
+     'oil stove' : "Chaudière fioul",'electric heat pump' : 'Pompes à chaleur','fossil gas boiler' : 'Chaudière gaz',
+     'urban heat network':'Chauffage urbain','fossil gas stove': "Chaudière fioul",'liquified petroleum gas stove': 'Chaudière gaz'}
+    base_dpe_residentiel_df['heating_system']=base_dpe_residentiel_df['heating_system'].replace(change_dict)
+else:
+    base_dpe_residentiel_df['heating_system']=base_dpe_residentiel_df['heating_system'].replace({"Chaudière - autres":"Biomasse",
                                                                                              "Autres":"Biomasse"})
 ### les stats
-base_dpe_residentiel_df.groupbyAndAgg(group_along= ['heating_system',"heating_fuel"],
-            aggregation_dic={"energy_consumption" : "wmean",
-                             "surface": "wmean",
-                             "IPONDL" : "sum"},
-            weightedMean_weight="IPONDL")
+if NEW_DATA:
+    base_dpe_residentiel_df.groupbyAndAgg(group_along= ['heating_system',"heating_fuel"],
+                aggregation_dic={"energy_consumption" : "wmean",
+                                 "surface": "wmean",
+                                 "IPONDL" : "sum"},
+                weightedMean_weight="IPONDL")
+else:
+    base_dpe_residentiel_df.groupbyAndAgg(group_along= ['heating_system'],
+                aggregation_dic={"energy_consumption" : "wmean",
+                                 "surface": "wmean",
+                                 "IPONDL" : "sum"},
+                weightedMean_weight="IPONDL")
 
 Index_to_add = expand_grid_from_dict({"Energy_source": list(Fraction_PACS.keys()),
                                       "residential_type":base_dpe_residentiel_df["residential_type"].unique()}).\

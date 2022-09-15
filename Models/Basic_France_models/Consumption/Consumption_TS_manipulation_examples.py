@@ -105,8 +105,22 @@ fig=MyStackedPlotly(y_df=EV_Consumption_df[["NTS_C","TS_C"]],
                     Names=['Conso VE non thermosensible','conso VE thermosensible'])
 fig=fig.update_layout(title_text="Consommation (MWh)", xaxis_title="Date")
 plotly.offline.plot(fig, filename='file.html') ## offline
+
+#même chose avec l'ECS
+ECS_Profile_df=pd.read_csv(InputFolder+'Profil_ECS_RTE.csv',sep=';',decimal=',',encoding='utf-8').\
+    melt(id_vars=["Jour","Heure"],value_vars=["ECS en juin","ECS en janvier"],value_name="Puissance.MW",var_name="Saison").\
+    replace({"Saison":{"ECS en juin":"Ete","ECS en janvier":"Hiver"},
+             "Jour":{"Lundi":1,"Mardi":2,"Mercredi":3,"Jeudi":4,"Vendredi":5,"Samedi":6,"Dimanche":7}})
+ECS_Consumption_df=Profile2Consumption(Profile_df=ECS_Profile_df,Temperature_df = ConsoTempe_df.loc[str(year)][['Temperature']],VarName="Puissance.MW")
+fig=MyStackedPlotly(y_df=ECS_Consumption_df[["NTS_C","TS_C"]],
+                    Names=['Conso ECS non thermosensible','conso ECS thermosensible'])
+fig=fig.update_layout(title_text="Consommation (MWh)", xaxis_title="Date")
+plotly.offline.plot(fig, filename='file.html') ## offline
+
+
 #fig.show()
 #endregion
+
 #region consumption decomposition
 ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv',parse_dates=['Date']).set_index(["Date"])
 year = 2012
@@ -135,12 +149,45 @@ ConsoTempeYear_decomposed_df.loc[:,"NTS_C"]# partie non thermosensible
 ConsoTempeYear_decomposed_df.loc[:,"TS_C"] # partie thermosensible
 
 Conso_non_thermosensible = ConsoTempeYear_decomposed_df[["NTS_C"]].rename(columns= {"NTS_C":"Consumption"})
+ConsoTempe_df
+L_week=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"]
+for weekday in range(7):
+    for hour in range(24):
+        indexHour=(ConsoTemp_2019_df.index.to_series().dt.hour==hour)&(ConsoTemp_2019_df.index.to_series().dt.weekday==weekday)
+        ConsoTemp_2019_df.loc[indexHour,'Consommation']=ConsoTemp_2019_df.loc[indexHour,'Consommation']\
+        -ECS_df.loc[(L_week[weekday],hour),'ECS en juin']\
+        -ECS_df.loc[(L_week[weekday],hour),'Thermosensibilite (GW/degre)']*ConsoTemp_2019_df.loc[indexHour,'Temperature']\
+        +ECS_df.loc[(L_week[weekday],hour),'Thermosensibilite (GW/degre)']*T2
 
-NTS_profil=  pd.read_csv(InputFolder+"Conso_model/Profil_NTS.csv",sep=";", decimal=",").\
-    melt(id_vars=['Heure','Jour', 'Mois'],
-          value_vars=['Industrie','Autres residentiel','Autres tertiaire','Eclairage','Cuisson'],
-         var_name='type', value_name='poids').\
-    set_index(["Jour","Mois","Heure"])
+ECS_df=pd.read_csv(InputFolder+'Profil_ECS_RTE.csv',sep=';',decimal=',',encoding='utf-8').set_index(["Jour","Heure"])
+
+add_day_month_hour(ConsoTempe_df[str(year)]).reset_index().set_index(['Heure','Jour',"Mois"]).\
+        merge(ECS_df.loc[:,"ECS_Base"].reset_index().set_index(['Heure','Jour']).drop(columns="Saison"),
+              how='outer',right_index = True,left_index=True).reset_index().set_index(["Date"]).\
+        drop(columns=["Heure","Jour" ,"Mois","Consumption"])
+NTS_profil=  pd.read_csv(InputFolder+"Profil_NTS_RTE.csv",sep=";", decimal=",").set_index(['Saison','Jour','Heure'])
+Profil={}
+for Saison in ["Hiver","Ete"]:
+    Profil[Saison]=add_day_month_hour(Conso_non_thermosensible).reset_index().set_index(['Heure','Jour',"Mois"]).\
+        merge(NTS_profil.loc[(Saison,slice(None),slice(None))].reset_index().set_index(['Heure','Jour']).drop(columns="Saison"),
+              how='outer',right_index = True,left_index=True).reset_index().set_index(["Date"]).\
+        drop(columns=["Heure","Jour" ,"Mois","Consumption"])
+
+Periodi_signal = np.concatenate((np.linspace(0,1,int(len(Conso_non_thermosensible.index)/2)),np.linspace(1,0,int(len(Conso_non_thermosensible.index)/2))), axis=None)
+Alpha=pd.DataFrame(Periodi_signal,index= Conso_non_thermosensible.index)
+Conso_NTS_par_usage=pd.DataFrame(None)
+for col in Profil["Hiver"].columns:
+    Conso_NTS_par_usage[col] = (Profil["Hiver"][col]*(1-Alpha[0])+Profil["Ete"][col]*Alpha[0])*Conso_non_thermosensible["Consumption"]
+
+fig = MyStackedPlotly(y_df=Conso_NTS_par_usage)
+plotly.offline.plot(fig, filename='file.html')  ## offline
+
+NTS_profil_hourly=Profile2Consumption(NTS_profil.reset_index(),
+                                      pd.concat(Conso_non_thermosensible,ConsoTempe_df[str(year)][["Temperature"]]),
+                                      VarName='poids')
+
+
+NTS_profil_hourly=Profile2Consumption(NTS_profil,Conso_non_thermosensible)
 
 NTS_profil_hourly=ComplexProfile2Consumption(NTS_profil,Conso_non_thermosensible).\
     reset_index()[["Consumption","Date","type"]].\
