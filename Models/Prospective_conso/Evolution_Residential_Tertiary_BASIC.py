@@ -32,16 +32,15 @@ sim_param["init_sim_stock"]["surface"] = sim_param["init_sim_stock"]["surface"] 
 Para_2_fill = {param: sim_param["base_index_year"] for param in
                ["retrofit_improvement", "retrofit_change_surface", "retrofit_Transition"]}
 sim_param = complete_parameters(sim_param, Para_2_fill=Para_2_fill)
-sim_param=complete_missing_indexes(data_set_from_excel,sim_param,Index_names,dim_names)
+sim_param = complete_missing_indexes(data_set_from_excel, sim_param, Index_names, dim_names)
 
 
 ## initialize all "new_yearly_surface"
 # sim_param["new_yearly_surface"]=sim_param["new_yearly_surface"]*sim_param["new_yearly_repartition_per_Energy_source"]
 
-def f_compute_conso_bySourceVecteur(x, sim_param, year, Energy_source,Vecteur):
-     return x[sim_param["volume_variable_name"]] * x["conso_unitaire_" + Vecteur] * x[
+def f_compute_conso_bySourceVecteur(x, sim_param, year, Energy_source, Vecteur):
+    return x[sim_param["volume_variable_name"]] * x["conso_unitaire_" + Vecteur] * x[
         sim_param["energy_need_variable_name"]] / sim_param["seasonal_efficiency"].loc[Energy_source, Vecteur]
-
 
 def f_Compute_conso_bySource(x, sim_param, Energy_source):
     res = 0.
@@ -49,13 +48,11 @@ def f_Compute_conso_bySource(x, sim_param, Energy_source):
         res += x["conso_" + Energy_source + "_" + Vecteur]
     return res
 
-
 def f_Compute_conso_byVecteur(x, sim_param, Vecteur):
     res = 0.
     for Energy_source in sim_param["Energy_source_index"]:
         res += x["conso_" + Energy_source + "_" + Vecteur]
     return res
-
 
 def f_Compute_conso_totale(x, sim_param):
     res = 0.
@@ -63,10 +60,9 @@ def f_Compute_conso_totale(x, sim_param):
         res += x["conso_" + Vecteur]
     return res
 
-
 def f_compute_emissions(x, sim_param, year, Vecteur):
-    return sim_param["direct_emissions"].loc[Vecteur, year] * x["conso_" + Vecteur]+sim_param["indirect_emissions"].loc[Vecteur, year] * x["conso_" + Vecteur]
-
+    return sim_param["direct_emissions"].loc[Vecteur, year] * x["conso_" + Vecteur] + \
+           sim_param["indirect_emissions"].loc[Vecteur, year] * x["conso_" + Vecteur]
 
 def f_Compute_emissions_totale(x, sim_param):
     res = 0.
@@ -75,18 +71,20 @@ def f_Compute_emissions_totale(x, sim_param):
     return res
 
 def f_Compute_electrical_peak(x, sim_param, Energy_source):
-    return    x["conso_"+ Energy_source + "_elec"]*1.5/35/sim_param["peak_efficiency"].loc[Energy_source, "elec"]
+    return x["conso_" + Energy_source + "_elec"] * 1.5 / 35 / sim_param["peak_efficiency"].loc[Energy_source, "elec"]
 
 def f_Compute_electrical_peak_totale(x, sim_param):
     res = 0.
     for Energy_source in sim_param["Energy_source_index"]:
         res += x["elecpeak_" + Energy_source]
     return res
+
 #
 for Energy_source in sim_param["Energy_source_index"]:
     for Vecteur in sim_param["Vecteurs"]:
         sim_param["f_Compute_conso_" + Energy_source + "_" + Vecteur] = {
-            "conso_" + Energy_source + "_" + Vecteur: partial(f_compute_conso_bySourceVecteur, Energy_source=Energy_source,
+            "conso_" + Energy_source + "_" + Vecteur: partial(f_compute_conso_bySourceVecteur,
+                                                              Energy_source=Energy_source,
                                                               Vecteur=Vecteur)}
     sim_param["f_Compute_conso_" + Energy_source] = {
         "conso_" + Energy_source: partial(f_Compute_conso_bySource, Energy_source=Energy_source)}
@@ -95,10 +93,11 @@ for Energy_source in sim_param["Energy_source_index"]:
 for Vecteur in sim_param["Vecteurs"]:
     sim_param["f_Compute_conso_" + Vecteur] = {"conso_" + Vecteur: partial(f_Compute_conso_byVecteur, Vecteur=Vecteur)}
     sim_param["f_Compute_emissions_" + Vecteur] = {
-            "emissions_" + Vecteur: partial(f_compute_emissions, Vecteur=Vecteur)}
+        "emissions_" + Vecteur: partial(f_compute_emissions, Vecteur=Vecteur)}
 sim_param["f_Compute_conso_totale"] = {"Conso": lambda x, sim_param: f_Compute_conso_totale(x, sim_param)}
 sim_param["f_Compute_emissions_totale"] = {"emissions": lambda x, sim_param: f_Compute_emissions_totale(x, sim_param)}
-sim_param["f_Compute_electrical_peak_totale"] = {"electrical_peak": lambda x, sim_param: f_Compute_electrical_peak_totale(x, sim_param)}
+sim_param["f_Compute_electrical_peak_totale"] = {
+    "electrical_peak": lambda x, sim_param: f_Compute_electrical_peak_totale(x, sim_param)}
 
 end = time.process_time()
 print("Chargement des données, des modèles et interpolation terminés en : " + str(end - start) + " secondes")
