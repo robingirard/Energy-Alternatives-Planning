@@ -149,22 +149,6 @@ ConsoTempeYear_decomposed_df.loc[:,"NTS_C"]# partie non thermosensible
 ConsoTempeYear_decomposed_df.loc[:,"TS_C"] # partie thermosensible
 
 Conso_non_thermosensible = ConsoTempeYear_decomposed_df[["NTS_C"]].rename(columns= {"NTS_C":"Consumption"})
-ConsoTempe_df
-L_week=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"]
-for weekday in range(7):
-    for hour in range(24):
-        indexHour=(ConsoTemp_2019_df.index.to_series().dt.hour==hour)&(ConsoTemp_2019_df.index.to_series().dt.weekday==weekday)
-        ConsoTemp_2019_df.loc[indexHour,'Consommation']=ConsoTemp_2019_df.loc[indexHour,'Consommation']\
-        -ECS_df.loc[(L_week[weekday],hour),'ECS en juin']\
-        -ECS_df.loc[(L_week[weekday],hour),'Thermosensibilite (GW/degre)']*ConsoTemp_2019_df.loc[indexHour,'Temperature']\
-        +ECS_df.loc[(L_week[weekday],hour),'Thermosensibilite (GW/degre)']*T2
-
-ECS_df=pd.read_csv(InputFolder+'Profil_ECS_RTE.csv',sep=';',decimal=',',encoding='utf-8').set_index(["Jour","Heure"])
-
-add_day_month_hour(ConsoTempe_df[str(year)]).reset_index().set_index(['Heure','Jour',"Mois"]).\
-        merge(ECS_df.loc[:,"ECS_Base"].reset_index().set_index(['Heure','Jour']).drop(columns="Saison"),
-              how='outer',right_index = True,left_index=True).reset_index().set_index(["Date"]).\
-        drop(columns=["Heure","Jour" ,"Mois","Consumption"])
 NTS_profil=  pd.read_csv(InputFolder+"Profil_NTS_RTE.csv",sep=";", decimal=",").set_index(['Saison','Jour','Heure'])
 Profil={}
 for Saison in ["Hiver","Ete"]:
