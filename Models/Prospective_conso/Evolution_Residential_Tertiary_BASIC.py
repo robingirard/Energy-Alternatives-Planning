@@ -40,7 +40,7 @@ sim_param = complete_missing_indexes(data_set_from_excel, sim_param, Index_names
 
 def f_Compute_conso(x,sim_param,Vecteur):
     conso_unitaire = x["conso_unitaire_"+Vecteur]
-    Energy_source = x.name[0]
+    Energy_source = x.name[sim_param['base_index'].names.index('Energy_source')]
     seasonal_efficiency=sim_param["seasonal_efficiency"][(Energy_source,Vecteur)]
     conso_unitaire=conso_unitaire/seasonal_efficiency
     return x["energy_need_per_"+sim_param["volume_variable_name"]] * x[sim_param["volume_variable_name"]]*x["proportion_energy_need"]*conso_unitaire
@@ -68,8 +68,12 @@ def f_Compute_emissions_totale(x, sim_param):
         res += x["emissions_" + Vecteur]
     return res
 
+for Vecteur in sim_param["Vecteurs"]:
+    sim_param["f_Compute_emissions_"+Vecteur]={"emissions_"+Vecteur : partial(f_Compute_conso,Vecteur =Vecteur)}
+sim_param["f_Compute_emissions_totale"]={"emissions" : lambda x,sim_param: f_Compute_conso_totale(x,sim_param)}
+
 def f_Compute_electrical_peak(x, sim_param):
-    Energy_source = x.name[0]
+    Energy_source = x.name[sim_param['base_index'].names.index('Energy_source')]
     return x["conso_elec"] * 1.5 / 35  / sim_param["peak_efficiency"][(Energy_source,"elec")]
 sim_param["f_Compute_electrical_peak_totale"] = {
     "electrical_peak": lambda x, sim_param: f_Compute_electrical_peak(x, sim_param)}
@@ -103,6 +107,14 @@ y_df = sim_stock_df.groupby(["year", "Energy_source"])[Var].sum().to_frame().res
 fig = MyStackedPlotly(y_df=y_df)
 fig = fig.update_layout(title_text="Emissions de GES par mode de chauffage (en MtCO2e)", xaxis_title="Année",
                         yaxis_title="Conso [MtCO2e]")
+plotly.offline.plot(fig, filename=Graphic_folder + 'file.html')  ## offline
+
+Var = "electrical_peak"
+y_df = sim_stock_df.groupby(["year", "Energy_source"])[Var].sum().to_frame().reset_index(). \
+           pivot(index=['year'], columns='Energy_source').loc[[year for year in sim_param["years"][1:]], Var] / 10 ** 9
+fig = MyStackedPlotly(y_df=y_df)
+fig = fig.update_layout(title_text="Thermosensibilité électrique (en TWh)", xaxis_title="Année",
+                        yaxis_title="Conso [TWh]")
 plotly.offline.plot(fig, filename=Graphic_folder + 'file.html')  ## offline
 
 Var = "surface"

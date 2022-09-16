@@ -30,6 +30,11 @@ Fraction_PACS ={    "Pompes à chaleur air-air": 6.5 / 8,
 #### là ça fait presque 10 millions de chauffage principal bois, avec 3 millions d'appartements ...
 base_dpe_residentiel_df['heating_system']=base_dpe_residentiel_df['heating_system'].replace({"Chaudière - autres":"Biomasse",
                                                                                              "Autres":"Biomasse"})
+
+d_corr_class=pd.DataFrame({'energy_class':['A','B','C','D','E','F','G'],'d_corr_class':[1.3,1.1,0.85,0.75,0.65,0.6,0.55]})
+base_dpe_residentiel_df=pd.merge(base_dpe_residentiel_df,d_corr_class,on='energy_class')
+base_dpe_residentiel_df['energy_consumption']=base_dpe_residentiel_df['energy_consumption']*base_dpe_residentiel_df['d_corr_class']
+base_dpe_residentiel_df=base_dpe_residentiel_df.drop('d_corr_class',axis=1)
 ### les stats
 base_dpe_residentiel_df.groupbyAndAgg(group_along= ['heating_system',"heating_fuel"],
             aggregation_dic={"energy_consumption" : "wmean",
