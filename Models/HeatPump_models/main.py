@@ -1,8 +1,6 @@
 #region imports
-import pandas as pd
-import numpy as np
 
-from   Models.HeatPump_models.f_heat_pump import *
+from functions.f_heat_pump import *
 from functions.f_graphicalTools import *
 Data_Folder = "Models/HeatPump_models/data/"
 GraphicalResultsFolder = "Models/HeatPump_models/graphics/"
@@ -27,18 +25,20 @@ Systems.System.unique()
 Systems.Technology.unique()
 System=Systems.iloc[10,:]
 Heating_params = {  "T_start" : 15, "T_target" : 18   }
+
+
+
 Simulation_PAC_input_parameter = {**Heating_params, **System.to_dict()}
 Simulation_PAC_input_parameter.keys()
-meteo_data = temp_ts_Zone.loc["2018",:]
-meteo_data_heating_period= get_heating_period_metdata(meteo_data)
+
 Power_Ratio={}
 Energy_Ratio={}
 Consumption_Ratio={}
 T_biv={}
 for Value in np.linspace(0.1,0.6,100):
     Simulation_PAC_input_parameter['Share_Power']=Value
-    SCOP=estim_SCOP(meteo_data_heating_period=meteo_data_heating_period,
-                    Simulation_PAC_input_parameter=Simulation_PAC_input_parameter)
+    SCOP=estim_SCOP(meteo_data=temp_ts_Zone,
+                    Simulation_PAC_input_parameter=Simulation_PAC_input_parameter,year=2018)
 
     MyConsoData =SCOP["meteo_data_heating_period"][["P_calo",'P_app']]
     Maximums = MyConsoData.max()
