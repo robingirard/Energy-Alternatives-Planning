@@ -69,8 +69,8 @@ def f_Compute_emissions_totale(x, sim_param):
     return res
 
 for Vecteur in sim_param["Vecteurs"]:
-    sim_param["f_Compute_emissions_"+Vecteur]={"emissions_"+Vecteur : partial(f_Compute_conso,Vecteur =Vecteur)}
-sim_param["f_Compute_emissions_totale"]={"emissions" : lambda x,sim_param: f_Compute_conso_totale(x,sim_param)}
+    sim_param["f_Compute_emissions_"+Vecteur]={"emissions_"+Vecteur : partial(f_compute_emissions,Vecteur =Vecteur)}
+sim_param["f_Compute_emissions_totale"]={"emissions" : lambda x,sim_param: f_Compute_emissions_totale(x,sim_param)}
 
 def f_Compute_electrical_peak(x, sim_param):
     Energy_source = x.name[sim_param['base_index'].names.index('Energy_source')]

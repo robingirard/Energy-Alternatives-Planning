@@ -40,7 +40,7 @@ for Value in np.linspace(0.1,0.6,100):
     SCOP=estim_SCOP(meteo_data=temp_ts_Zone,
                     Simulation_PAC_input_parameter=Simulation_PAC_input_parameter,year=2018)
 
-    MyConsoData =SCOP["meteo_data_heating_period"][["P_calo",'P_app']]
+    MyConsoData =SCOP["meteo_data_heating_period"][["temp","P_calo",'P_app']]
     Maximums = MyConsoData.max()
     Means =  MyConsoData.mean()
     mean_P_elec = SCOP["meteo_data_heating_period"]["P_elec"].mean()
