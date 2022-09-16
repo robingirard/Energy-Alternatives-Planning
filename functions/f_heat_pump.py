@@ -250,8 +250,10 @@ def estim_SCOP(meteo_data, Simulation_PAC_input_parameter,year=2018):
         assign(T_fluid=lambda x: comp_params["a"] * x['temp'] + comp_params["b"])
     meteo_data_heating_period["COP"] = meteo_data_heating_period. \
         apply(lambda x: estim_COP(x['temp'], x['T_fluid'], type=Simulation_PAC_input_parameter["System"]), axis=1)
+    meteo_data_heating_period["Besoin_chauff"] = (meteo_data_heating_period["temp"] < T_target) * (
+            T_target - meteo_data_heating_period['temp'])
+
     meteo_data_heating_period = meteo_data_heating_period. \
-        assign(Besoin_chauff=lambda x: T_target - x['temp']). \
         assign(
         PLR_CR=lambda x: comp_params["COP_biv"] * x['Besoin_chauff'] / comp_params["Besoin_chauff_biv"] / x['COP']). \
         assign(PLF=lambda x: a_PLF * x['PLR_CR'] + b_PLF). \
