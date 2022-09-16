@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from sklearn import linear_model
 from functions.f_consumptionModels import * #Il faut préciser le chemin où vous avez sauvegardé les données csv
 from functions.f_graphicalTools import * #Il faut préciser le chemin où vous avez sauvegardé les données csv
+from functions.f_heat_pump import *
 #endregion
 
 #region  Load and visualize consumption
@@ -96,6 +97,27 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 #fig.show()
 #endregion
 
+#region heat pump
+ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv',parse_dates=['Date']).set_index(["Date"]).\
+                    rename(columns={'Temperature' :'temp'})[["temp"]]
+year=2018
+Simulation_PAC_input_parameter = {
+    "System": "A/A HP", "Technology": "Inverter", "Mode": "Bivalent", "Emitters": "Fan coil unit",
+    "N_stages": np.nan, "Power_ratio": 3.0, "PLF_biv": 1.4, "Ce": 0.7, "Lifetime": 17, "Temperature_limit": -10,
+    "Share_Power": 0.5, "regulation": "Y", "T_start" : 15, "T_target" : 18   }
+
+SCOP=estim_SCOP(ConsoTempe_df, Simulation_PAC_input_parameter,year=year)
+MyConsoData =SCOP["meteo_data_heating_period"][["P_calo",'P_app']]
+index_year =ConsoTempe_df.loc[str(year)].index
+MyConsoData.loc[MyConsoData.loc[:,"P_calo"]<0,"P_calo"]=0
+MyConsoData_filled=pd.DataFrame([0]*len(index_year),index=index_year).\
+    merge(MyConsoData,how="outer",left_index=True,right_index=True).drop(columns=0).fillna(0)
+fig=MyStackedPlotly(y_df=MyConsoData_filled)
+fig=fig.update_layout(title_text="Conso (en Delta°C)", xaxis_title="heures de l'année")
+plotly.offline.plot(fig, filename='file.html') ## offline
+
+#endregion
+
 #region Electric Vehicle
 
 VEProfile_df=pd.read_csv(InputFolder+'EVModel.csv', sep=';')#.set_index(["Date"])
@@ -134,7 +156,6 @@ Profile_df_merged_spread
 fig = MyStackedPlotly(y_df=Profile_df_merged_spread)
 plotly.offline.plot(fig, filename='file.html')  ## offline
 #endregion
-
 
 #region  decomposition avec les profils de Pierrick
 

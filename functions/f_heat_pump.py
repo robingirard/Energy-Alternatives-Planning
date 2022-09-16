@@ -75,16 +75,12 @@ def estim_COP(T_ext, T_fluid, type="A/W HP"):
                 a1 + b1 * Delta_T + c1 * Delta_T ** 2 + d1 * T_fluid)
     return res
 
-<<<<<<< HEAD
 
 def compute_T_biv2(COP_biv, T_biv, a, b, Simulation_PAC_input_parameter):
-||||||| 09868cf
-def compute_T_biv2(COP_biv,T_biv,a,b,Simulation_PAC_input_parameter):
 
-=======
-def compute_T_biv2(COP_biv,T_biv,a,b,Simulation_PAC_input_parameter):
+
     #COP_biv=COP_base ;T_biv=T_dim; a=ab["a"]; b=ab["b"]
->>>>>>> 62733d0f800ba26ebf9e92f30352018399b293d1
+
     type = Simulation_PAC_input_parameter["System"]
     T_target = Simulation_PAC_input_parameter["T_target"]
     # DEFINITION DES COEFFICIENTS DE LA COURBE DE COP
@@ -198,7 +194,7 @@ def estim_T_biv(T_base, Simulation_PAC_input_parameter):
         ## calcul à faire
 
 
-def estim_SCOP(meteo_data_heating_period, Simulation_PAC_input_parameter):
+def estim_SCOP(meteo_data, Simulation_PAC_input_parameter,year=2018):
     """
 
     :param meteo_data_heating_period:
@@ -206,12 +202,12 @@ def estim_SCOP(meteo_data_heating_period, Simulation_PAC_input_parameter):
     :return:
     """
     global nominal_COP_curve_Coefficients
-
+    year=str(year)
     T_target = Simulation_PAC_input_parameter["T_target"]
     T_start = Simulation_PAC_input_parameter["T_start"]
-
+    meteo_data_heating_period = get_heating_period_metdata(meteo_data.loc[year,:])
     comp_params = {}
-    comp_params["T_base"] = np.quantile(meteo_data_heating_period["temp"], q=5 / 365)
+    comp_params["T_base"] = np.quantile(meteo_data["temp"], q=5 / 365)
     comp_params["T_biv"] = estim_T_biv(T_base=comp_params["T_base"],
                                        Simulation_PAC_input_parameter=Simulation_PAC_input_parameter)
     comp_params["Besoin_chauff_biv"] = T_target - comp_params["T_biv"]  # à la valeur de U près
@@ -342,8 +338,8 @@ def estim_SCOP(meteo_data_heating_period, Simulation_PAC_input_parameter):
 
 def get_heating_period_metdata(meteo_data):
     year = meteo_data.index.year[0]
-    meteo_data["day"] = meteo_data.index.day
-    meteo_data["month"] = meteo_data.index.month
+    meteo_data.loc[:,"day"] = meteo_data.index.day
+    meteo_data.loc[:,"month"] = meteo_data.index.month
     period_chauff = meteo_data.groupby(["month", "day"]).temp.mean().to_frame().rename(columns={"temp": "T_mean"})
 
     ##ON CALCULE LA MOYENNE GLISSANTE SUR 3 JOURS POUR IDENFITIER UN JOUR DE DEMARRAGE
