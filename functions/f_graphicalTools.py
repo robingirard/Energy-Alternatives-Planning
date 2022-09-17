@@ -131,6 +131,18 @@ def MyStackedPlotly(y_df, Conso=-1,isModifyOrder=True,Names=-1,color_dict=None):
     :return: 
     '''
 
+    if type(y_df.columns) == pd.MultiIndex:
+        if len(y_df.columns[0]) == 2:
+            i = 1
+            col_class_dict = {}
+            for col1, new_df in y_df.groupby(level=0, axis=1):
+                for col2 in new_df.columns:
+                    col_class_dict["_".join(col2)] = i
+                i += 1
+            y_df.columns = ["_".join(col) for col in y_df.columns]
+            color_dict = gen_grouped_color_map(col_class_dict)
+        else: "column multi index only implemented for 2 dimensions"
+
     if isModifyOrder: y_df=ModifyOrder_df(y_df) ### set Nuke first column
     if (Names.__class__ == int): Names=y_df.columns.unique().tolist()
     x_df=y_df.index

@@ -13,7 +13,7 @@ dependencies :
     - seaborn
     - qgrid
     - openpyxl
-    - nbconda
+    - nb_conda
     - pip :
       - pyomo
       - Mosek

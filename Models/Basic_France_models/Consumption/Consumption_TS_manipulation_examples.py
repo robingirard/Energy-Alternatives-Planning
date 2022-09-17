@@ -97,27 +97,6 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 #fig.show()
 #endregion
 
-#region heat pump
-ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv',parse_dates=['Date']).set_index(["Date"]).\
-                    rename(columns={'Temperature' :'temp'})[["temp"]]
-year=2018
-Simulation_PAC_input_parameter = {
-    "System": "A/A HP", "Technology": "Inverter", "Mode": "Bivalent", "Emitters": "Fan coil unit",
-    "N_stages": np.nan, "Power_ratio": 3.0, "PLF_biv": 1.4, "Ce": 0.7, "Lifetime": 17, "Temperature_limit": -10,
-    "Share_Power": 0.5, "regulation": "Y", "T_start" : 15, "T_target" : 18   }
-
-SCOP=estim_SCOP(ConsoTempe_df, Simulation_PAC_input_parameter,year=year)
-MyConsoData =SCOP["meteo_data_heating_period"][["P_calo",'P_app']]
-index_year =ConsoTempe_df.loc[str(year)].index
-MyConsoData.loc[MyConsoData.loc[:,"P_calo"]<0,"P_calo"]=0
-MyConsoData_filled=pd.DataFrame([0]*len(index_year),index=index_year).\
-    merge(MyConsoData,how="outer",left_index=True,right_index=True).drop(columns=0).fillna(0)
-fig=MyStackedPlotly(y_df=MyConsoData_filled)
-fig=fig.update_layout(title_text="Conso (en Delta°C)", xaxis_title="heures de l'année")
-plotly.offline.plot(fig, filename='file.html') ## offline
-
-#endregion
-
 #region Electric Vehicle
 
 VEProfile_df=pd.read_csv(InputFolder+'EVModel.csv', sep=';')#.set_index(["Date"])
@@ -143,21 +122,110 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 #fig.show()
 #endregion
 
-#region consumption decomposition
-ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv',parse_dates=['Date']).set_index(["Date"])
+#region consumption decomposition [Tertiaire,résidentiel,Indus,Autre]x[ChauffagexAutre]
 year = 2012
-Profile_df=pd.read_csv(InputFolder+"ConsumptionDetailedProfiles.csv").set_index(["Mois", "heures",'Nature', 'type', 'UsagesGroupe', 'UsageDetail', "WeekDay"])
-Profile_df_merged=ComplexProfile2Consumption(Profile_df,ConsoTempe_df[str(year)])
+TemperatureThreshold = 15
+ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv',parse_dates=['Date']).\
+    set_index(["Date"])[str(year)]
+ConsoTempe_df=ConsoTempe_df[~ConsoTempe_df.index.duplicated(keep='first')]
+(ConsoTempeYear_decomposed_df,Thermosensibilite)=Decomposeconso(ConsoTempe_df,TemperatureThreshold=TemperatureThreshold)
 
-Profile_df_merged_spread = Profile_df_merged.groupby(["Date","UsagesGroupe"]).sum().reset_index(). \
-    drop(columns=["Temperature"]). \
-    pivot(index="Date", columns=["UsagesGroupe"], values='Conso');
-Profile_df_merged_spread
-fig = MyStackedPlotly(y_df=Profile_df_merged_spread)
+Profile_df_sans_chauffage=pd.read_csv(InputFolder+"ConsumptionDetailedProfiles.csv").\
+    rename(columns={'heures':'Heure',"WeekDay":"Jour"}).\
+    replace({"Jour" :{"Sat": "Samedi" , "Week":"Semaine"  , "Sun": "Dimanche"}}). \
+    query('UsagesGroupe != "Chauffage"'). \
+    set_index(["Mois", "Heure",'Nature', 'type', 'UsagesGroupe', 'UsageDetail', "Jour"]).\
+    groupby(["Mois","Jour","Heure","type"]).sum().\
+    merge(add_day_month_hour(df=ConsoTempe_df,semaine_simplifie=True,French=True,to_index=True),
+          how="outer",left_index=True,right_index=True).reset_index().set_index("Date")[["type","Conso"]]. \
+    pivot_table(index="Date", columns=["type"], values='Conso')
+
+Profile_df_sans_chauffage=Profile_df_sans_chauffage.loc[:,Profile_df_sans_chauffage.sum(axis=0)>0]
+Profile_df_n=Profile_df_sans_chauffage.div(Profile_df_sans_chauffage.sum(axis=1), axis=0) ### normalisation par 1 et multiplication
+for col in Profile_df_sans_chauffage.columns:
+    Profile_df_sans_chauffage[col]=Profile_df_n[col]*ConsoTempeYear_decomposed_df["NTS_C"]
+
+Profile_df_seulement_chauffage=pd.read_csv(InputFolder+"ConsumptionDetailedProfiles.csv").\
+    rename(columns={'heures':'Heure',"WeekDay":"Jour"}).\
+    replace({"Jour" :{"Sat": "Samedi" , "Week":"Semaine"  , "Sun": "Dimanche"}}). \
+    query('UsagesGroupe == "Chauffage"'). \
+    set_index(["Mois", "Heure",'Nature', 'type', 'UsagesGroupe', 'UsageDetail', "Jour"]).\
+    groupby(["Mois","Jour","Heure","type"]).sum().\
+    merge(add_day_month_hour(df=ConsoTempe_df,semaine_simplifie=True,French=True,to_index=True),
+          how="outer",left_index=True,right_index=True).reset_index().set_index("Date")[["type","Conso"]]. \
+    pivot_table(index="Date", columns=["type"], values='Conso')
+
+Profile_df_seulement_chauffage=Profile_df_seulement_chauffage.loc[:,Profile_df_seulement_chauffage.sum(axis=0)>0]
+Profile_df_n=Profile_df_seulement_chauffage.div(Profile_df_seulement_chauffage.sum(axis=1), axis=0) ### normalisation par 1 et multiplication
+for col in Profile_df_seulement_chauffage.columns:
+    Profile_df_seulement_chauffage[col]=Profile_df_n[col]*ConsoTempeYear_decomposed_df["TS_C"]
+
+Profile_df_seulement_chauffage.columns=[(col,"chauffage") for col in Profile_df_seulement_chauffage.columns]
+Profile_df_sans_chauffage.columns=[(col,"autre") for col in Profile_df_sans_chauffage.columns]
+Profile_df=pd.concat([Profile_df_seulement_chauffage,Profile_df_sans_chauffage],axis=1)
+Profile_df.columns=pd.MultiIndex.from_tuples(Profile_df.columns, names=('type', 'usage'))
+fig = MyStackedPlotly(y_df=Profile_df)
 plotly.offline.plot(fig, filename='file.html')  ## offline
+
+Profile_df.sum(axis=0)/10**6
 #endregion
 
-#region  decomposition avec les profils de Pierrick
+#region consumption decomposition [Tertiaire,résidentiel,Indus,Autre]x[ChauffagexECSxCuissonx...]
+year = 2012
+ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv',parse_dates=['Date']).\
+    set_index(["Date"])[str(year)]
+ConsoTempe_df=ConsoTempe_df[~ConsoTempe_df.index.duplicated(keep='first')]
+(ConsoTempeYear_decomposed_df,Thermosensibilite)=Decomposeconso(ConsoTempe_df,TemperatureThreshold=TemperatureThreshold)
+
+UsagesGroupe_simplified_dict={'Autres': "Specifique et autre",  'Congelateur':"Specifique et autre",
+       'Eclairage': "Specifique et autre" ,
+       'LaveLinge':"Specifique et autre", 'Lavevaisselle':"Specifique et autre",
+       'Ordis': "Specifique et autre",
+       'Refrigirateur' :"Specifique et autre" , 'SecheLinge' :"Specifique et autre",
+        'TVAutreElectroMen' : "Specifique et autre"}
+
+Profile_df_sans_chauffage=pd.read_csv(InputFolder+"ConsumptionDetailedProfiles.csv").\
+    rename(columns={'heures':'Heure',"WeekDay":"Jour"}).\
+    replace({"Jour" :{"Sat": "Samedi" , "Week":"Semaine"  , "Sun": "Dimanche"},
+             'UsagesGroupe':UsagesGroupe_simplified_dict}). \
+    query('UsagesGroupe != "Chauffage"'). \
+    set_index(["Mois", "Heure",'Nature', 'type','UsagesGroupe', 'UsageDetail', "Jour"]).\
+    groupby(["Mois","Jour","Heure",'type','UsagesGroupe']).sum().\
+    merge(add_day_month_hour(df=ConsoTempe_df,semaine_simplifie=True,French=True,to_index=True),
+          how="outer",left_index=True,right_index=True).reset_index().set_index("Date")[['type','UsagesGroupe',"Conso"]]. \
+    pivot_table(index="Date", columns=['type','UsagesGroupe'], values='Conso')
+
+Profile_df_sans_chauffage=Profile_df_sans_chauffage.loc[:,Profile_df_sans_chauffage.sum(axis=0)>0]
+Profile_df_n=Profile_df_sans_chauffage.div(Profile_df_sans_chauffage.sum(axis=1), axis=0) ### normalisation par 1 et multiplication
+for col in Profile_df_sans_chauffage.columns:
+    Profile_df_sans_chauffage[col]=Profile_df_n[col]*ConsoTempeYear_decomposed_df["NTS_C"]
+
+
+Profile_df_seulement_chauffage=pd.read_csv(InputFolder+"ConsumptionDetailedProfiles.csv").\
+    rename(columns={'heures':'Heure',"WeekDay":"Jour"}).\
+    replace({"Jour" :{"Sat": "Samedi" , "Week":"Semaine"  , "Sun": "Dimanche"},
+             'UsagesGroupe':UsagesGroupe_simplified_dict}). \
+    query('UsagesGroupe == "Chauffage"'). \
+    set_index(["Mois", "Heure",'Nature', 'type','UsagesGroupe', 'UsageDetail', "Jour"]).\
+    groupby(["Mois","Jour","Heure",'type','UsagesGroupe']).sum().\
+    merge(add_day_month_hour(df=ConsoTempe_df,semaine_simplifie=True,French=True,to_index=True),
+          how="outer",left_index=True,right_index=True).reset_index().set_index("Date")[['type','UsagesGroupe',"Conso"]]. \
+    pivot_table(index="Date", columns=['type','UsagesGroupe'], values='Conso')
+
+Profile_df_seulement_chauffage=Profile_df_seulement_chauffage.loc[:,Profile_df_seulement_chauffage.sum(axis=0)>0]
+Profile_df_n=Profile_df_seulement_chauffage.div(Profile_df_seulement_chauffage.sum(axis=1), axis=0) ### normalisation par 1 et multiplication
+for col in Profile_df_seulement_chauffage.columns:
+    Profile_df_seulement_chauffage[col]=Profile_df_n[col]*ConsoTempeYear_decomposed_df["TS_C"]
+
+Profile_df=pd.concat([Profile_df_seulement_chauffage,Profile_df_sans_chauffage],axis=1)
+fig = MyStackedPlotly(y_df=Profile_df)
+plotly.offline.plot(fig, filename='file.html')  ## offline
+
+
+
+#endregion
+
+#region brouillon decomposition avec les profils de Pierrick
 
 #ECS_profil= pd.read_csv(InputFolder+"Conso_model/Profil_ECS.csv")
 ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv',
@@ -186,35 +254,27 @@ for col in Profil["Hiver"].columns:
 
 fig = MyStackedPlotly(y_df=Conso_NTS_par_usage)
 plotly.offline.plot(fig, filename='file.html')  ## offline
-
-NTS_profil_hourly=Profile2Consumption(NTS_profil.reset_index(),
-                                      pd.concat(Conso_non_thermosensible,ConsoTempe_df[str(year)][["Temperature"]]),
-                                      VarName='poids')
-
-
-NTS_profil_hourly=Profile2Consumption(NTS_profil,Conso_non_thermosensible)
-
-NTS_profil_hourly=ComplexProfile2Consumption(NTS_profil,Conso_non_thermosensible).\
-    reset_index()[["Consumption","Date","type"]].\
-    groupby(["Date","type"]).sum().reset_index().\
-    pivot(index="Date", columns="type", values="Consumption")
-### etrange d'aavoir à faire le grouby ci-dessus
-### si on veut visualiser les poids, il faut remplacer "Consumption" par "poids" ci-dessus
-
-fig = MyStackedPlotly(y_df=NTS_profil_hourly)
-plotly.offline.plot(fig, filename='file.html')  ## offline
 #endregion
 
-####
-#Day="Samedi"
-#df=pd.read_csv(InputFolder+Day+'.csv', sep=';', encoding='cp437',decimal=",")
-#Profile_df_Sat=CleanProfile(df,Nature_PROFILE,type_PROFILE,Usages_PROFILE,UsagesGroupe_PROFILE)
-#Day="Dimanche"
-#df=pd.read_csv(InputFolder+Day+'.csv', sep=';', encoding='cp437',decimal=",")
-#Profile_df_Sun=CleanProfile(df,Nature_PROFILE,type_PROFILE,Usages_PROFILE,UsagesGroupe_PROFILE)
-#Day="Semaine"
-#df=pd.read_csv(InputFolder+Day+'.csv', sep=';', encoding='cp437',decimal=",")
-#Profile_df_Week=CleanProfile(df,Nature_PROFILE,type_PROFILE,Usages_PROFILE,UsagesGroupe_PROFILE)
-#Profile_df_Week["WeekDay"] = "Week"; Profile_df_Sat["WeekDay"] = "Sat"; Profile_df_Sun["WeekDay"] = "Sun"
-#Profile_df = Profile_df_Week.append(Profile_df_Sat).append(Profile_df_Sun).set_index(['WeekDay'], append=True)
-#Profile_df.to_csv(InputFolder+"ConsumptionDetailedProfiles.csv")
+#region heat pump
+ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv',parse_dates=['Date']).set_index(["Date"]).\
+                    rename(columns={'Temperature' :'temp'})[["temp"]]
+year=2018
+Simulation_PAC_input_parameter = {
+    "System": "A/A HP", "Technology": "Inverter", "Mode": "Bivalent", "Emitters": "Fan coil unit",
+    "N_stages": np.nan, "Power_ratio": 3.0, "PLF_biv": 1.4, "Ce": 0.7, "Lifetime": 17, "Temperature_limit": -10,
+    "Share_Power": 0.5, "regulation": "Y", "T_start" : 15, "T_target" : 18   }
+
+SCOP=estim_SCOP(ConsoTempe_df, Simulation_PAC_input_parameter,year=year)
+MyConsoData =SCOP["meteo_data_heating_period"][["P_calo",'P_app',"P_elec"]]
+index_year =ConsoTempe_df.loc[str(year)].index
+MyConsoData_filled=pd.DataFrame([0]*len(index_year),index=index_year).\
+    merge(MyConsoData,how="outer",left_index=True,right_index=True).drop(columns=0).fillna(0)
+fig=MyStackedPlotly(y_df=MyConsoData_filled[["P_calo",'P_app']])
+fig.add_trace(go.Scatter(x=MyConsoData_filled.index,
+                         y=MyConsoData_filled["P_elec"], name="Puissance PAC",
+                         line=dict(color='red', width=0.4)))
+fig=fig.update_layout(title_text="Conso (en Delta°C)", xaxis_title="heures de l'année")
+plotly.offline.plot(fig, filename='file.html') ## offline
+
+#endregion

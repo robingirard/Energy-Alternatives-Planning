@@ -125,18 +125,31 @@ def Recompose(ConsoSeparee_df,Thermosensibilite,Newdata_df=-1, TemperatureThresh
     return(ConsoSepareeNew_df)
 
 
-def add_day_month_hour(df,TimeName="Date",French=True):
+def add_day_month_hour(df,TimeName="Date",French=True,semaine_simplifie=False,day_name=True,to_index=False):
     if French:
         df = df.assign(
             Jour=df.index.get_level_values(TimeName).to_series().dt.dayofweek,
             Mois=df.index.get_level_values(TimeName).to_series().dt.month,
             Heure=df.index.get_level_values(TimeName).to_series().dt.hour);
-        df.Jour=df.Jour.replace({0:"Lundi",1:"Mardi",2:"Mercredi",3:"Jeudi",4:"Vendredi",5:"Samedi",6:"Dimanche"})
+        if semaine_simplifie:
+            df['Jour'] = df['Jour'].apply(lambda x: "Semaine" if x < 5 else "Samedi" if x == 5 else "Dimanche")
+        elif day_name:
+            df.Jour=df.Jour.replace({0:"Lundi",1:"Mardi",2:"Mercredi",3:"Jeudi",4:"Vendredi",5:"Samedi",6:"Dimanche"})
+
+        if to_index:
+            df = df.reset_index().set_index(["Jour", "Mois", "Heure"])
     else:
         df = df.assign(
             Day=df.index.get_level_values(TimeName).to_series().dt.weekday,
             Month=df.index.get_level_values(TimeName).to_series().dt.month,
             Hour=df.index.get_level_values(TimeName).to_series().dt.hour);
+        if semaine_simplifie:
+            df['Day'] = df['Day'].apply(lambda x: "Week" if x < 5 else "Sat" if x == 5 else "Sun")
+        elif day_name:
+            df.Jour=df.Jour.replace({0:"Monday",1:"Tuesday",2:"Wednesday",3:"Thursday",4:"Friday",5:"Saturday",6:"Sunday"})
+
+        if to_index:
+            df = df.reset_index().set_index(["Day", "Month", "Hour"])
     return df
 
 def Profile2Consumption(Profile_df,Temperature_df, TemperatureThreshold=14,

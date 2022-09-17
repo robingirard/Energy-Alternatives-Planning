@@ -49,6 +49,8 @@ for weekday in range(7):
         -ECS_df.loc[(L_week[weekday],hour),'Thermosensibilite (GW/degre)']*ConsoTemp_2019_df.loc[indexHour,'Temperature']\
         +ECS_df.loc[(L_week[weekday],hour),'Thermosensibilite (GW/degre)']*T2
 
+
+
 ## Decomposition Thermosensible et non-thermosensible
 (ConsoSeparee_df, Thermosensitivity_winter,Thermosensitivity_summer)=Decomposeconso2(ConsoTemp_2019_df,T0,T1,'Temperature','Consommation','Date')
 
@@ -62,7 +64,7 @@ NTS_profil=  pd.read_csv(InputFolder+"Profil_NTS_RTE.csv",sep=";", decimal=",").
          var_name='type', value_name='poids').\
     set_index(['Saison','Jour','Heure'])
 
-NTS_profil_hourly=ComplexProfile2Consumption_2(NTS_profil,Conso_non_thermosensible)
+NTS_profil_hourly=ComplexProfile2Consumption_2(NTS_profil.loc[("Hiver",slice(None),slice(None))],Conso_non_thermosensible)
 
 #Pour visualiser
 fig = MyStackedPlotly(y_df=NTS_profil_hourly)
