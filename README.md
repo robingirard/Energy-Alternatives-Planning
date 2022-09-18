@@ -71,6 +71,7 @@ Energy-Alternatives-Planing models are directly derived from work performes for 
 
 ### Main contributors : 
 - [Robin Girard](https://www.minesparis.psl.eu/Services/Annuaire/robin-girard) -- [blog](https://www.energy-alternatives.eu/) [gitHub](https://github.com/robingirard) [LinkedIn](https://www.linkedin.com/in/robin-girard-a88baa4/) [google Scholar](https://scholar.google.fr/citations?user=cEYGStIAAAAJ&hl=fr)
+- Antoine Rogeau
 - Quentin Raillard Cazanove
 - Pierrick Dartois
 - Anaelle Jodry
