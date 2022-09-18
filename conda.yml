@@ -15,6 +15,7 @@ dependencies :
     - openpyxl
     - nb_conda
     - pip :
+      - plotnine
       - pyomo
       - Mosek
       - xarray

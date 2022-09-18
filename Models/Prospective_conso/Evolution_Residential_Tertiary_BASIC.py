@@ -1,3 +1,4 @@
+
 # region Chargement des packages
 import pandas as pd
 from functions.f_tools import *
@@ -28,10 +29,14 @@ sim_param = extract_sim_param(data_set_from_excel, Index_names=Index_names, dim_
 sim_param["init_sim_stock"] = create_initial_parc(sim_param).sort_index()
 sim_param["volume_variable_name"] = "surface"
 sim_param["init_sim_stock"]["surface"] = sim_param["init_sim_stock"]["surface"] * sim_param["init_sim_stock"]["IPONDL"]
+sim_param = interpolate_sim_param(sim_param)
+sim_param["retrofit_change_surface"]=sim_param["retrofit_change_total_proportion_surface"].diff().fillna(0)
 
 Para_2_fill = {param: sim_param["base_index_year"] for param in
                ["retrofit_improvement", "retrofit_change_surface", "retrofit_Transition"]}
 sim_param = complete_parameters(sim_param, Para_2_fill=Para_2_fill)
+sim_param["retrofit_change_surface"]=sim_param["retrofit_change_surface"]*sim_param["init_sim_stock"]["surface"]
+
 sim_param = complete_missing_indexes(data_set_from_excel, sim_param, Index_names, dim_names)
 
 
