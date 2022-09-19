@@ -24,6 +24,10 @@ Once you have downloaded the Energy-Alternatives-Planing folder, in the terminal
     conda env create conda.yml
     conda activate energyalternatives
 
+The notebooks sometimes use qgrid. It is a package that 
+
+    jupyter nbextension enable --py --sys-prefix qgrid
+    upyter nbextension enable --py --sys-prefix widgetsnbextension
 
 ## 2- Models Folder <a class="anchor" id="CasDEtude"></a>
 Contains folders with Models. Each folder in Models Folder contains a set of Models and associated data and case studies. 
