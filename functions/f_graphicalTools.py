@@ -122,7 +122,6 @@ def gen_grouped_color_map(col_class_dict,cmap="Set1"):
 
 
 
-
 def MyStackedPlotly(y_df, Conso=-1,isModifyOrder=True,Names=-1,color_dict=None):
     '''
     :param x: 

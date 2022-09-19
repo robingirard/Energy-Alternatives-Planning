@@ -64,7 +64,6 @@ end = time.process_time()
 print("Chargement des données, des modèles et interpolation terminés en : "+str(end-start)+" secondes")
 #endregion
 
-
 #region simulation
 sim_stock_voyageurs = launch_simulation(sim_param_voyageurs)
 sim_stock_df_voyageurs = pd.concat(sim_stock_voyageurs, axis=0).reset_index().\
@@ -75,10 +74,8 @@ sim_stock_df_fret = pd.concat(sim_stock_fret, axis=0).reset_index().\
 sim_stock_df = pd.concat([sim_stock_df_voyageurs,sim_stock_df_fret])
 #endregion
 
-
-Var = "Conso"
-y_df = sim_stock_df.groupby(["year",Energy_system_name])[Var].sum().to_frame().reset_index().\
-    pivot(index=['year'], columns=Energy_system_name).loc[[year for year in sim_param["years"][1:]],Var]
+#region représentations graphiques
+### categories pour avoir des groupes de couleurs dans les graphiques
 col_class_dict={'Bus et cars GNV' : 1, 'Bus et cars H2':1, 'Bus et cars diesel':1, 'Bus et cars électrique':1,
  'Rail court':2, 'Rail long':2, 'Camion fret' : 2,'camion fret H2' : 2,
                 'VP GNV':3, 'VP fuel':3, 'VP électrique':3,
@@ -87,29 +84,22 @@ col_class_dict={'Bus et cars GNV' : 1, 'Bus et cars H2':1, 'Bus et cars diesel':
  'deux roues diesel':6, 'deux roues électrique':6,
  'Avion fret  international': 7, 'Bateau fret  international': 7,'Train fret':7}
 
-my_color_dict=gen_grouped_color_map(col_class_dict)
-
-fig = MyStackedPlotly(y_df=y_df,color_dict=my_color_dict)
-fig=fig.update_layout(title_text="Conso énergie finale par mode de transport (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")
-plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 
 Var = "Conso"
 y_df = sim_stock_df.groupby(["year",Energy_system_name])[Var].sum().to_frame().reset_index().\
     pivot(index=['year'], columns=Energy_system_name).loc[[year for year in sim_param["years"][1:]],Var]
+y_df.columns=pd.MultiIndex.from_tuples([(str(col_class_dict[key]),key) for key in y_df.columns])
+
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Conso énergie finale par mode de transport (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 
-Var = "Mds_voy_km"
-y_df = sim_stock_df.groupby(["year",Energy_system_name])[Var].sum().to_frame().reset_index().\
-    pivot(index=['year'], columns=Energy_system_name).loc[[year for year in sim_param["years"][1:]],Var]
-fig = MyStackedPlotly(y_df=y_df)
-fig=fig.update_layout(title_text="Mds_voy_km par mode de transport", xaxis_title="Année",yaxis_title="Mds_voy_km")
-plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 
 Var = "emissions"
 y_df = sim_stock_df.groupby(["year",Energy_system_name])[Var].sum().to_frame().reset_index().\
     pivot(index=['year'], columns=Energy_system_name).loc[[year for year in sim_param["years"][1:]],Var]/10**3
+y_df.columns=pd.MultiIndex.from_tuples([(str(col_class_dict[key]),key) for key in y_df.columns])
+
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Emissions de GES par mode de chauffage (en MtCO2e)", xaxis_title="Année",yaxis_title="Conso [MtCO2e]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
@@ -124,4 +114,39 @@ plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 y_df = sim_stock_df.groupby(["year"])[[ 'emissions_'+Vecteur for Vecteur in sim_param["Vecteurs"]]].sum().loc[[year for year in sim_param["years"][1:]],:]
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Emissions par vecteur [MT CO2]", xaxis_title="Année",yaxis_title="CO2 [MT]")
+plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
+#endregion
+
+#region others
+Var = "Mds_voy_km"
+y_df = sim_stock_df.groupby(["year",Energy_system_name])[Var].sum().to_frame().reset_index().\
+    pivot(index=['year'], columns=Energy_system_name).loc[[year for year in sim_param["years"][1:]],Var]
+y_df.columns=pd.MultiIndex.from_tuples([(str(col_class_dict[key]),key) for key in y_df.columns])
+
+fig = MyStackedPlotly(y_df=y_df)
+fig=fig.update_layout(title_text="Mds_voy_km par mode de transport", xaxis_title="Année",yaxis_title="Mds_voy_km")
+plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
+#endregion
+
+
+import plotly.express as px
+Var = "Conso"
+y_df = sim_stock_df.loc[(2021,slice(None),slice(None))].groupby([Energy_system_name])[Var].sum().to_frame().reset_index()
+#y_df.loc[:,"Categorie"]=pd.MultiIndex.from_tuples([(str(col_class_dict[key]),key) for key in y_df.Categorie])
+color_dict = gen_grouped_color_map(col_class_dict)
+y_df["class"]=[col_class_dict[cat] for cat in y_df["Categorie"]]
+y_df=y_df.sort_values(by=['class'])
+fig = px.bar(y_df,x="class", y=Var, color="Categorie", title="Wide-Form Input",color_discrete_map=color_dict)
+fig=fig.update_layout(title_text="Conso énergie finale par mode de transport (en TWh)", xaxis_title="Categorie",yaxis_title="Conso [TWh]")
+plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
+
+Var = "emissions"
+y_df = sim_stock_df.loc[(2021,slice(None),slice(None))].groupby([Energy_system_name])[Var].sum().to_frame().reset_index()
+#y_df.loc[:,"Categorie"]=pd.MultiIndex.from_tuples([(str(col_class_dict[key]),key) for key in y_df.Categorie])
+color_dict = gen_grouped_color_map(col_class_dict)
+y_df["class"]=[col_class_dict[cat] for cat in y_df["Categorie"]]
+y_df=y_df.sort_values(by=['class'])
+y_df.emissions=y_df.emissions/10**3
+fig = px.bar(y_df,x="class", y=Var, color="Categorie", title="Wide-Form Input",color_discrete_map=color_dict)
+fig=fig.update_layout(title_text="Emissions par mode de transport (en MTCO2)", xaxis_title="Categorie",yaxis_title="Emissions [MTCO2]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline

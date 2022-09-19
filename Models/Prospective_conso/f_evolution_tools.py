@@ -89,7 +89,6 @@ def extract_sim_param(data_set_from_excel, Index_names=["Energy_source"],
         print(
             "Attention, la liste des vecteurs de la table Vecteurs doit correspondre aux colonnes de la table contenant les consos unitaires")
 
-
     return sim_param
 
 
@@ -145,6 +144,8 @@ def complete_parameters(sim_param, Para_2_fill={}):
         reset_index().rename(
         columns={sim_param["Energy_system_name"] + "_out": sim_param["Energy_system_name"]}).set_index(
         past_dim + ["old_new"])
+
+
     return sim_param
 
 
@@ -170,7 +171,9 @@ def apply_transition(Surf_2_retrofit, Transition, sim_param):
 def interpolate_sim_param(sim_param):
     # interpolations
     for key in sim_param.keys():
+
         if isinstance(sim_param[key], pd.Series):
+            sim_param[key] = sim_param[key].dropna(how='all')
             if sim_param[key].index.name == "year":
                 sim_param[key] = sim_param[key].interpolate_along_one_index_column(new_x_values=sim_param["years"],
                                                                                    x_columns_for_interpolation="year")
@@ -179,6 +182,7 @@ def interpolate_sim_param(sim_param):
                     sim_param[key] = sim_param[key].interpolate_along_one_index_column(new_x_values=sim_param["years"],
                                                                                        x_columns_for_interpolation="year")
         elif isinstance(sim_param[key], pd.DataFrame):
+            sim_param[key] = sim_param[key].dropna(how='all')
             if ("year" in list(sim_param[key].index.to_frame().columns)):
                 sim_param[key] = sim_param[key].interpolate_along_one_index_column(new_x_values=sim_param["years"],
                                                                                    x_columns_for_interpolation="year")
@@ -333,8 +337,7 @@ def launch_simulation(sim_param):
                 print("warning, too much retrofit, excess of " + str(
                     (Unit_2_retrofit_TMP - Unit_2_retrofit).sum() / Unit_2_retrofit_TMP.sum() * 100) + " %")
 
-            Transition = sim_param["retrofit_Transition"].loc[base_index_year_new, :].rm_index("year").rm_index(
-                "old_new")
+            Transition = sim_param["retrofit_Transition"].loc[base_index_year_new, :].rm_index("year").rm_index("old_new")
             New_units = apply_transition(Unit_2_retrofit, Transition, sim_param)
             if ((Unit_2_retrofit.sum() - New_units.sum()) > 0.005 * Unit_2_retrofit_TMP.sum()):
                 print("warning, Transition does not sum to one")

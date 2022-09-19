@@ -21,27 +21,16 @@ pd.set_option('display.width', 1000)
 
 #region chargement des données
 start = time.process_time()
-dim_names=["Energy_source","year"];Index_names = ["Energy_source"];Energy_system_name="Energy_source"
+dim_names=["Energy_source","year","Vecteur"];Index_names = ["Energy_source"];Energy_system_name="Energy_source"
 data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_tertiaire_1D.xlsx", None);
 sim_param = extract_sim_param(data_set_from_excel,Index_names = Index_names,dim_names=dim_names,Energy_system_name=Energy_system_name)
 sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
 sim_param["volume_variable_name"] = "surface"
-### example (un peu trop simpliste car ici on pourrait le faire formellement) de callage de paramètre
-### modèle avec alpha paramètre libre : rénovation tous les ans de alpha *  sim_param["init_sim_stock"].loc[:, "surface"]
-### cible : on veut que sur toute la période de simulation que cela fasse sim_param["retrofit_change"] * sim_param["init_sim_stock"]["Surface"]
-def Error_function(alpha,sim_param):
-    total_change_target = sim_param["retrofit_change_total_proportion_surface"] * sim_param["init_sim_stock"]["surface"]
-    Total_change = pd.Series(0.,index=sim_param["base_index"])
-    for year in range(int(sim_param["date_debut"])+1,int(sim_param["date_fin"])):
-        Total_change+=alpha *  sim_param["init_sim_stock"].loc[:, "surface"]
-    return  ((Total_change-total_change_target)**2).sum()
-
-alpha = scop.minimize(Error_function, x0=1, method='BFGS',args=(sim_param))["x"][0]
-sim_param["retrofit_change_surface"] = alpha * sim_param["init_sim_stock"]["surface"]
-sim_param["retrofit_change_surface"]=sim_param["retrofit_change_total_proportion_Mds_voy_km"].diff().fillna(0)
-
-Pameter_to_fill_along_index_year = {param : sim_param["base_index_year"] for param in ["new_energy","retrofit_improvement","retrofit_change_surface","retrofit_Transition"]}
-sim_param   =   complete_parameters(sim_param,Para_2_fill=Pameter_to_fill_along_index_year)
+sim_param = interpolate_sim_param(sim_param)
+sim_param["retrofit_change_surface"]=sim_param["retrofit_change_total_proportion_surface"].diff().fillna(0)
+Para_2_fill = {param : sim_param["base_index_year"] for param in ["new_energy","retrofit_improvement","retrofit_change_surface","retrofit_Transition"]}
+sim_param   =   complete_parameters(sim_param,Para_2_fill=Para_2_fill)
+sim_param["retrofit_change_surface"]=sim_param["retrofit_change_surface"]*sim_param["init_sim_stock"]["surface"]
 sim_param["old_taux_disp"]
 ## initialize all "new_yearly_surface"
 sim_param["new_yearly_surface"]=sim_param["new_yearly_surface"]*sim_param["new_yearly_repartition_per_Energy_source"]
@@ -62,6 +51,21 @@ sim_param["f_Compute_conso_totale"]={"Conso" : lambda x,sim_param: f_Compute_con
 
 def f_Compute_besoin(x,sim_param): return x["energy_need_per_surface"] * x["surface"]*x["proportion_energy_need"]
 sim_param["f_Compute_besoin"]={"energy_need" : f_Compute_besoin}
+
+def f_compute_emissions(x, sim_param, year, Vecteur):
+    return sim_param["direct_emissions"].loc[Vecteur, year] * x["conso_" + Vecteur] + \
+           sim_param["indirect_emissions"].loc[Vecteur, year] * x["conso_" + Vecteur]
+
+def f_Compute_emissions_totale(x, sim_param):
+    res = 0.
+    for Vecteur in sim_param["Vecteurs"]:
+        res += x["emissions_" + Vecteur]
+    return res
+
+for Vecteur in sim_param["Vecteurs"]:
+    sim_param["f_Compute_emissions_"+Vecteur]={"emissions_"+Vecteur : partial(f_compute_emissions,Vecteur =Vecteur)}
+sim_param["f_Compute_emissions_totale"]={"emissions" : lambda x,sim_param: f_Compute_emissions_totale(x,sim_param)}
+
 
 end = time.process_time()
 print("Chargement des données, des modèles et interpolation terminés en : "+str(end-start)+" secondes")
