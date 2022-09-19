@@ -564,11 +564,14 @@ def complete_missing_indexes(data_set_from_excel,sim_param,Index_names,dim_names
     other_dict_indexes = {'Vecteur': np.array(sim_param["Vecteurs"]), 'year': np.array(sim_param["years"])}
     dict_indexes = {**dict_indexes, **other_dict_indexes}
 
-    for key in sim_param:
+    for key in sim_param.keys():
         if isinstance(sim_param[key], pd.Series):
-            tmp_index = expand_grid_from_dict(
-                    My_dict={dic: dict_indexes[dic] for dic in sim_param[key].index.names}, as_MultiIndex=True)
-            sim_param[key] = sim_param[key].reindex(tmp_index, fill_value=1).sort_index()
+            if len(sim_param[key].index.names)>1:
+                tmp_index = expand_grid_from_dict(
+                        My_dict={dic: dict_indexes[dic] for dic in sim_param[key].index.names}, as_MultiIndex=True)
+                sim_param[key] = sim_param[key].reindex(tmp_index, fill_value=1).sort_index()
+            else :
+                sim_param[key]=sim_param[key].reindex(dict_indexes[sim_param[key].index.names[0]], fill_value=1).sort_index()
 
     return sim_param
 
