@@ -285,6 +285,24 @@ def initialize_Simulation(sim_param):
     sim_stock[year].loc[
         (*sim_param["base_index_tuple"], "new"), sim_param["volume_variable_name"]] = 0  ## on commence sans "neuf"
 
+    Functions_ = get_function_list(sim_param)
+    for func in Functions_:
+        for key in sim_param[func]:
+            args = inspect.getfullargspec(sim_param[func][key]).args
+            if args == ['x']:
+                sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                    lambda x: sim_param[func][key](x), axis=1).fillna(0)
+            elif args == ['x', 'sim_param']:
+                sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                    lambda x: sim_param[func][key](x, sim_param), axis=1).fillna(0)
+            elif args == ['x', 'sim_param', 'year']:
+                sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                    lambda x: sim_param[func][key](x, sim_param, year), axis=1).fillna(0)
+            else:
+                print("Warnings, function func defined with arguments " + str(
+                    args) + " only x | x,sim_param | x,sim_param,year implemented")
+    sim_stock[year] = sim_stock[year].fillna(0)
+
     return sim_stock
 
 
