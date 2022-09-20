@@ -29,6 +29,10 @@ sim_param = extract_sim_param(data_set_from_excel, Index_names=Index_names, dim_
 sim_param["init_sim_stock"] = create_initial_parc(sim_param).sort_index()
 sim_param["volume_variable_name"] = "surface"
 sim_param["init_sim_stock"]["surface"] = sim_param["init_sim_stock"]["surface"] * sim_param["init_sim_stock"]["IPONDL"]
+
+# We adjust energy need for electricity considering the primary energy factor
+sim_param["init_sim_stock"]["conso_unitaire_elec"]=sim_param["init_sim_stock"]["conso_unitaire_elec"]/2.3
+
 sim_param = interpolate_sim_param(sim_param)
 sim_param["retrofit_change_surface"]=sim_param["retrofit_change_total_proportion_surface"].diff().fillna(0)
 
