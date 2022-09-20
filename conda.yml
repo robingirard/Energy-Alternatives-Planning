@@ -20,7 +20,7 @@ dependencies :
       - Mosek
       - xarray
       - plotly
-      - matplotlib == 3.5.2
+      - matplotlib==3.5.2
       - sklearn
       - mycolorpy
 
