@@ -303,7 +303,7 @@ def non_valid_data(sim_param):
 
     return is_there_a_problem
 
-
+#sim_param=sim_param_H2
 def launch_simulation(sim_param):
     sim_param["energy_need_variable_name"] = "energy_need_per_" + sim_param["volume_variable_name"]
     sim_param["energy_consumption_variable_name"] = "energy_consumption_per_" + sim_param["volume_variable_name"]
