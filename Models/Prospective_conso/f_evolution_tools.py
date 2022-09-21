@@ -35,7 +35,7 @@ def extract_sim_param(data_set_from_excel, Index_names=["Energy_source"],
     sim_param = {}
 
     for key in sheet_name_and_dim.keys():
-        if ~(key == "retrofit_Transition"):
+        if not key == "retrofit_Transition":
             if len(sheet_name_and_dim[key]) > 0:
                 for col in data_set_from_excel[key].set_index(sheet_name_and_dim[key]).columns:
                     sim_param[col] = data_set_from_excel[key].set_index(sheet_name_and_dim[key])[col]
@@ -77,6 +77,7 @@ def extract_sim_param(data_set_from_excel, Index_names=["Energy_source"],
         sim_param["Complementary_index_tuple"] = tuple(
             [slice(None)] * len(list(sim_param["Complementary_index"].to_frame().columns)))
     sim_param["base_index_tuple"] = tuple([slice(None)] * len(list(sim_param["base_index"].to_frame().columns)))
+    sim_param["base_index_year_tuple"] = tuple([slice(None)] * (len(list(sim_param["base_index"].to_frame().columns))+1))
 
     sim_param["Vecteurs_"] = []
     for key in sim_param:
@@ -282,9 +283,19 @@ def initialize_Simulation(sim_param):
     sim_stock[year] = pd.concat([sim_param["init_sim_stock"].assign(old_new="old"),
                                  sim_param["init_sim_stock"].assign(old_new="new")]).set_index(['old_new'],
                                                                                                append=True).sort_index()
-    sim_stock[year].loc[
-        (*sim_param["base_index_tuple"], "new"), sim_param["volume_variable_name"]] = 0  ## on commence sans "neuf"
 
+    # old_index=sim_stock[year].index.names
+    # tupleX = tuple(x for x in sim_param["init_sim_stock"].index.names if x not in sim_param["base_index"].names)
+    # if len(tupleX)>0:
+    #     new_index=[*sim_param["base_index"].names,'old_new',*tupleX]
+    # else :
+    #     new_index=[*sim_param["base_index"].names,'old_new']
+    #
+    # sim_stock[year]=sim_stock[year].reset_index().set_index(new_index)
+
+    sim_stock[year].loc[
+        (*sim_param["base_index_tuple"], "new") , sim_param["volume_variable_name"]] = 0  ## on commence sans "neuf"
+    # sim_stock[year] = sim_stock[year].reset_index().set_index(old_index)
     return sim_stock
 
 
@@ -343,14 +354,14 @@ def launch_simulation(sim_param):
                 print("warning, Transition does not sum to one")
             New_energy_need = (1 - sim_param["retrofit_improvement"].loc[(*sim_param["base_index_tuple"], year)]) * \
                               sim_stock[year - 1][sim_param["energy_need_variable_name"]].loc[
-                                  (*sim_param["base_index_tuple"], "old")]
+                                  base_index_old]
             sim_stock = update_heat_need(sim_stock=sim_stock, year=year,
                                          New_units=New_units,
                                          New_energy_need=New_energy_need,
                                          sim_param=sim_param)
 
             sim_stock[year].loc[
-                (*sim_param["base_index_tuple"], "old"), sim_param["volume_variable_name"]] = Unit_remain
+                base_index_old, sim_param["volume_variable_name"]] = Unit_remain
 
             # neuf
             if sim_param["new_yearly_variable_name"] in sim_param:
