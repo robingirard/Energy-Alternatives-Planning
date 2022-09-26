@@ -77,7 +77,6 @@ def extract_sim_param(data_set_from_excel, Index_names=["Energy_source"],
         sim_param["Complementary_index_tuple"] = tuple(
             [slice(None)] * len(list(sim_param["Complementary_index"].to_frame().columns)))
     sim_param["base_index_tuple"] = tuple([slice(None)] * len(list(sim_param["base_index"].to_frame().columns)))
-    sim_param["base_index_year_tuple"] = tuple([slice(None)] * (len(list(sim_param["base_index"].to_frame().columns))+1))
 
     sim_param["Vecteurs_"] = []
     for key in sim_param:
@@ -294,8 +293,26 @@ def initialize_Simulation(sim_param):
     # sim_stock[year]=sim_stock[year].reset_index().set_index(new_index)
 
     sim_stock[year].loc[
-        (*sim_param["base_index_tuple"], "new") , sim_param["volume_variable_name"]] = 0  ## on commence sans "neuf"
-    # sim_stock[year] = sim_stock[year].reset_index().set_index(old_index)
+        (*sim_param["base_index_tuple"], "new"), sim_param["volume_variable_name"]] = 0  ## on commence sans "neuf"
+
+    Functions_ = get_function_list(sim_param)
+    for func in Functions_:
+        for key in sim_param[func]:
+            args = inspect.getfullargspec(sim_param[func][key]).args
+            if args == ['x']:
+                sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                    lambda x: sim_param[func][key](x), axis=1).fillna(0)
+            elif args == ['x', 'sim_param']:
+                sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                    lambda x: sim_param[func][key](x, sim_param), axis=1).fillna(0)
+            elif args == ['x', 'sim_param', 'year']:
+                sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                    lambda x: sim_param[func][key](x, sim_param, year), axis=1).fillna(0)
+            else:
+                print("Warnings, function func defined with arguments " + str(
+                    args) + " only x | x,sim_param | x,sim_param,year implemented")
+    sim_stock[year] = sim_stock[year].fillna(0)
+
     return sim_stock
 
 
@@ -354,14 +371,14 @@ def launch_simulation(sim_param):
                 print("warning, Transition does not sum to one")
             New_energy_need = (1 - sim_param["retrofit_improvement"].loc[(*sim_param["base_index_tuple"], year)]) * \
                               sim_stock[year - 1][sim_param["energy_need_variable_name"]].loc[
-                                  base_index_old]
+                                  (*sim_param["base_index_tuple"], "old")]
             sim_stock = update_heat_need(sim_stock=sim_stock, year=year,
                                          New_units=New_units,
                                          New_energy_need=New_energy_need,
                                          sim_param=sim_param)
 
             sim_stock[year].loc[
-                base_index_old, sim_param["volume_variable_name"]] = Unit_remain
+                (*sim_param["base_index_tuple"], "old"), sim_param["volume_variable_name"]] = Unit_remain
 
             # neuf
             if sim_param["new_yearly_variable_name"] in sim_param:

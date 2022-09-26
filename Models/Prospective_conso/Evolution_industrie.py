@@ -48,13 +48,13 @@ sim_param["f_Compute_conso_totale"]={"Conso" : lambda x,sim_param: f_Compute_con
 
 def f_Compute_emissions(x,sim_param):
     emissions = 0
-    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]*sim_param["Emissions_scope_2_3"][Vecteur_]
+    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]* x[sim_param["volume_variable_name"]]*sim_param["Emissions_scope_2_3"][Vecteur_]
     emissions+= x["emissions_unitaire"]* x[sim_param["volume_variable_name"]]
     return emissions
 
 def f_Compute_emissions_year(x,sim_param,year):
     emissions = 0
-    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]*sim_param["Emissions_scope_2_3"][(Vecteur_,year)]
+    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]* x[sim_param["volume_variable_name"]]*sim_param["Emissions_scope_2_3"][(Vecteur_,year)]
     emissions+= x["emissions_unitaire"]* x[sim_param["volume_variable_name"]]
     return emissions
 
@@ -97,15 +97,15 @@ sim_param["f_Compute_conso_totale"]={"Conso" : lambda x,sim_param: f_Compute_con
 
 def f_Compute_emissions(x,sim_param):
     emissions = 0
-    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]*sim_param["direct_emissions"][Vecteur_]
-    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]*sim_param["indirect_emissions"][Vecteur_]
+    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]* x[sim_param["volume_variable_name"]]*sim_param["direct_emissions"][Vecteur_]
+    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]* x[sim_param["volume_variable_name"]]*sim_param["indirect_emissions"][Vecteur_]
     emissions+= x["process_emissions_"+sim_param["volume_variable_name"]]* x[sim_param["volume_variable_name"]]
     return emissions
 
 def f_Compute_emissions_year(x,sim_param,year):
     emissions = 0
-    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]*sim_param["direct_emissions"][(Vecteur_,year)]
-    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]*sim_param["indirect_emissions"][(Vecteur_,year)]
+    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]* x[sim_param["volume_variable_name"]]*sim_param["direct_emissions"][(Vecteur_,year)]
+    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]* x[sim_param["volume_variable_name"]]*sim_param["indirect_emissions"][(Vecteur_,year)]
     emissions+= x["process_emissions_"+sim_param["volume_variable_name"]]* x[sim_param["volume_variable_name"]]
     return emissions
 
@@ -148,13 +148,13 @@ sim_param["f_Compute_conso_totale"]={"Conso" : lambda x,sim_param: f_Compute_con
 
 def f_Compute_emissions(x,sim_param):
     emissions = 0
-    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]*sim_param["Emissions_scope_2_3"][Vecteur_]
+    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]* x[sim_param["volume_variable_name"]]*sim_param["Emissions_scope_2_3"][Vecteur_]
     emissions+= x["emissions_unitaire"]* x[sim_param["volume_variable_name"]]
     return emissions
 
 def f_Compute_emissions_year(x,sim_param,year):
     emissions = 0
-    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]*sim_param["Emissions_scope_2_3"][(Vecteur_,year)]
+    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]* x[sim_param["volume_variable_name"]]*sim_param["Emissions_scope_2_3"][(Vecteur_,year)]
     emissions+= x["emissions_unitaire"]* x[sim_param["volume_variable_name"]]
     return emissions
 
@@ -198,13 +198,13 @@ sim_param["f_Compute_conso_totale"]={"Conso" : lambda x,sim_param: f_Compute_con
 
 def f_Compute_emissions(x,sim_param):
     emissions = 0
-    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]*sim_param["Emissions_scope_2_3"][Vecteur_]
+    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]* x[sim_param["volume_variable_name"]]*sim_param["Emissions_scope_2_3"][Vecteur_]
     emissions+= x["emissions_unitaire"]* x[sim_param["volume_variable_name"]]
     return emissions
 
 def f_Compute_emissions_year(x,sim_param,year):
     emissions = 0
-    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]*sim_param["Emissions_scope_2_3"][(Vecteur_,year)]
+    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]* x[sim_param["volume_variable_name"]]*sim_param["Emissions_scope_2_3"][(Vecteur_,year)]
     emissions+= x["emissions_unitaire"]* x[sim_param["volume_variable_name"]]
     return emissions
 
@@ -216,8 +216,6 @@ sim_param_olefines=sim_param
 end = time.process_time()
 print("Chargement des données, des modèles et interpolation terminés en : "+str(end-start)+" secondes")
 #endregion
-
-
 
 #region simulation
 sim_stock_acier = launch_simulation(sim_param_acier)
@@ -240,7 +238,7 @@ sim_stock_df = pd.concat([sim_stock_acier_df,sim_stock_ceramique_df,sim_stock_st
 
 #endregion
 
-sim_stock_df.reset_index().Production_system.unique()
+#region etat initial
 ### categories pour avoir des groupes de couleurs dans les graphiques
 col_class_dict={'BF-BOF' : 1, 'Bio-BF': 1, 'Bio-DRI-EAF': 1, 'CH4-DRI-EAF': 1, 'Coal-DRI-EAF': 1,
        'EAF': 1, 'EW-EAF': 1, 'H-DRI-EAF': 1, 'H2-BF': 1,
@@ -263,22 +261,24 @@ col_class_dict={'BF-BOF' : 1, 'Bio-BF': 1, 'Bio-DRI-EAF': 1, 'CH4-DRI-EAF': 1, '
        'Naphtha steam cracking':4, 'Naphtha steam cracking - Eboiler':4,
        'Oxidative Coupling of Methane (OCM)':4
                 }
+#unité de production : kt.
+# Energie : MWh/tk émissions en tCO2 par kt produit.
 
 import plotly.express as px
 Var = "Conso"
-y_df = sim_stock_df.loc[(2021,slice(None),slice(None))].groupby([Energy_system_name])[Var].sum().to_frame().reset_index()
+y_df = sim_stock_df.loc[(2020,slice(None),slice(None))].groupby([Energy_system_name])[Var].sum().to_frame().reset_index()
 #y_df.loc[:,"Categorie"]=pd.MultiIndex.from_tuples([(str(col_class_dict[key]),key) for key in y_df.Categorie])
 color_dict = gen_grouped_color_map(col_class_dict)
 y_df["class"]=[col_class_dict[cat] for cat in y_df.Production_system]
 y_df=y_df.sort_values(by=['class'])
-y_df[Var]=y_df[Var]/10**3
+y_df[Var]=y_df[Var]/10**6
 fig = px.bar(y_df,x="class", y=Var, color="Production_system", title="Wide-Form Input",color_discrete_map=color_dict)
 fig=fig.update_layout(title_text="Conso énergie finale (en TWh)", xaxis_title="Categorie",yaxis_title="Conso [TWh]")
 #fig.show()
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 
 Var = "Emissions"
-y_df = sim_stock_df.loc[(2021,slice(None),slice(None))].groupby([Energy_system_name])[Var].sum().to_frame().reset_index()
+y_df = sim_stock_df.loc[(2020,slice(None),slice(None))].groupby([Energy_system_name])[Var].sum().to_frame().reset_index()
 #y_df.loc[:,"Categorie"]=pd.MultiIndex.from_tuples([(str(col_class_dict[key]),key) for key in y_df.Categorie])
 color_dict = gen_grouped_color_map(col_class_dict)
 y_df["class"]=[col_class_dict[cat] for cat in y_df.Production_system]
@@ -288,13 +288,12 @@ fig = px.bar(y_df,x="class", y=Var, color="Production_system", title="Wide-Form 
 fig=fig.update_layout(title_text="Emissions CO2 [MTCO2]", xaxis_title="Categorie",yaxis_title="Emissions CO2 [MTCO2]")
 #fig.show()
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
-
-
+#endregion
 
 #region représentation des résultats
 Var = "Conso"
 y_df = sim_stock_df.groupby(["year",Energy_system_name])[Var].sum().to_frame().reset_index().\
-    pivot(index='year', columns=Energy_system_name).loc[[year for year in sim_param["years"][1:]],Var]/10**3
+    pivot(index='year', columns=Energy_system_name).loc[[year for year in sim_param["years"][1:]],Var]/10**6
 y_df.columns=pd.MultiIndex.from_tuples([(str(col_class_dict[key]),key) for key in y_df.columns])
 
 fig = MyStackedPlotly(y_df=y_df)
@@ -304,6 +303,8 @@ plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 Var = "Emissions"
 y_df = sim_stock_df.groupby(["year",Energy_system_name])[Var].sum().to_frame().reset_index().\
     pivot(index='year', columns=Energy_system_name).loc[[year for year in sim_param["years"][1:]],Var]/10**6
+y_df.columns=pd.MultiIndex.from_tuples([(str(col_class_dict[key]),key) for key in y_df.columns])
+
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Emissions CO2 Mt", xaxis_title="Année",yaxis_title="Emissions [MtCO2]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline

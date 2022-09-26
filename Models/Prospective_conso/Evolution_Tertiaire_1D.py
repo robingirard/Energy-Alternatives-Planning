@@ -35,36 +35,10 @@ sim_param["old_taux_disp"]
 ## initialize all "new_yearly_surface"
 sim_param["new_yearly_surface"]=sim_param["new_yearly_surface"]*sim_param["new_yearly_repartition_per_Energy_source"]
 
-def f_Compute_conso(x,sim_param,Vecteur):
-    conso_unitaire = x["conso_unitaire_"+Vecteur]
-    return x["energy_need_per_"+sim_param["volume_variable_name"]] * x[sim_param["volume_variable_name"]]*x["proportion_energy_need"]*conso_unitaire
-def f_Compute_conso_totale(x,sim_param):
-    res=0.
-    for Vecteur in sim_param["Vecteurs"]:
-        res+=x["conso_"+Vecteur]
-    return res
-
-#
-for Vecteur in sim_param["Vecteurs"]:
-    sim_param["f_Compute_conso_"+Vecteur]={"conso_"+Vecteur : partial(f_Compute_conso,Vecteur =Vecteur)}
-sim_param["f_Compute_conso_totale"]={"Conso" : lambda x,sim_param: f_Compute_conso_totale(x,sim_param)}
+sim_param=set_model_functions(sim_param)
 
 def f_Compute_besoin(x,sim_param): return x["energy_need_per_surface"] * x["surface"]*x["proportion_energy_need"]
 sim_param["f_Compute_besoin"]={"energy_need" : f_Compute_besoin}
-
-def f_compute_emissions(x, sim_param, year, Vecteur):
-    return sim_param["direct_emissions"].loc[Vecteur, year] * x["conso_" + Vecteur] + \
-           sim_param["indirect_emissions"].loc[Vecteur, year] * x["conso_" + Vecteur]
-
-def f_Compute_emissions_totale(x, sim_param):
-    res = 0.
-    for Vecteur in sim_param["Vecteurs"]:
-        res += x["emissions_" + Vecteur]
-    return res
-
-for Vecteur in sim_param["Vecteurs"]:
-    sim_param["f_Compute_emissions_"+Vecteur]={"emissions_"+Vecteur : partial(f_compute_emissions,Vecteur =Vecteur)}
-sim_param["f_Compute_emissions_totale"]={"emissions" : lambda x,sim_param: f_Compute_emissions_totale(x,sim_param)}
 
 
 end = time.process_time()
