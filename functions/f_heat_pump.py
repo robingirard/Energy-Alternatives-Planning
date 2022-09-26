@@ -14,9 +14,9 @@ TemperatureValues = {
 # coefficients issus de la thèse d'Antoine https://pastel.archives-ouvertes.fr/tel-02969503/document
 # equation (3.7) (3.8) p78
 nominal_COP_curve_Coefficients = {
-    "A/A HP": {"a1": 7.177, "b1": -0.156, "c1": 0.0005, "d1": -0.066,
+    "A/A HP": {"a1": 7.177, "b1": -0.09, "c1": 0.0005, "d1": -0.066,
                "a2": 4.27, "b2": -0.09, "c2": 0.0005},
-    "A/W HP": {"a1": 8.507, "b1": -0.156, "c1": 0.0005, "d1": -0.066,
+    "A/W HP": {"a1": 8.507, "b1": -0.09, "c1": 0.0005, "d1": -0.066,
                "a2": 5.6, "b2": -0.09, "c2": 0.0005},
     "W/W HP": {"a1": 10.29, "b1": -0.21, "c1": 0.0012, "d1": 0,
                "a2": 10.29, "b2": -0.21, "c2": 0.0012}
@@ -76,10 +76,8 @@ def estim_COP(T_ext, T_fluid, type="A/W HP"):
     return res
 
 
-def compute_T_biv2(COP_biv, T_biv, a, b, Simulation_PAC_input_parameter):
-
-
-    #COP_biv=COP_base ;T_biv=T_dim; a=ab["a"]; b=ab["b"]
+def compute_T_biv2(COP_biv, T_biv, a, b, Simulation_PAC_input_parameter,Regime='Full-Load'):
+    # COP_biv=COP_base ;T_biv=T_dim; a=ab["a"]; b=ab["b"]
 
     type = Simulation_PAC_input_parameter["System"]
     T_target = Simulation_PAC_input_parameter["T_target"]
@@ -93,28 +91,46 @@ def compute_T_biv2(COP_biv, T_biv, a, b, Simulation_PAC_input_parameter):
     d1 = nominal_COP_curve_Coefficients[type]["d1"];
 
     if Simulation_PAC_input_parameter["Technology"] == "Inverter":
-        Omega = Simulation_PAC_input_parameter["Power_ratio"] / Simulation_PAC_input_parameter["PLF_biv"]
+        if Regime == 'Full-Load':
+            Omega = 1/Simulation_PAC_input_parameter["Share_Power"]
+        elif Regime == 'Inverter':
+            Omega = Simulation_PAC_input_parameter["Power_ratio"] / Simulation_PAC_input_parameter["PLF_biv"]
+        else:
+            print("Regime not valid")
     if Simulation_PAC_input_parameter["Technology"] == "Bi-compressor":
         Omega = Simulation_PAC_input_parameter["N_stages"]
 
-    A1_degiv = float(Omega * COP_biv / (T_target - T_biv) * T_target - (a2 + b2 * b + c2 * b ** 2))
-    A2_degiv = float(-Omega * COP_biv / (T_target - T_biv) + (b2 + 2 * c2 * b) * (1 - a))
-    A3_degiv = float(-c2 * (1 - a) ** 2)
+    coeff_nodegiv_1 = a1 + (b1 + d1) * b + c1 * b ** 2
+    coeff_nodegiv_X = - (b1 + 2 * c1 * b) * (1 - a) + d1 * a
+    coeff_nodegiv_X2 = c1 * (1 - a) ** 2
+
+    coeff_degiv_1 = a2 + b2 * b + c2 * b ** 2
+    coeff_degiv_X = - (b2 + 2 * c2 * b) * (1 - a)
+    coeff_degiv_X2 = c2 * (1 - a) ** 2
+
+    A1_degiv = float(Omega * COP_biv / (T_target - T_biv) * T_target - coeff_degiv_1)
+    A2_degiv = float(-Omega * COP_biv / (T_target - T_biv) - coeff_degiv_X)
+    A3_degiv = float(- coeff_degiv_X2)
 
     # CALCUL DU DELTA ET DES RACINES
     delta_degiv = A2_degiv ** 2 - 4 * A1_degiv * A3_degiv
     if delta_degiv >= 0:
-        T_biv2_degiv = (-A2_degiv - math.sqrt(delta_degiv)) / (2 * A3_degiv)
+        sol1 = (-A2_degiv - math.sqrt(delta_degiv)) / (2 * A3_degiv)
+        sol2 = (-A2_degiv + math.sqrt(delta_degiv)) / (2 * A3_degiv)
+        T_biv2_degiv = sol1 if (sol1 > T_biv) & (sol1 < -3) else sol2 if (sol2 > T_biv) & (sol2 < -3) else np.nan
     else:
         T_biv2_degiv = np.nan
     ## IDEM POUR LA DEUXIEME COURBES DE COP (AVEC DEGIVRAGE)
-    A1_nodegiv = float(Omega * COP_biv / (T_target - T_biv) * T_target - (a1 + (b1 + d1) * b + c1 * b ** 2))
-    A2_nodegiv = float(-Omega * COP_biv / (T_target - T_biv) + (b1 + 2 * c1 * b) * (1 - a) - d1 * a)
-    A3_nodegiv = float(-c1 * (1 - a) ** 2)
+    A1_nodegiv = float(Omega * COP_biv / (T_target - T_biv) * T_target - coeff_nodegiv_1)
+    A2_nodegiv = float(-Omega * COP_biv / (T_target - T_biv) - coeff_nodegiv_X)
+    A3_nodegiv = float(-coeff_nodegiv_X2)
 
     delta_nodegiv = A2_nodegiv ** 2 - 4 * A1_nodegiv * A3_nodegiv
     if delta_nodegiv >= 0:
-        T_biv2_nodegiv = (-A2_nodegiv - math.sqrt(delta_nodegiv)) / (2 * A3_nodegiv)
+        sol1 = (-A2_nodegiv - math.sqrt(delta_nodegiv)) / (2 * A3_nodegiv)
+        sol2 = (-A2_nodegiv + math.sqrt(delta_nodegiv)) / (2 * A3_nodegiv)
+        T_biv2_nodegiv = sol1 if (sol1 > 6) & (sol1 < T_target) else sol2 if (sol2 > 6) & (
+                sol2 < T_target) else np.nan
     else:
         T_biv2_nodegiv = np.nan
 
@@ -125,35 +141,24 @@ def compute_T_biv2(COP_biv, T_biv, a, b, Simulation_PAC_input_parameter):
     N2 = 6 / 9;
     M2 = -1 / 9
 
-    alpha = a
-    beta = b
+    coeff_1 = N1 * coeff_nodegiv_1 + N2 * coeff_degiv_1
+    coeff_X = M1 * coeff_nodegiv_1 + N1 * coeff_nodegiv_X + M2 * coeff_degiv_1 + N2 * coeff_degiv_X
+    coeff_X2 = M1 * coeff_nodegiv_X + N1 * coeff_nodegiv_X2 + M2 * coeff_degiv_X + N2 * coeff_degiv_X2
+    coeff_X3 = M1 * coeff_nodegiv_X2 + M2 * coeff_degiv_X2
 
-    coeff1_1 = N1 * (a1 + (b1 + d1) * beta + c1 * beta ** 2)
-    coeff1_X = M1 * (a1 + b1 * beta + c1 * beta ** 2) - N1 * (
-                b1 * (1 - alpha) + 2 * c1 * beta * (1 - alpha) - d1 * alpha)
-    coeff1_X2 = -M1 * (b1 * (1 - alpha) + 2 * c1 * beta * (1 - alpha)) + N1 * c1 * (1 - alpha) ** 2
-    coeff1_X3 = M1 * c1 * (1 - alpha) ** 2
-
-    coeff2_1 = N2 * (a2 + b2 * beta + c2 * beta ** 2)
-    coeff2_X = M2 * (a2 + b2 * beta + c2 * beta ** 2) - N2 * (b2 * (1 - alpha) + 2 * c2 * beta * (1 - alpha))
-    coeff2_X2 = -M2 * (b2 * (1 - alpha) + 2 * c2 * beta * (1 - alpha)) + N2 * c2 * (1 - alpha) ** 2
-    coeff2_X3 = M2 * c2 * (1 - alpha) ** 2
-
-    coeff_1 = (coeff1_1 + coeff2_1)
-    coeff_X = (coeff1_X + coeff2_X)
-    coeff_X2 = (coeff1_X2 + coeff2_X2)
-    coeff_X3 = (coeff1_X3 + coeff2_X3)
-
-    A1_partdegiv = -Omega * COP_biv / (T_target - T_biv) * T_target + coeff_1
-    A2_partdegiv = Omega * COP_biv / (T_target - T_biv) + coeff_X
-    A3_partdegiv = coeff_X2
-    A4_partdegiv = coeff_X3
+    A1_partdegiv = Omega * COP_biv / (T_target - T_biv) * T_target - coeff_1
+    A2_partdegiv = -Omega * COP_biv / (T_target - T_biv) - coeff_X
+    A3_partdegiv = -coeff_X2
+    A4_partdegiv = -coeff_X3
 
     ## SI LE COEFF DU CUBE EST NUL, ON RESOUD L'EQUATION DU 2ND DEGRE
     if A4_partdegiv == 0:
         delta_partdegiv = A2_partdegiv ** 2 - 4 * A1_partdegiv * A3_partdegiv
         if delta_partdegiv >= 0:
-            T_biv2_partdegiv = (-A2_partdegiv - math.sqrt(delta_partdegiv)) / (2 * A3_partdegiv)
+            sol1 = (-A2_partdegiv - math.sqrt(delta_partdegiv)) / (2 * A3_partdegiv)
+            sol2 = (-A2_partdegiv + math.sqrt(delta_partdegiv)) / (2 * A3_partdegiv)
+            T_biv2_partdegiv = sol1 if (sol1 > -3) & (sol1 < 6) else sol2 if (sol2 > -3) & (
+                    sol2 < 6) else np.nan
         else:
             T_biv2_partdegiv = np.nan
     else:
@@ -188,13 +193,12 @@ def estim_T_biv(T_base, Simulation_PAC_input_parameter):
                              T_fluid=TemperatureValues[Simulation_PAC_input_parameter["Emitters"]],
                              type=Simulation_PAC_input_parameter["System"])
         ab = coeffs_T_fluid(T_base, Simulation_PAC_input_parameter)
-        T_target = Simulation_PAC_input_parameter["T_target"]
-        T_dim = T_target + (T_base - T_target) * Simulation_PAC_input_parameter['Share_Power']
-        return compute_T_biv2(COP_base, T_dim, ab["a"], ab["b"], Simulation_PAC_input_parameter)
+        return compute_T_biv2(COP_biv=COP_base, T_biv=T_base, a=ab["a"], b=ab["b"],
+                              Simulation_PAC_input_parameter=Simulation_PAC_input_parameter,Regime='Full-Load')
         ## calcul à faire
 
 
-def estim_SCOP(meteo_data, Simulation_PAC_input_parameter,year=2018):
+def estim_SCOP(meteo_data, Simulation_PAC_input_parameter, year=2018):
     """
 
     :param meteo_data_heating_period:
@@ -202,10 +206,10 @@ def estim_SCOP(meteo_data, Simulation_PAC_input_parameter,year=2018):
     :return:
     """
     global nominal_COP_curve_Coefficients
-    year=str(year)
+    year = str(year)
     T_target = Simulation_PAC_input_parameter["T_target"]
     T_start = Simulation_PAC_input_parameter["T_start"]
-    meteo_data_heating_period = get_heating_period_metdata(meteo_data.loc[year,:])
+    meteo_data_heating_period = get_heating_period_metdata(meteo_data.loc[year, :])
     comp_params = {}
     comp_params["T_base"] = np.quantile(meteo_data["temp"], q=5 / 365)
     comp_params["T_biv"] = estim_T_biv(T_base=comp_params["T_base"],
@@ -229,7 +233,8 @@ def estim_SCOP(meteo_data, Simulation_PAC_input_parameter,year=2018):
                                                T_biv=comp_params["T_biv"],
                                                a=comp_params["a"],
                                                b=comp_params["b"],
-                                               Simulation_PAC_input_parameter=Simulation_PAC_input_parameter)
+                                               Simulation_PAC_input_parameter=Simulation_PAC_input_parameter,
+                                               Regime='Inverter')
         Besoin_chauff_biv2 = T_target - comp_params["T_biv2"]
         comp_params["T_fluid_biv2"] = comp_params["a"] * comp_params["T_biv2"] + comp_params["b"]
         COP_biv2 = estim_COP(T_ext=comp_params["T_biv2"], T_fluid=comp_params["T_fluid_biv2"],
@@ -270,18 +275,18 @@ def estim_SCOP(meteo_data, Simulation_PAC_input_parameter,year=2018):
             lambda x: x['Besoin_chauff'] if x['temp'] < Simulation_PAC_input_parameter["Temperature_limit"] else
             comp_params["Besoin_chauff_biv"] / comp_params["COP_biv"] if x['temp'] < comp_params["T_biv"] else x[
                                                                                                                    'Besoin_chauff'] / (
-                                                                                                                           x[
-                                                                                                                               'COP'] *
-                                                                                                                           x[
-                                                                                                                               'PLF']) if (
-                        (x['temp'] < comp_params["T_biv2"]) & (x['temp'] > comp_params["T_biv"])) else x[
-                                                                                                           'Besoin_chauff'] / (
-                                                                                                                   x[
-                                                                                                                       'COP'] *
-                                                                                                                   x[
-                                                                                                                       'PLF'] *
-                                                                                                                   x[
-                                                                                                                       'Dp']),
+                                                                                                                       x[
+                                                                                                                           'COP'] *
+                                                                                                                       x[
+                                                                                                                           'PLF']) if (
+                    (x['temp'] < comp_params["T_biv2"]) & (x['temp'] > comp_params["T_biv"])) else x[
+                                                                                                       'Besoin_chauff'] / (
+                                                                                                           x[
+                                                                                                               'COP'] *
+                                                                                                           x[
+                                                                                                               'PLF'] *
+                                                                                                           x[
+                                                                                                               'Dp']),
             axis=1)
         RE = 0
         RP = np.zeros(len(meteo_data_heating_period))
@@ -305,14 +310,14 @@ def estim_SCOP(meteo_data, Simulation_PAC_input_parameter,year=2018):
                                                                                                                   comp_params[
                                                                                                                       "T_biv"] else
             x['Besoin_chauff'] / (x['COP'] * x['PLF']) if (
-                        (x['temp'] < comp_params["T_biv2"]) & (x['temp'] > comp_params["T_biv"])) else x[
-                                                                                                           'Besoin_chauff'] / (
-                                                                                                                   x[
-                                                                                                                       'COP'] *
-                                                                                                                   x[
-                                                                                                                       'PLF'] *
-                                                                                                                   x[
-                                                                                                                       'Dp']),
+                    (x['temp'] < comp_params["T_biv2"]) & (x['temp'] > comp_params["T_biv"])) else x[
+                                                                                                       'Besoin_chauff'] / (
+                                                                                                           x[
+                                                                                                               'COP'] *
+                                                                                                           x[
+                                                                                                               'PLF'] *
+                                                                                                           x[
+                                                                                                               'Dp']),
             axis=1)
         meteo_data_heating_period["P_app"] = meteo_data_heating_period.apply(
             lambda x: x['Besoin_chauff'] if x['temp'] < Simulation_PAC_input_parameter["Temperature_limit"] else x[
@@ -326,9 +331,9 @@ def estim_SCOP(meteo_data, Simulation_PAC_input_parameter,year=2018):
             x['temp'] < comp_params["T_biv"] else 0, axis=1)
 
         RE = meteo_data_heating_period["P_app"].sum() / (
-                    meteo_data_heating_period["P_calo"] + meteo_data_heating_period["P_app"]).sum()
+                meteo_data_heating_period["P_calo"] + meteo_data_heating_period["P_app"]).sum()
         RP = meteo_data_heating_period["P_app"] / (
-                    meteo_data_heating_period["P_calo"] + meteo_data_heating_period["P_app"])
+                meteo_data_heating_period["P_calo"] + meteo_data_heating_period["P_app"])
 
     ## ON STOCKE LES RESULTATS
     SCOP = meteo_data_heating_period["P_calo"].sum() / meteo_data_heating_period["P_elec"].sum()
@@ -340,8 +345,8 @@ def estim_SCOP(meteo_data, Simulation_PAC_input_parameter,year=2018):
 
 def get_heating_period_metdata(meteo_data):
     year = meteo_data.index.year[0]
-    meteo_data.loc[:,"day"] = meteo_data.index.day
-    meteo_data.loc[:,"month"] = meteo_data.index.month
+    meteo_data.loc[:, "day"] = meteo_data.index.day
+    meteo_data.loc[:, "month"] = meteo_data.index.month
     period_chauff = meteo_data.groupby(["month", "day"]).temp.mean().to_frame().rename(columns={"temp": "T_mean"})
 
     ##ON CALCULE LA MOYENNE GLISSANTE SUR 3 JOURS POUR IDENFITIER UN JOUR DE DEMARRAGE
