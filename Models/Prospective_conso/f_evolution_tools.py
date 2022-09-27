@@ -56,7 +56,7 @@ def extract_sim_param(data_set_from_excel, Index_names=["Energy_source"],
         sim_param["years"] = list(
             range(int(sim_param["date_debut"]), int(sim_param["date_fin"]), int(sim_param["date_step"])))
     else:
-        sim_param["years"] = list(range(int(sim_param["date_debut"]), int(sim_param["date_fin"])))
+        sim_param["years"] = list(range(int(sim_param["date_debut"]), int(sim_param["date_fin"]) + 1))
     # data_set_from_excel["years"]=sim_param["years"]
 
     sim_param["base_index_year"] = expand_grid_from_dict({**Index_val_dict, "year": sim_param["years"]},
@@ -70,7 +70,10 @@ def extract_sim_param(data_set_from_excel, Index_names=["Energy_source"],
     else:
         sim_param["base_index"] = expand_grid_from_dict(Index_val_dict, as_MultiIndex=True)
 
-    sim_param["Energy_source_index"] = data_set_from_excel[Energy_system_name][Energy_system_name].tolist()
+    if Energy_system_name in sheet_name:
+        sim_param["Energy_source_index"] = data_set_from_excel[Energy_system_name][Energy_system_name].tolist()
+    elif "Energy_source" in Index_names:
+        sim_param["Energy_source_index"] = Index_val_dict[Energy_system_name]
     if len(sim_param["Complementary_Index_names"]) > 0:
         sim_param["Complementary_index"] = expand_grid_from_dict(
             My_dict={key: Index_val_dict[key] for key in sim_param["Complementary_Index_names"]}, as_MultiIndex=True)
@@ -80,15 +83,17 @@ def extract_sim_param(data_set_from_excel, Index_names=["Energy_source"],
 
     sim_param["Vecteurs_"] = []
     for key in sim_param:
-        if len(key) > len("init_conso_unitaire_"):
-            if key[0:len("init_conso_unitaire_")] == "init_conso_unitaire_":
-                sim_param["Vecteurs_"] += [key[len("init_conso_unitaire_"):len(key)]]
+        if len(key) > len("conso_unitaire_"):
+            if key[0:len("conso_unitaire_")] == "conso_unitaire_":
+                sim_param["Vecteurs_"] += [key[len("conso_unitaire_"):len(key)]]
     if not ("Vecteurs" in sim_param):
         sim_param["Vecteurs"] = sim_param["Vecteurs_"]
     if not (sim_param["Vecteurs_"] == sim_param["Vecteurs"]):
         print(
             "Attention, la liste des vecteurs de la table Vecteurs doit correspondre aux colonnes de la table contenant les consos unitaires")
-
+    sim_param["base_index_year_vecteur"] = expand_grid_from_dict(
+        {**Index_val_dict, "year": sim_param["years"], "Vecteur": sim_param["Vecteurs"]},
+        as_MultiIndex=True)
     return sim_param
 
 
@@ -145,9 +150,29 @@ def complete_parameters(sim_param, Para_2_fill={}):
         columns={sim_param["Energy_system_name"] + "_out": sim_param["Energy_system_name"]}).set_index(
         past_dim + ["old_new"])
 
-
     return sim_param
 
+def complete_parameters_test(sim_param, Para_2_fill={}):
+    sim_param = interpolate_sim_param(sim_param)
+    if len(Para_2_fill) > 0:
+        sim_param = fill_sim_param(sim_param, Para_2_fill=Para_2_fill)
+
+    # particular processing for "retrofit_Transition" : kind of matrix transpose
+    past_dim = sim_param["retrofit_Transition"].index.names
+    Other_dims = list(
+        map(lambda x: x.replace(sim_param["Energy_system_name"], sim_param["Energy_system_name"] + "_out"), past_dim))
+    sim_param["retrofit_Transition"] = sim_param["retrofit_Transition"].reset_index().assign(old_new="renovated").set_index(
+        past_dim + ["old_new"]). \
+        melt(ignore_index=False, var_name=sim_param["Energy_system_name"] + "_out",
+             value_name="retrofit_Transition").set_index(
+        [sim_param["Energy_system_name"] + "_out"], append=True). \
+        pivot_table(values='retrofit_Transition', index=Other_dims + ["old_new"],
+                    columns=sim_param["Energy_system_name"]). \
+        reset_index().rename(
+        columns={sim_param["Energy_system_name"] + "_out": sim_param["Energy_system_name"]}).set_index(
+        past_dim + ["old_new"])
+
+    return sim_param
 
 # data_series_to_transition= sim_param["init_sim_stock"]["total_surface"]
 def apply_transition(Surf_2_retrofit, Transition, sim_param):
@@ -315,6 +340,52 @@ def initialize_Simulation(sim_param):
 
     return sim_stock
 
+def initialize_Simulation_test(sim_param):
+    """
+    Creates a dictionnary with sim_stock and fill it the initial year data.
+    :param sim_param:
+    :return:
+    """
+    sim_stock = {}
+    year = int(sim_param["date_debut"])
+    sim_stock[year] = pd.concat([sim_param["init_sim_stock"].assign(old_new="old"),
+                                 sim_param["init_sim_stock"].assign(old_new="new"),
+                                 sim_param["init_sim_stock"].assign(old_new="renovated")]).set_index(['old_new'],
+                                                                                               append=True).sort_index()
+
+    # old_index=sim_stock[year].index.names
+    # tupleX = tuple(x for x in sim_param["init_sim_stock"].index.names if x not in sim_param["base_index"].names)
+    # if len(tupleX)>0:
+    #     new_index=[*sim_param["base_index"].names,'old_new',*tupleX]
+    # else :
+    #     new_index=[*sim_param["base_index"].names,'old_new']
+    #
+    # sim_stock[year]=sim_stock[year].reset_index().set_index(new_index)
+
+    sim_stock[year].loc[
+        (*sim_param["base_index_tuple"], "new"), sim_param["volume_variable_name"]] = 0  ## on commence sans "neuf"
+    sim_stock[year].loc[
+        (*sim_param["base_index_tuple"], "renovated"), sim_param["volume_variable_name"]] = 0  ## on commence sans "rénové"
+
+    Functions_ = get_function_list(sim_param)
+    for func in Functions_:
+        for key in sim_param[func]:
+            args = inspect.getfullargspec(sim_param[func][key]).args
+            if args == ['x']:
+                sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                    lambda x: sim_param[func][key](x), axis=1).fillna(0)
+            elif args == ['x', 'sim_param']:
+                sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                    lambda x: sim_param[func][key](x, sim_param), axis=1).fillna(0)
+            elif args == ['x', 'sim_param', 'year']:
+                sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                    lambda x: sim_param[func][key](x, sim_param, year), axis=1).fillna(0)
+            else:
+                print("Warnings, function func defined with arguments " + str(
+                    args) + " only x | x,sim_param | x,sim_param,year implemented")
+    sim_stock[year] = sim_stock[year].fillna(0)
+
+    return sim_stock
 
 def non_valid_data(sim_param):
     is_there_a_problem = False
@@ -331,7 +402,8 @@ def non_valid_data(sim_param):
 
     return is_there_a_problem
 
-#sim_param=sim_param_H2
+
+# sim_param=sim_param_H2
 def launch_simulation(sim_param):
     sim_param["energy_need_variable_name"] = "energy_need_per_" + sim_param["volume_variable_name"]
     sim_param["energy_consumption_variable_name"] = "energy_consumption_per_" + sim_param["volume_variable_name"]
@@ -342,32 +414,41 @@ def launch_simulation(sim_param):
         sim_stock = 0
     else:
         sim_stock = initialize_Simulation(sim_param)
-        for year in progressbar(range(int(sim_param["date_debut"]) + 1, int(sim_param["date_fin"])), "Computing: ", 40):
+        for year in progressbar(range(int(sim_param["date_debut"]) + 1, int(sim_param["date_fin"]) + 1), "Computing: ",
+                                40):
+            # if year ==2038: break
             sim_stock[year] = sim_stock[year - 1].copy()
 
-            # destruction
-            if "old_taux_disp" in sim_param:
-                sim_stock[year].loc[:, sim_param["volume_variable_name"]] -= \
-                    sim_param["old_taux_disp"][year] * sim_stock[year].loc[:, sim_param["volume_variable_name"]]
-
-            # renovation
             base_index_old = (*sim_param["base_index_tuple"], "old")
             base_index_year_new = (*sim_param["base_index_tuple"], year, "new")
 
+            # destruction
+            # if "old_taux_disp" in sim_param:
+            #     sim_stock[year].loc[:, sim_param["volume_variable_name"]] -= \
+            #         sim_param["old_taux_disp"][year] * sim_stock[year].loc[:, sim_param["volume_variable_name"]]
+            if "old_taux_disp" in sim_param:
+                adjusted_old_taux_disp = sim_param["old_taux_disp"][year] * sim_stock[year].loc[:,sim_param["volume_variable_name"]].sum() / \
+                                         sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old].sum()
+                sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] -= \
+                    adjusted_old_taux_disp * sim_stock[year][sim_param["volume_variable_name"]].loc[
+                        base_index_old]
+            # renovation
             Unit_2_retrofit_TMP = sim_param[sim_param["retrofit_change_variable_name"]].loc[
-                (*sim_param["base_index_tuple"], year)]
+                                      (*sim_param["base_index_tuple"], year)] * \
+                                  sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old]
             Unit_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],
                                             Unit_2_retrofit_TMP)
             Unit_2_retrofit = (
-                        sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] - Unit_remain.rm_index(
-                    "old_new"))
+                    sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] - Unit_remain.rm_index(
+                "old_new"))
             if ((Unit_2_retrofit_TMP - Unit_2_retrofit).sum() > 0.005 * Unit_2_retrofit_TMP.sum()):
                 print("warning, too much retrofit, excess of " + str(
                     (Unit_2_retrofit_TMP - Unit_2_retrofit).sum() / Unit_2_retrofit_TMP.sum() * 100) + " %")
 
-            Transition = sim_param["retrofit_Transition"].loc[base_index_year_new, :].rm_index("year").rm_index("old_new")
+            Transition = sim_param["retrofit_Transition"].loc[base_index_year_new, :].rm_index("year").rm_index(
+                "old_new")
             New_units = apply_transition(Unit_2_retrofit, Transition, sim_param)
-            if ((Unit_2_retrofit.sum() - New_units.sum()) > 0.005 * Unit_2_retrofit_TMP.sum()):
+            if (abs(Unit_2_retrofit.sum() - New_units.sum()) > 0.005 * Unit_2_retrofit_TMP.sum()):
                 print("warning, Transition does not sum to one")
             New_energy_need = (1 - sim_param["retrofit_improvement"].loc[(*sim_param["base_index_tuple"], year)]) * \
                               sim_stock[year - 1][sim_param["energy_need_variable_name"]].loc[
@@ -402,36 +483,172 @@ def launch_simulation(sim_param):
                     elif args == ['x', 'sim_param', 'year']:
                         sim_stock[year].loc[:, key] = sim_stock[year].apply(
                             lambda x: sim_param[func][key](x, sim_param, year), axis=1).fillna(0)
-                    else: print("Warnings, function func defined with arguments "+str(args)+" only x | x,sim_param | x,sim_param,year implemented")
-            sim_stock[year]=sim_stock[year].fillna(0)
+                    else:
+                        print("Warnings, function func defined with arguments " + str(
+                            args) + " only x | x,sim_param | x,sim_param,year implemented")
+            sim_stock[year] = sim_stock[year].fillna(0)
 
     return sim_stock
 
+def launch_simulation_test(sim_param):
+    sim_param["energy_need_variable_name"] = "energy_need_per_" + sim_param["volume_variable_name"]
+    sim_param["energy_consumption_variable_name"] = "energy_consumption_per_" + sim_param["volume_variable_name"]
+    sim_param["new_yearly_variable_name"] = "new_yearly_" + sim_param["volume_variable_name"]
+    sim_param["retrofit_change_variable_name"] = "retrofit_change_" + sim_param["volume_variable_name"]
+    if non_valid_data(sim_param):
+        print("Error")
+        sim_stock = 0
+    else:
+        sim_stock = initialize_Simulation_test(sim_param)
+        for year in progressbar(range(int(sim_param["date_debut"]) + 1, int(sim_param["date_fin"]) + 1), "Computing: ",
+                                40):
+            # if year ==2038: break
+            sim_stock[year] = sim_stock[year - 1].copy()
+
+            base_index_old = (*sim_param["base_index_tuple"], "old")
+            base_index_renovated = (*sim_param["base_index_tuple"], "renovated")
+            base_index_year_new = (*sim_param["base_index_tuple"], year, "new")
+            base_index_year_renovated = (*sim_param["base_index_tuple"],year, "renovated")
+
+            # destruction
+            # if "old_taux_disp" in sim_param:
+            #     sim_stock[year].loc[:, sim_param["volume_variable_name"]] -= \
+            #         sim_param["old_taux_disp"][year] * sim_stock[year].loc[:, sim_param["volume_variable_name"]]
+            if "old_taux_disp" in sim_param:
+                adjusted_old_taux_disp = sim_param["old_taux_disp"][year] * sim_stock[year].loc[:,sim_param["volume_variable_name"]].sum() / \
+                                         sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old].sum()
+                sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] -= \
+                    adjusted_old_taux_disp * sim_stock[year][sim_param["volume_variable_name"]].loc[
+                        base_index_old]
+            # renovation
+            Adjusted_renov=sim_param[sim_param["retrofit_change_variable_name"]].loc[
+                                      (*sim_param["base_index_tuple"], year)] *(sim_stock[year][sim_param[\
+                                      "volume_variable_name"]].loc[base_index_old].sum()+sim_stock[year-1][sim_param[\
+                                      "volume_variable_name"]].loc[base_index_renovated].sum())/sim_stock[year][sim_param["volume_variable_name"\
+                                      ]].loc[base_index_old].sum()
+            Unit_2_retrofit_TMP = Adjusted_renov * \
+                                  sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old]
+            Unit_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],
+                                            Unit_2_retrofit_TMP)
+            Unit_2_retrofit = (
+                    sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] - Unit_remain.rm_index(
+                "old_new"))
+            if ((Unit_2_retrofit_TMP - Unit_2_retrofit).sum() > 0.005 * Unit_2_retrofit_TMP.sum()):
+                print("warning, too much retrofit, excess of " + str(
+                    (Unit_2_retrofit_TMP - Unit_2_retrofit).sum() / Unit_2_retrofit_TMP.sum() * 100) + " %")
+
+            Transition = sim_param["retrofit_Transition"].loc[base_index_year_renovated, :].rm_index("year").rm_index(
+                "old_new")
+            Renovated_units = apply_transition(Unit_2_retrofit, Transition, sim_param)
+            if (abs(Unit_2_retrofit.sum() - Renovated_units.sum()) > 0.005 * Unit_2_retrofit_TMP.sum()):
+                print("warning, Transition does not sum to one")
+            Renovated_energy_need = (1 - sim_param["retrofit_improvement"].loc[(*sim_param["base_index_tuple"], year)]) * \
+                              sim_stock[year - 1][sim_param["energy_need_variable_name"]].loc[
+                                  (*sim_param["base_index_tuple"], "old")]
+            sim_stock = update_heat_need_test(sim_stock=sim_stock, year=year,
+                                         New_units=Renovated_units,
+                                         New_energy_need=Renovated_energy_need,
+                                         sim_param=sim_param,
+                                         target="renovated")
+
+            sim_stock[year].loc[
+                (*sim_param["base_index_tuple"], "old"), sim_param["volume_variable_name"]] = Unit_remain
+
+            # neuf
+            if sim_param["new_yearly_variable_name"] in sim_param:
+                sim_stock = update_heat_need_test(sim_stock=sim_stock, year=year,
+                                             New_units=sim_param[sim_param["new_yearly_variable_name"]].loc[
+                                                 (*sim_param["base_index_tuple"], year)],
+                                             New_energy_need=sim_param["new_energy"].loc[
+                                                 (*sim_param["base_index_tuple"], year)],
+                                             sim_param=sim_param,
+                                             target='new')
+
+            Functions_ = get_function_list(sim_param)
+            for func in Functions_:
+                for key in sim_param[func]:
+                    args = inspect.getfullargspec(sim_param[func][key]).args
+                    if args == ['x']:
+                        sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                            lambda x: sim_param[func][key](x), axis=1).fillna(0)
+                    elif args == ['x', 'sim_param']:
+                        sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                            lambda x: sim_param[func][key](x, sim_param), axis=1).fillna(0)
+                    elif args == ['x', 'sim_param', 'year']:
+                        sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                            lambda x: sim_param[func][key](x, sim_param, year), axis=1).fillna(0)
+                    else:
+                        print("Warnings, function func defined with arguments " + str(
+                            args) + " only x | x,sim_param | x,sim_param,year implemented")
+            sim_stock[year] = sim_stock[year].fillna(0)
+
+    return sim_stock
 
 # lorsque l'on met à jour l'ensemble des surfaces et le besoin associé
 
 def set_model_functions(sim_param):
-    def f_Compute_conso(x,sim_param,Vecteur):
-        return x[sim_param["volume_variable_name"]]*x["conso_unitaire_" + Vecteur]*x[sim_param["energy_need_variable_name"]]
-    def f_Compute_conso_totale(x,sim_param):
-        res=0.
-        for Vecteur in sim_param["Vecteurs"]:
-            res+=x["conso_"+Vecteur]
-        return res
-    def f_compute_emissions(x,sim_param,year,Vecteur):
-        return sim_param["direct_emission"].loc[Vecteur,year]*x["conso_"+Vecteur]
-    def f_Compute_emissions_totale(x,sim_param):
-        res=0.
-        for Vecteur in sim_param["Vecteurs"]:
-            res+=x["emissions_"+Vecteur]
-        return res
-    #
+    def f_Compute_conso(x, sim_param, year, Vecteur):
+        Energy_source = x.name[sim_param['base_index'].names.index('Energy_source')]
+        conso_unitaire = sim_param["conso_unitaire_" + Vecteur][(Energy_source, year)]
+        seasonal_efficiency = sim_param["seasonal_efficiency"][(Energy_source, Vecteur)]
+        conso_unitaire = conso_unitaire / seasonal_efficiency
+        return x["energy_need_per_" + sim_param["volume_variable_name"]] * x[sim_param["volume_variable_name"]] * x[
+            "proportion_energy_need"] * conso_unitaire
+
     for Vecteur in sim_param["Vecteurs"]:
-        sim_param["f_Compute_conso_"+Vecteur]={"conso_"+Vecteur : partial(f_Compute_conso,Vecteur =Vecteur)}
-        sim_param["f_Compute_emissions_" + Vecteur] = {"emissions_" + Vecteur: partial(f_compute_emissions, Vecteur=Vecteur)}
-    sim_param["f_Compute_conso_totale"]={"Conso" : lambda x,sim_param: f_Compute_conso_totale(x,sim_param)}
-    sim_param["f_Compute_emissions_totale"]={"emissions" : lambda x,sim_param: f_Compute_emissions_totale(x,sim_param)}
+        sim_param["f_Compute_conso_" + Vecteur] = {"conso_" + Vecteur: partial(f_Compute_conso, Vecteur=Vecteur)}
+
+    def f_Compute_conso_totale(x, sim_param):
+        res = 0.
+        for Vecteur in sim_param["Vecteurs"]:
+            res += x["conso_" + Vecteur]
+        return res
+
+    sim_param["f_Compute_conso_totale"] = {"Conso": lambda x, sim_param: f_Compute_conso_totale(x, sim_param)}
+
+    def f_Compute_besoin(x, sim_param, year, Vecteur):
+        Energy_source = x.name[sim_param['base_index'].names.index('Energy_source')]
+        conso_unitaire = sim_param["conso_unitaire_" + Vecteur][(Energy_source, year)]
+        return x["energy_need_per_surface"] * x["surface"] * x["proportion_energy_need"] * conso_unitaire
+
+    for Vecteur in sim_param["Vecteurs"]:
+        sim_param["f_Compute_besoin_" + Vecteur] = {"Besoin_" + Vecteur: partial(f_Compute_besoin, Vecteur=Vecteur)}
+
+    def f_Compute_besoin_total(x, sim_param):
+        res = 0.
+        for Vecteur in sim_param["Vecteurs"]:
+            res += x["Besoin_" + Vecteur]
+        return res
+
+    sim_param["f_Compute_besoin_total"] = {"Besoin": lambda x, sim_param: f_Compute_besoin_total(x, sim_param)}
+
+    def f_compute_emissions(x, sim_param, year, Vecteur):
+        return sim_param["direct_emissions"].loc[Vecteur, year] * x["conso_" + Vecteur] + \
+               sim_param["indirect_emissions"].loc[Vecteur, year] * x["conso_" + Vecteur]
+
+    for Vecteur in sim_param["Vecteurs"]:
+        sim_param["f_Compute_emissions_" + Vecteur] = {
+            "emissions_" + Vecteur: partial(f_compute_emissions, Vecteur=Vecteur)}
+
+    def f_Compute_emissions_totale(x, sim_param):
+        res = 0.
+        for Vecteur in sim_param["Vecteurs"]:
+            res += x["emissions_" + Vecteur]
+        return res
+
+    sim_param["f_Compute_emissions_totale"] = {
+        "emissions": lambda x, sim_param: f_Compute_emissions_totale(x, sim_param)}
+
+    def f_Compute_electrical_peak(x, sim_param):
+        Energy_source = x.name[sim_param['base_index'].names.index('Energy_source')]
+        return x["conso_elec"] * 1.5 / 35 / sim_param["peak_efficiency"][(Energy_source, "elec")] * \
+               sim_param["share_peak"][
+                   (Energy_source, "elec")]
+
+    sim_param["f_Compute_electrical_peak_totale"] = {
+        "electrical_peak": lambda x, sim_param: f_Compute_electrical_peak(x, sim_param)}
     return sim_param
+
 
 def get_index_name(xx):
     if type(xx) == pd.Series:
@@ -467,12 +684,40 @@ def update_heat_need(sim_stock, year, New_units, New_energy_need, sim_param):
         sim_param["energy_need_variable_name"]]
 
     sim_stock[year].loc[(*sim_param["base_index_tuple"], "new"), sim_param["volume_variable_name"]] += \
-    Nouvelles_unite_neuf.to_frame().assign(old_new="new").set_index(["old_new"], append=True)[old_col_names]
+        Nouvelles_unite_neuf.to_frame().assign(old_new="new").set_index(["old_new"], append=True)[old_col_names]
     sim_stock[year].loc[
         (*sim_param["base_index_tuple"], "new"), sim_param["energy_need_variable_name"]] = New_energy_need_new
 
     return sim_stock
 
+def update_heat_need_test(sim_stock, year, New_units, New_energy_need, sim_param,target='new'):
+    # mise à jour des surfaces
+    old_col_names = New_units.name
+    if type(old_col_names) == type(None): old_col_names = 0
+    Nouvelles_unite_neuf = New_units.loc[sim_param["base_index_tuple"]]
+    My_index_names = get_index_name(sim_param["base_index"])
+    if 'Efficiency_class' in My_index_names:
+        Nouvelles_unite_neuf = Nouvelles_unite_neuf.update_Efficiency_class(New_energy_need, sim_param)
+        New_energy_need = New_energy_need.update_Efficiency_class(New_energy_need, sim_param)
+    # mise à jouro du besoin
+    Old_energy_need_new = sim_stock[year][sim_param["energy_need_variable_name"]].loc[
+        (*sim_param["base_index_tuple"], target)]
+    Anciennes_unite = sim_stock[year][sim_param["volume_variable_name"]].loc[(*sim_param["base_index_tuple"], "new")]
+    New_energy_need_new = sim_stock[year][sim_param["energy_need_variable_name"]].loc[
+        (*sim_param["base_index_tuple"], target)].copy()
+    sub_index = Nouvelles_unite_neuf > 0
+    New_energy_need_new.loc[sub_index] = (Old_energy_need_new.loc[sub_index] * Anciennes_unite.loc[sub_index] +
+                                          New_energy_need.loc[sub_index] * Nouvelles_unite_neuf.loc[sub_index]) / \
+                                         (Anciennes_unite.loc[sub_index] + Nouvelles_unite_neuf.loc[sub_index])
+    New_energy_need_new = New_energy_need_new.to_frame().assign(old_new=target).set_index(["old_new"], append=True)[
+        sim_param["energy_need_variable_name"]]
+
+    sim_stock[year].loc[(*sim_param["base_index_tuple"], target), sim_param["volume_variable_name"]] += \
+        Nouvelles_unite_neuf.to_frame().assign(old_new=target).set_index(["old_new"], append=True)[old_col_names]
+    sim_stock[year].loc[
+        (*sim_param["base_index_tuple"], target), sim_param["energy_need_variable_name"]] = New_energy_need_new
+
+    return sim_stock
 
 def update_Efficiency_class(df, New_energy_need, sim_param, Efficiency_class_name="Efficiency_class"):
     Name = df.name
@@ -587,19 +832,21 @@ def find_alpha(age_moy, duree_vie):
             alpha1 = alpha
     return alpha0
 
-def complete_missing_indexes(data_set_from_excel,sim_param,Index_names,dim_names):
+
+def complete_missing_indexes(data_set_from_excel, sim_param, Index_names, dim_names):
     dict_indexes = {key: get_index_vals(data_set_from_excel, key) for key in Index_names}
     other_dict_indexes = {'Vecteur': np.array(sim_param["Vecteurs"]), 'year': np.array(sim_param["years"])}
     dict_indexes = {**dict_indexes, **other_dict_indexes}
 
     for key in sim_param.keys():
         if isinstance(sim_param[key], pd.Series):
-            if len(sim_param[key].index.names)>1:
+            if len(sim_param[key].index.names) > 1:
                 tmp_index = expand_grid_from_dict(
-                        My_dict={dic: dict_indexes[dic] for dic in sim_param[key].index.names}, as_MultiIndex=True)
+                    My_dict={dic: dict_indexes[dic] for dic in sim_param[key].index.names}, as_MultiIndex=True)
                 sim_param[key] = sim_param[key].reindex(tmp_index, fill_value=1).sort_index()
-            else :
-                sim_param[key]=sim_param[key].reindex(dict_indexes[sim_param[key].index.names[0]], fill_value=1).sort_index()
+            else:
+                sim_param[key] = sim_param[key].reindex(dict_indexes[sim_param[key].index.names[0]],
+                                                        fill_value=1).sort_index()
 
     return sim_param
 
