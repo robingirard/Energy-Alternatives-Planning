@@ -44,6 +44,7 @@ for Value in np.linspace(0.1,0.6,100):
     Maximums = MyConsoData.max()
     Means =  MyConsoData.mean()
     mean_P_elec = SCOP["meteo_data_heating_period"]["P_elec"].mean()
+    ## Sur que c'est ce qu'on veut faire ? Pas le Min de P_calo plutot ?
     Power_Ratio[Value] = Maximums["P_calo"] / (Maximums["P_calo"]+Maximums["P_app"])
     Energy_Ratio[Value] = Means["P_calo"] / (Means["P_calo"]+Means["P_app"])
     Consumption_Ratio[Value] = mean_P_elec / (mean_P_elec+Means["P_app"])
