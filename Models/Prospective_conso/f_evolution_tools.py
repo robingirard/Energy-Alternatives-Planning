@@ -51,6 +51,10 @@ def extract_sim_param(data_set_from_excel, Index_names=["Energy_source"],
     sim_param["Energy_system_name"] = Energy_system_name
     sim_param["Complementary_Index_names"] = Complementary_Index_names
 
+    for dim_name in dim_names:
+        if not (dim_names in ['years']+Index_names):
+            sim_param[dim_name] = get_index_vals(data_set_from_excel, dim_name)
+
     Index_val_dict = {key: get_index_vals(data_set_from_excel, key) for key in Index_names}
     if "date_step" in sim_param:
         sim_param["years"] = list(
@@ -88,9 +92,9 @@ def extract_sim_param(data_set_from_excel, Index_names=["Energy_source"],
                 sim_param["Vecteurs_"] += [key[len("conso_unitaire_"):len(key)]]
     if not ("Vecteurs" in sim_param):
         sim_param["Vecteurs"] = sim_param["Vecteurs_"]
-    if not (sim_param["Vecteurs_"] == sim_param["Vecteurs"]):
-        print(
-            "Attention, la liste des vecteurs de la table Vecteurs doit correspondre aux colonnes de la table contenant les consos unitaires")
+    #if not (sim_param["Vecteurs_"] == sim_param["Vecteurs"]):
+        #print(
+        #    "Attention, la liste des vecteurs de la table Vecteurs doit correspondre aux colonnes de la table contenant les consos unitaires")
     sim_param["base_index_year_vecteur"] = expand_grid_from_dict(
         {**Index_val_dict, "year": sim_param["years"], "Vecteur": sim_param["Vecteurs"]},
         as_MultiIndex=True)
@@ -351,7 +355,7 @@ def non_valid_data(sim_param):
     return is_there_a_problem
 
 
-# sim_param=sim_param_H2
+# sim_param=sim_param_voyageurs
 def launch_simulation(sim_param):
     sim_param["energy_need_variable_name"] = "energy_need_per_" + sim_param["volume_variable_name"]
     sim_param["energy_consumption_variable_name"] = "energy_consumption_per_" + sim_param["volume_variable_name"]
@@ -362,8 +366,7 @@ def launch_simulation(sim_param):
         sim_stock = 0
     else:
         sim_stock = initialize_Simulation(sim_param)
-        for year in progressbar(range(int(sim_param["date_debut"]) + 1, int(sim_param["date_fin"]) + 1), "Computing: ",
-                                40):
+        for year in progressbar(range(int(sim_param["date_debut"]) + 1, int(sim_param["date_fin"]) + 1), "Computing: ",40):
             # if year ==2038: break
             sim_stock[year] = sim_stock[year - 1].copy()
 
@@ -456,7 +459,7 @@ def launch_simulation(sim_param):
 
 # lorsque l'on met à jour l'ensemble des surfaces et le besoin associé
 
-def set_model_functions(sim_param):
+def set_model_functions(sim_param,compute_peak=True):
     def f_Compute_conso(x, sim_param, year, Vecteur):
         Energy_source = x.name[sim_param['base_index'].names.index('Energy_source')]
         conso_unitaire = sim_param["conso_unitaire_" + Vecteur][(Energy_source, year)]
@@ -508,17 +511,97 @@ def set_model_functions(sim_param):
 
     sim_param["f_Compute_emissions_totale"] = {
         "emissions": lambda x, sim_param: f_Compute_emissions_totale(x, sim_param)}
+    if compute_peak:
+        def f_Compute_electrical_peak(x, sim_param):
+            Energy_source = x.name[sim_param['base_index'].names.index('Energy_source')]
+            return x["conso_elec"] * 1.5 / 35 / sim_param["peak_efficiency"][(Energy_source, "elec")] * \
+                   sim_param["share_peak"][
+                       (Energy_source, "elec")]
 
-    def f_Compute_electrical_peak(x, sim_param):
-        Energy_source = x.name[sim_param['base_index'].names.index('Energy_source')]
-        return x["conso_elec"] * 1.5 / 35 / sim_param["peak_efficiency"][(Energy_source, "elec")] * \
-               sim_param["share_peak"][
-                   (Energy_source, "elec")]
-
-    sim_param["f_Compute_electrical_peak_totale"] = {
-        "electrical_peak": lambda x, sim_param: f_Compute_electrical_peak(x, sim_param)}
+        sim_param["f_Compute_electrical_peak_totale"] = {
+            "electrical_peak": lambda x, sim_param: f_Compute_electrical_peak(x, sim_param)}
     return sim_param
 
+
+
+
+
+def set_model_functions_simple(sim_param):
+    def f_Compute_conso(x, sim_param, year, Vecteur):
+        Energy_system = x.name[0]
+        if "remplissage" in x:
+            conso_unitaire = sim_param["conso_unitaire_" + Vecteur][(Energy_system, year)]/x["remplissage"]
+        else:
+            conso_unitaire = sim_param["conso_unitaire_" + Vecteur][(Energy_system, year)]
+        return x["energy_need_per_" + sim_param["volume_variable_name"]] * x[sim_param["volume_variable_name"]]  * conso_unitaire
+
+    for Vecteur in sim_param["Vecteurs"]:
+        sim_param["f_Compute_conso_" + Vecteur] = {"conso_" + Vecteur: partial(f_Compute_conso, Vecteur=Vecteur)}
+
+    def f_Compute_conso_totale(x, sim_param):
+        res = 0.
+        for Vecteur in sim_param["Vecteurs"]:
+            res += x["conso_" + Vecteur]
+        return res
+
+    sim_param["f_Compute_conso_totale"] = {"Conso": lambda x, sim_param: f_Compute_conso_totale(x, sim_param)}
+
+
+    def f_compute_emissions(x, sim_param, year, Vecteur):
+        return sim_param["direct_emissions"].loc[Vecteur, year] * x["conso_" + Vecteur] + \
+               sim_param["indirect_emissions"].loc[Vecteur, year] * x["conso_" + Vecteur]
+
+    for Vecteur in sim_param["Vecteurs"]:
+        sim_param["f_Compute_emissions_" + Vecteur] = {
+            "emissions_" + Vecteur: partial(f_compute_emissions, Vecteur=Vecteur)}
+
+    def f_Compute_emissions_totale(x, sim_param):
+        res = 0.
+        for Vecteur in sim_param["Vecteurs"]:
+            res += x["emissions_" + Vecteur]
+        return res
+
+    sim_param["f_Compute_emissions_totale"] = {
+        "emissions": lambda x, sim_param: f_Compute_emissions_totale(x, sim_param)}
+
+    return sim_param
+
+def set_model_function_indus(sim_param):
+    def f_Compute_conso(x, sim_param, Vecteur):
+        conso_unitaire = x["conso_unitaire_" + Vecteur]
+        return x["energy_need_per_" + sim_param["volume_variable_name"]] * x[
+            sim_param["volume_variable_name"]] * conso_unitaire
+
+    def f_Compute_conso_totale(x, sim_param):
+        res = 0.
+        for Vecteur in sim_param["Vecteurs"]:
+            res += x["conso_" + Vecteur]
+        return res
+
+    for Vecteur in sim_param["Vecteurs"]:
+        sim_param["f_Compute_conso_" + Vecteur] = {"conso_" + Vecteur: partial(f_Compute_conso, Vecteur=Vecteur)}
+    sim_param["f_Compute_conso_totale"] = {"Conso": lambda x, sim_param: f_Compute_conso_totale(x, sim_param)}
+
+    def f_Compute_emissions(x, sim_param):
+        emissions = 0
+        for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_" + Vecteur_] * x[
+            sim_param["volume_variable_name"]] * sim_param["Emissions_scope_2_3"][Vecteur_]
+        emissions += x["emissions_unitaire"] * x[sim_param["volume_variable_name"]]
+        return emissions
+
+    def f_Compute_emissions_year(x, sim_param, year):
+        emissions = 0
+        for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_" + Vecteur_] * x[
+            sim_param["volume_variable_name"]] * sim_param["Emissions_scope_2_3"][(Vecteur_, year)]
+        emissions += x["emissions_unitaire"] * x[sim_param["volume_variable_name"]]
+        return emissions
+
+    if type(sim_param["Emissions_scope_2_3"].index) == pd.MultiIndex:
+        sim_param["f_Compute_emissions"] = {
+            "Emissions": f_Compute_emissions_year}  # {"Emissions" : partial(f_Compute_emissions,year =year)}
+    else:
+        sim_param["f_Compute_emissions"] = {"Emissions": f_Compute_emissions}
+    return sim_param
 
 def get_index_name(xx):
     if type(xx) == pd.Series:

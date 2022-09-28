@@ -33,9 +33,9 @@ sim_param = interpolate_sim_param(sim_param)
 sim_param["retrofit_change_Mds_voy_km"]=sim_param["retrofit_change_total_proportion_Mds_voy_km"].diff().fillna(0)
 sim_param   =   complete_parameters(sim_param,Para_2_fill=Para_2_fill)
 sim_param["retrofit_change_Mds_voy_km"]=sim_param["retrofit_change_Mds_voy_km"]*sim_param["init_sim_stock"]["Mds_voy_km"]
-sim_param["init_sim_stock"]["energy_need_per_Mds_voy_km"] = sim_param["init_sim_stock"].apply(
-                            lambda x: 1 /(100*x["remplissage"]), axis=1).fillna(0)
-sim_param=set_model_functions(sim_param)
+#sim_param["init_sim_stock"]["energy_need_per_Mds_voy_km"] = sim_param["init_sim_stock"].apply(
+#                            lambda x: 1 /(100*x["remplissage"]), axis=1).fillna(0)
+sim_param=set_model_functions_simple(sim_param)
 sim_param["retrofit_Transition"]=sim_param["retrofit_Transition"].fillna(0)
 sim_param_voyageurs = sim_param
 end = time.process_time()
@@ -56,8 +56,8 @@ sim_param = interpolate_sim_param(sim_param)
 sim_param["retrofit_change_Mds_t_km"]=sim_param["retrofit_change_total_proportion_Mds_t_km"].diff().fillna(0)
 sim_param   =   complete_parameters(sim_param,Para_2_fill=Para_2_fill)
 sim_param["retrofit_change_Mds_t_km"]=sim_param["retrofit_change_Mds_t_km"]*sim_param["init_sim_stock"]["Mds_t_km"]
-sim_param["init_sim_stock"]["energy_need_per_Mds_t_km"] = sim_param["init_sim_stock"].apply(lambda x: 1 /(100), axis=1).fillna(0)
-sim_param=set_model_functions(sim_param)
+#sim_param["init_sim_stock"]["energy_need_per_Mds_t_km"] = sim_param["init_sim_stock"].apply(lambda x: 1 /(100), axis=1).fillna(0)
+sim_param=set_model_functions_simple(sim_param)
 sim_param["retrofit_Transition"]=sim_param["retrofit_Transition"].fillna(0)
 sim_param_fret = sim_param
 end = time.process_time()
@@ -111,7 +111,7 @@ fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Conso énergie finale par vecteur (en TWh)", xaxis_title="Année",yaxis_title="Conso [TWh]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 
-y_df = sim_stock_df.groupby(["year"])[[ 'emissions_'+Vecteur for Vecteur in sim_param["Vecteurs"]]].sum().loc[[year for year in sim_param["years"][1:]],:]
+y_df = sim_stock_df.groupby(["year"])[[ 'emissions_'+Vecteur for Vecteur in sim_param["Vecteurs"]]].sum().loc[[year for year in sim_param["years"][1:]],:]/10**3
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Emissions par vecteur [MT CO2]", xaxis_title="Année",yaxis_title="CO2 [MT]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
