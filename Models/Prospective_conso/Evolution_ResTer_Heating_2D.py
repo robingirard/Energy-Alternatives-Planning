@@ -34,7 +34,8 @@ dim_names = ["Energy_source", "building_type", "Vecteur", "year"];
 Index_names = ["Energy_source", "building_type"];
 Energy_system_name = "Energy_source"
 # Reading the data
-data_set_from_excel = pd.read_excel(Data_folder + "Hypotheses_ResTer_Heating_2D.xlsx", None);
+data_set_from_excel = pd.read_excel(Data_folder + "Hypotheses_ResTer_Heating_Scenario1.xlsx", None);
+# data_set_from_excel = pd.read_excel(Data_folder + "Hypotheses_ResTer_Heating_Scenario2.xlsx", None);
 # Extracting info from sheets and creating indexes etc
 sim_param = extract_sim_param(data_set_from_excel, Index_names=Index_names, dim_names=dim_names,
                               Energy_system_name=Energy_system_name)
@@ -56,7 +57,10 @@ Para_2_fill = {param: sim_param["base_index_year"] for param in
                 "new_energy"]}
 sim_param = complete_parameters(sim_param, Para_2_fill=Para_2_fill)
 
-sim_param["retrofit_change_surface"] = sim_param["retrofit_change_surface"] *sim_param["init_sim_stock"]["surface"]*(1-sim_param["old_taux_disp"].sum())
+final_share = (1 - sim_param["old_taux_disp"].sum()) if "old_taux_disp" in sim_param else 1
+
+sim_param["retrofit_change_surface"] = sim_param["retrofit_change_surface"] * sim_param["init_sim_stock"][
+    "surface"] * final_share
 
 # When data is not given for every string index (typically vecteurs), we complete
 sim_param = complete_missing_indexes(data_set_from_excel, sim_param, Index_names, dim_names)
@@ -97,8 +101,8 @@ plotly.offline.plot(fig, filename=Graphic_folder + 'file.html')  ## offline
 Var = "Conso"
 y_df = sim_stock_df.groupby(["year", Energy_system_name])[Var].sum().to_frame().reset_index(). \
     pivot(index=['year'], columns=Energy_system_name).loc[[year for year in sim_param["years"][1:]], Var]
-tmp=sim_stock_df.copy().reset_index()
-tmp=tmp[tmp["year"]==2049]
+tmp = sim_stock_df.copy().reset_index()
+tmp = tmp[tmp["year"] == 2049]
 fig = MyStackedPlotly(y_df=y_df)
 fig = fig.update_layout(title_text="Conso énergie finale par mode de transport (en TWh)", xaxis_title="Année",
                         yaxis_title="Conso [TWh]")
