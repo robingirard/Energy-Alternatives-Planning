@@ -44,7 +44,7 @@ sim_param["volume_variable_name"] = "surface"
 sim_param["init_sim_stock"]["surface"] = sim_param["init_sim_stock"]["surface"] * sim_param["init_sim_stock"]["IPONDL"]
 
 # We adjust energy need for electricity considering the primary energy factor
-sim_param["conso_unitaire_elec"]=sim_param["conso_unitaire_elec"]/2.3
+# sim_param["conso_unitaire_elec"]=sim_param["conso_unitaire_elec"]/2.3
 
 # When data is not given for every numeric index (typically years), we interpolate
 sim_param = interpolate_sim_param(sim_param)
@@ -54,9 +54,9 @@ sim_param["retrofit_change_surface"] = sim_param["retrofit_change_total_proporti
 Para_2_fill = {param: sim_param["base_index_year"] for param in
                ["retrofit_improvement", "retrofit_change_surface", "retrofit_Transition", "new_yearly_surface",
                 "new_energy"]}
-sim_param = complete_parameters_test(sim_param, Para_2_fill=Para_2_fill)
+sim_param = complete_parameters(sim_param, Para_2_fill=Para_2_fill)
 
-# sim_param["retrofit_change_surface"] = sim_param["retrofit_change_surface"] * sim_param["init_sim_stock"]["surface"]
+sim_param["retrofit_change_surface"] = sim_param["retrofit_change_surface"] *sim_param["init_sim_stock"]["surface"]*(1-sim_param["old_taux_disp"].sum())
 
 # When data is not given for every string index (typically vecteurs), we complete
 sim_param = complete_missing_indexes(data_set_from_excel, sim_param, Index_names, dim_names)
@@ -65,7 +65,7 @@ sim_param = complete_missing_indexes(data_set_from_excel, sim_param, Index_names
 sim_param = set_model_functions(sim_param)
 
 # We lanch the simulation
-sim_stock = launch_simulation_test(sim_param)
+sim_stock = launch_simulation(sim_param)
 
 sim_stock_df = pd.concat(sim_stock, axis=0).reset_index(). \
     rename(columns={"level_0": "year"}).set_index(["year", "Energy_source", "building_type", "old_new"])
