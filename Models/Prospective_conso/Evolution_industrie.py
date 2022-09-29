@@ -181,37 +181,7 @@ sim_param["retrofit_change_"+sim_param["volume_variable_name"]] = sim_param["ret
 Para_2_fill = {param : sim_param["base_index_year"] for param in ["retrofit_improvement","retrofit_change_unite_prod","retrofit_Transition","energy_need_per_unite_prod",
                                                                                                    "new_energy","new_yearly_repartition_per_Energy_source"]}
 sim_param   =   complete_parameters(sim_param,Para_2_fill=Para_2_fill)
-
-def f_Compute_conso(x,sim_param,Vecteur):
-    conso_unitaire = x["conso_unitaire_"+Vecteur]
-    return x["energy_need_per_"+sim_param["volume_variable_name"]] * x[sim_param["volume_variable_name"]]*conso_unitaire
-def f_Compute_conso_totale(x,sim_param):
-    res=0.
-    for Vecteur in sim_param["Vecteurs"]:
-        res+=x["conso_"+Vecteur]
-    return res
-
-for Vecteur in sim_param["Vecteurs"]:
-    sim_param["f_Compute_conso_"+Vecteur]={"conso_"+Vecteur : partial(f_Compute_conso,Vecteur =Vecteur)}
-sim_param["f_Compute_conso_totale"]={"Conso" : lambda x,sim_param: f_Compute_conso_totale(x,sim_param)}
-
-
-def f_Compute_emissions(x,sim_param):
-    emissions = 0
-    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]* x[sim_param["volume_variable_name"]]*sim_param["Emissions_scope_2_3"][Vecteur_]
-    emissions+= x["emissions_unitaire"]* x[sim_param["volume_variable_name"]]
-    return emissions
-
-def f_Compute_emissions_year(x,sim_param,year):
-    emissions = 0
-    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]* x[sim_param["volume_variable_name"]]*sim_param["Emissions_scope_2_3"][(Vecteur_,year)]
-    emissions+= x["emissions_unitaire"]* x[sim_param["volume_variable_name"]]
-    return emissions
-
-if type(sim_param["Emissions_scope_2_3"].index) == pd.MultiIndex:
-    sim_param["f_Compute_emissions"]= {"Emissions" : f_Compute_emissions_year }#{"Emissions" : partial(f_Compute_emissions,year =year)}
-else:
-    sim_param["f_Compute_emissions"]={"Emissions" : f_Compute_emissions}
+sim_param = set_model_function_indus(sim_param)
 sim_param_olefines=sim_param
 end = time.process_time()
 print("Chargement des données, des modèles et interpolation terminés en : "+str(end-start)+" secondes")
@@ -231,37 +201,7 @@ sim_param["retrofit_change_"+sim_param["volume_variable_name"]] = sim_param["ret
 Para_2_fill = {param : sim_param["base_index_year"] for param in ["retrofit_improvement","retrofit_change_unite_prod","retrofit_Transition","energy_need_per_unite_prod",
                                                                                                    "new_energy","new_yearly_repartition_per_Energy_source"]}
 sim_param   =   complete_parameters(sim_param,Para_2_fill=Para_2_fill)
-
-def f_Compute_conso(x,sim_param,Vecteur):
-    conso_unitaire = x["conso_unitaire_"+Vecteur]
-    return x["energy_need_per_"+sim_param["volume_variable_name"]] * x[sim_param["volume_variable_name"]]*conso_unitaire
-def f_Compute_conso_totale(x,sim_param):
-    res=0.
-    for Vecteur in sim_param["Vecteurs"]:
-        res+=x["conso_"+Vecteur]
-    return res
-
-for Vecteur in sim_param["Vecteurs"]:
-    sim_param["f_Compute_conso_"+Vecteur]={"conso_"+Vecteur : partial(f_Compute_conso,Vecteur =Vecteur)}
-sim_param["f_Compute_conso_totale"]={"Conso" : lambda x,sim_param: f_Compute_conso_totale(x,sim_param)}
-
-
-def f_Compute_emissions(x,sim_param):
-    emissions = 0
-    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]* x[sim_param["volume_variable_name"]]*sim_param["Emissions_scope_2_3"][Vecteur_]
-    emissions+= x["emissions_unitaire"]* x[sim_param["volume_variable_name"]]
-    return emissions
-
-def f_Compute_emissions_year(x,sim_param,year):
-    emissions = 0
-    for Vecteur_ in sim_param["Vecteurs"]: emissions += x["conso_unitaire_"+Vecteur_]* x[sim_param["volume_variable_name"]]*sim_param["Emissions_scope_2_3"][(Vecteur_,year)]
-    emissions+= x["emissions_unitaire"]* x[sim_param["volume_variable_name"]]
-    return emissions
-
-if type(sim_param["Emissions_scope_2_3"].index) == pd.MultiIndex:
-    sim_param["f_Compute_emissions"]= {"Emissions" : f_Compute_emissions_year }#{"Emissions" : partial(f_Compute_emissions,year =year)}
-else:
-    sim_param["f_Compute_emissions"]={"Emissions" : f_Compute_emissions}
+sim_param = set_model_function_indus(sim_param)
 sim_param_amonia=sim_param
 end = time.process_time()
 print("Chargement des données, des modèles et interpolation terminés en : "+str(end-start)+" secondes")
@@ -315,7 +255,8 @@ col_class_dict={'BF-BOF' : 1, 'Bio-BF': 1, 'Bio-DRI-EAF': 1, 'CH4-DRI-EAF': 1, '
        'CO2-H2-OCM':4, 'Coal to Olefins':4, 'Coal to Olefins - Eboiler':4,
        'Gas to Olefins':4, 'Gas to Olefins - Eboiler':4,
        'Naphtha steam cracking':4, 'Naphtha steam cracking - Eboiler':4,
-       'Oxidative Coupling of Methane (OCM)':4
+       'Oxidative Coupling of Methane (OCM)':4,
+        'Haber-Bosch' : 5, 'Molten Salt': 5, 'SSAS': 5, 'eNH3 (electrolysis)': 5
                 }
 #unité de production : kt.
 # Energie : MWh/tk émissions en tCO2 par kt produit.
