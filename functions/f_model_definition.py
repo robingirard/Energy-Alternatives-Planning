@@ -32,7 +32,8 @@ def Create_pyomo_model_sets_parameters(Parameters,
         for set_name in Set_vals:
             if set_name in Parameters[key_name].index.names:
                 Set_vals[set_name]=Set_vals[set_name].union(set(Parameters[key_name].index.get_level_values(set_name).unique()))
-                if set_name == "Date": Date_list = Parameters[key_name].index.get_level_values(set_name).unique()
+                if set_name == "Date":
+                    Date_list = Parameters[key_name].index.get_level_values(set_name).unique()
 
 
     ###############
@@ -64,7 +65,6 @@ def Create_pyomo_model_sets_parameters(Parameters,
             if Dim_name not in get_allSets(model).keys():
                 setattr(model,Index_names[0] +"_" +Index_names[1]+"_" +Index_names[2]+"_" +Index_names[3],
                     getattr(model,Index_names[0]) * getattr(model,Index_names[1])* getattr(model,Index_names[2])* getattr(model,Index_names[3]))
-
 
 
     #TODO Make this part more generic --> defined name for AREAS-DATE, ....

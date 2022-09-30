@@ -2,16 +2,17 @@ import os
 import warnings
 warnings.filterwarnings("ignore")
 
-
 #from functions.f_optimization import *
 from functions.f_consumptionModels import *
 from pyomo.opt import SolverFactory
+
+from Models.Seven_node_Europe.Data_processing_functions import *
+from Models.Seven_node_Europe.Multinode_model import *
+
 import pickle
 if os.path.basename(os.getcwd()) != "Seven_node_Europe":
     os.chdir('Models/Seven_node_Europe/')
 
-from Models.Seven_node_Europe.Data_processing_functions import *
-from Models.Seven_node_Europe.Multinode_model import *
 
 
 
@@ -43,6 +44,7 @@ def main_historical(year=2018,number_of_sub_techs=1,error_deactivation=False):
     areaConsumption = pd.read_csv(
         InputFolder + str(year) + '_MultiNodeAreaConsumption.csv',
         decimal='.', skiprows=0, parse_dates=['Date'])
+    areaConsumption.dropna(inplace=True)
     areaConsumption["Date"] = pd.to_datetime(areaConsumption["Date"])
     areaConsumption.set_index(["AREAS", "Date"], inplace=True)
 
@@ -52,6 +54,7 @@ def main_historical(year=2018,number_of_sub_techs=1,error_deactivation=False):
         InputFolder + str(year) +'_Multinode_availability_factor.csv',
         decimal='.', skiprows=0, parse_dates=['Date']).set_index(["AREAS", "Date", "TECHNOLOGIES"])
     availabilityFactor.loc[availabilityFactor.availabilityFactor > 1, "availabilityFactor"] = 1
+    availabilityFactor.dropna(inplace=True)
 
     #Import interconnections data
     ExchangeParameters = pd.read_csv(InputFolder + str(year) + '_interconnexions.csv', sep=",",
@@ -112,4 +115,4 @@ def main_historical(year=2018,number_of_sub_techs=1,error_deactivation=False):
     end_time = datetime.now()
     print('\t Total duration: {}'.format(end_time - start_time))
     return Variables
-# main_historical(number_of_sub_techs=3)
+main_historical(year=2018,number_of_sub_techs=1)

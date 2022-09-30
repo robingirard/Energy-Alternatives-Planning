@@ -1,16 +1,24 @@
 import os
 import warnings
-warnings.filterwarnings("ignore")
 
+import pandas as pd
+
+warnings.filterwarnings("ignore")
 
 #from functions.f_optimization import *
 from functions.f_consumptionModels import *
+from Models.Seven_node_Europe.Data_processing_functions import *
+from Models.Seven_node_Europe.Multinode_model import *
+
 from pyomo.opt import SolverFactory
 import pickle
 if os.path.basename(os.getcwd()) != "Seven_node_Europe":
     os.chdir('Models/Seven_node_Europe/')
-from Data_processing_functions import *
-from Multinode_model import *
+
+
+
+
+
 
 InputFolder = 'Input data/2030/'
 InputFolder_other="Input data/Conso flex files/"
@@ -25,7 +33,9 @@ def main_2030(weather_year=2018,carbon_tax=60,gas_price_coef=1,coal_price_coef=1
         print('No weather data for ' + str(weather_year))
         print("Weather data is available from 2017 to 2019")
         return None
-
+    if weather_year==2019:
+        print("ConsumptionTemperature_1996TO2019_FR.csv is not complete \nTherefore 2019 weather data cannot be processed")
+        return None
     if error_deactivation:
         import logging  # to deactivate pyomo false error warnings
         logging.getLogger('pyomo.core').setLevel(logging.ERROR)
@@ -43,6 +53,7 @@ def main_2030(weather_year=2018,carbon_tax=60,gas_price_coef=1,coal_price_coef=1
     areaConsumption = pd.read_csv(
         InputFolder + str(year) + '_MultiNodeAreaConsumption_' + str(weather_year) + '_data_FR_no_H2_EV_Steel.csv',
         decimal='.', skiprows=0, parse_dates=['Date'])
+    areaConsumption.dropna(inplace=True)
     areaConsumption["Date"] = pd.to_datetime(areaConsumption["Date"])
     areaConsumption.set_index(["AREAS", "Date"], inplace=True)
 
@@ -50,9 +61,11 @@ def main_2030(weather_year=2018,carbon_tax=60,gas_price_coef=1,coal_price_coef=1
     #Import availibility factor data
     availabilityFactor = pd.read_csv(
         InputFolder + str(year) + "_" + str(weather_year) + '_Multinode_availability_factor.csv',
-        decimal='.', skiprows=0, parse_dates=['Date']).set_index(["AREAS", "Date", "TECHNOLOGIES"])
+        decimal='.', skiprows=0, parse_dates=['Date'])
     availabilityFactor.loc[availabilityFactor.availabilityFactor > 1, "availabilityFactor"] = 1
-
+    availabilityFactor.dropna(inplace=True)
+    availabilityFactor["Date"]=pd.to_datetime(availabilityFactor["Date"])
+    availabilityFactor.set_index(["AREAS", "Date", "TECHNOLOGIES"],inplace=True)
     #Import interconnections data
     ExchangeParameters = pd.read_csv(InputFolder + str(year) + '_interconnexions.csv', sep=";",
                                      decimal='.').set_index(["AREAS", "AREAS.1"])
@@ -69,7 +82,7 @@ def main_2030(weather_year=2018,carbon_tax=60,gas_price_coef=1,coal_price_coef=1
 
     #Flexibility data inclusion
     ConsoParameters_,labour_ratio,to_flex_consumption=Flexibility_data_processing(fr_flex_consum,areaConsumption,2030,weather_year)
-
+    to_flex_consumption
     #Marginal cost adjustment and merit order simulation
     TechParameters=Marginal_cost_adjustment(TechParameters,number_of_sub_techs,techs,areas,carbon_tax,ctax_ini,gas_price_coef,coal_price_coef)
 
@@ -117,4 +130,4 @@ def main_2030(weather_year=2018,carbon_tax=60,gas_price_coef=1,coal_price_coef=1
     end_time = datetime.now()
     print('\t Total duration: {}'.format(end_time - start_time))
     return Variables
-# main_2030(number_of_sub_techs=1)
+# main_2030(weather_year=2018,number_of_sub_techs=1)

@@ -24,26 +24,6 @@ def LoadProfile2Consumption(Profile_df, year, annual_consum):
     Profile_df_merged.rename(columns={"Time":"Date"},inplace=True)
     return Profile_df_merged
 
-def EVProfile2Consumption(Profile_df,year,nb_EV):
-    ConsoSepareeNew_df = pd.DataFrame()
-    ConsoSepareeNew_df["Time"] = pd.date_range(start="1/1/" + str(year), end="31/12/" + str(year) + " 23:00", freq="H")
-    # ConsoSepareeNew_df.set_index("Time",inplace=True)
-    ConsoSepareeNew_df = ConsoSepareeNew_df.assign(
-        Saison=ConsoSepareeNew_df["Time"].dt.month,
-        Jour=ConsoSepareeNew_df["Time"].dt.weekday,
-        Heure=ConsoSepareeNew_df["Time"].dt.hour);
-    ConsoSepareeNew_df['Jour'] = ConsoSepareeNew_df['Jour']+1
-    ConsoSepareeNew_df['Saison'] = ConsoSepareeNew_df['Saison'].apply(
-        lambda x: "Hiver" if x in [10,11,12,1,2,3] else "Ete")
-
-    Profile_df_merged = ConsoSepareeNew_df.merge(Profile_df, on=["Saison","Jour", "Heure"])
-
-    Profile_df_merged = Profile_df_merged[["Time", "Puissance.MW.par.million"]]
-    Profile_df_merged.sort_values("Time", inplace=True)
-    Profile_df_merged["Puissance.MW.par.million"] = Profile_df_merged["Puissance.MW.par.million"] * nb_EV
-    Profile_df_merged.rename(columns={"Puissance.MW.par.million":"Conso"},inplace=True)
-    Profile_df_merged.reset_index(drop=True,inplace=True)
-    return Profile_df_merged
 
 def bisextile(year):
     if year%4==0:
@@ -144,16 +124,18 @@ def Flexibility_data_processing(fr_flex_consum,areaConsumption,year,weather_year
 
     # obtaining industry-metal consumption
     Profile_df = pd.read_csv(InputFolder_other + "ConsumptionDetailedProfiles.csv")
+    # print(Profile_df)
     Profile_df = Profile_df[Profile_df.type == "Ind"]
+    # print(Profile_df)
     Profile_df = Profile_df[Profile_df.Nature == "MineraiMetal"]
+    # print(Profile_df.UsagesGroupe.unique())
     Profile_df = Profile_df[Profile_df.UsagesGroupe == "Process"]
+    # print(Profile_df)
     steel_consumption = LoadProfile2Consumption(Profile_df, year, fr_flex_consum["conso"]["steel_twh"]).set_index(
         ["Date"])
-
     ConsoTempe_df = pd.read_csv(InputFolder_other + 'ConsumptionTemperature_1996TO2019_FR.csv',
                                 parse_dates=['Date']).set_index(["Date"])  #
     ConsoTempe_df_nodup = ConsoTempe_df.loc[~ConsoTempe_df.index.duplicated(), :]
-
     VEProfile_df = pd.read_csv(InputFolder_other + 'EVModel.csv', sep=';')
     NbVE = fr_flex_consum["conso"]["nbVE"]  # millions
     ev_consumption = NbVE * Profile2Consumption(Profile_df=VEProfile_df,
@@ -174,7 +156,6 @@ def Flexibility_data_processing(fr_flex_consum,areaConsumption,year,weather_year
                                          {'to_flex_consumption': h2_Energy_flat_consumption, 'FLEX_CONSUM': 'H2',
                                           'AREAS': 'FR'}).reset_index().set_index(
                                          ['AREAS', 'Date', 'FLEX_CONSUM'])])
-    # print(to_flex_consumption)
     ConsoParameters_ = ConsoParameters.join(
         to_flex_consumption.groupby("FLEX_CONSUM").max().rename(columns={"to_flex_consumption": "max_power"}))
     ConsoParameters_.loc[("FR", "Steel"), "flex_ratio"] = fr_flex_consum["ratio"]["steel_ratio"]
