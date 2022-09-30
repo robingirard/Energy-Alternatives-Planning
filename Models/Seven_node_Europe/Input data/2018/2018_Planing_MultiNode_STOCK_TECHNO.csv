@@ -1,0 +1,15 @@
+AREAS,STOCK_TECHNO,storageCost,p_max,c_min,c_max,efficiency_in,dissipation,efficiency_out
+FR,Battery,100,0.0,0.0,0.0,0.9,0,0.9
+FR,HydroStorage,100,5020.0,100400.0,100400.0,0.9,0,0.9
+BE,Battery,100,0.0,0.0,0.0,0.9,0,0.9
+BE,HydroStorage,100,1308.0,32700.0,32700.0,0.9,0,0.9
+DE,Battery,100,0.0,0.0,0.0,0.9,0,0.9
+DE,HydroStorage,100,8918.24,133773.6,133773.6,0.9,0,0.9
+ES,Battery,100,0.0,0.0,0.0,0.9,0,0.9
+ES,HydroStorage,100,5645.4,56454.0,56454.0,0.9,0,0.9
+GB,Battery,100,0.0,0.0,0.0,0.9,0,0.9
+GB,HydroStorage,100,2744.0,27440.0,27440.0,0.9,0,0.9
+IT,Battery,100,0.0,0.0,0.0,0.9,0,0.9
+IT,HydroStorage,100,6453.0,64530.0,64530.0,0.9,0,0.9
+CH,Battery,100,0.0,0.0,0.0,0.9,0,0.9
+CH,HydroStorage,100,6593.7,131874.0,131874.0,0.9,0,0.9
