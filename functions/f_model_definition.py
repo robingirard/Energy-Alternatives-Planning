@@ -35,13 +35,13 @@ def Create_pyomo_model_sets_parameters(Parameters,
                 if set_name == "Date": Date_list = Parameters[key_name].index.get_level_values(set_name).unique()
 
 
-
     ###############
     # Sets       ##
     ###############
     for set_name in Set_vals:
         if set_name != "AREAS.1":
             setattr(model,set_name,Set(initialize=Set_vals[set_name], ordered=False))
+
     #get_allSets(model).keys()
     #Set_names = get_allSetsnames(model)
     # product set are defined depending on existing parameters multi_index
