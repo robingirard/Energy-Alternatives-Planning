@@ -1,0 +1,4 @@
+AREAS;FLEX_CONSUM;LoadCost;flex_ratio;max_ratio;flex_type;labourcost
+FR;Steel;2009000;0.9;1.0;week;78
+FR;EV;3409;0.15;1.0;day;0
+FR;H2;53000;1.0;1.0;year;0
