@@ -115,4 +115,4 @@ def main_historical(year=2018,number_of_sub_techs=1,error_deactivation=False):
     end_time = datetime.now()
     print('\t Total duration: {}'.format(end_time - start_time))
     return Variables
-main_historical(year=2018,number_of_sub_techs=1)
+main_historical(year=2019,number_of_sub_techs=5)
