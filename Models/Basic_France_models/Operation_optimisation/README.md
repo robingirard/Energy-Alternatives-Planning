@@ -1,9 +1,7 @@
 
 # Optimisation of operation - One node
 This folder contains 
-
- - texts with maths and introduction to the pyomo package to do the math in python (in [Math_and_pyomo_background_for_operation.ipynb](./Math_and_pyomo_background_for_operation.ipynb))
- - operation optimisation models for one node defined in [f_operationModels.py](./f_operationModels.py)
+ - operation optimisation models for one node defined in [f_operationModels.py](./f_operationModels.py). To understand de maths and learn about how to use the pyomo code, see [here](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Basic_France_models/Operation_optimisation/case_operation_step_by_step_learning.html)
    - without storage in function GetElectricSystemModel_GestionSingleNode 
    - with storage in function GetElectricSystemModel_GestionSingleNode_withStorage 
  - case studies that apply these models:
