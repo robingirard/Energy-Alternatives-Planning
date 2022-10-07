@@ -29,7 +29,7 @@ Once you have downloaded the Energy-Alternatives-Planing folder, in the terminal
 Contains folders with Models. Each folder in Models Folder contains a set of Models and associated data and case studies. 
 See the corresponding [README](Models/README.md). You can add your own Models folder to contribute, or by creating a case study in an existing Models Folder.
 
-If you want to learn how to use the energy system planing tool, you can jump directly into the one node [Basic_France_models](Models/Basic_France_models/README.md) or the multinode [Basic_France_Germany_models](Models/Basic_France_Germany_models/README.md). 
+If you want to learn how to use the energy system planing tool, you can jump directly into the one node [operation example](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Basic_France_models/Operation_optimisation/case_operation_step_by_step_learning.html) or mode generally into the one node model [Basic_France_models](Models/Basic_France_models/README.md) or the multinode [Basic_France_Germany_models](Models/Basic_France_Germany_models/README.md). 
 There, you will find tutorials on how to use the simulation/modelisation tool, how to use pyomo and you will find a mathematical description of the models.
 
 If you want to learn how to use our simple consumption prospective models for France, you can jump directly in [Prospective_conso](Models/Prospective_conso/README.md). 
