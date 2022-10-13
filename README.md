@@ -2,7 +2,7 @@
 
 This project contains code and data to model the electric system.
 It relies mainly on a combined use of two well known python packages (panda and pyomo)
-for linear programming adapted for the specific use of electric system modeling.
+for linear programming adapted for the specific use of energy system modeling.
 
 The installation relies on the use of a conda environment. Instruction is below
 #TODO : add links to illustrative exemples here. 
