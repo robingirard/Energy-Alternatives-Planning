@@ -11,7 +11,7 @@ The installation relies on the use of a conda environment. Instruction is below
 
 * [1. Installation](#installations)
 * [2. Models Folder](#CasDEtude)
-* [3. Repertoire functions](#functions)
+* [3. Functions Folder](#functions)
 * [4. Pycharm tips](#pycharm)
 * [5. Getting help](#GettingH)
 * [6. Getting involved](#GettingI)
@@ -35,6 +35,21 @@ There, you will find tutorials on how to use the simulation/modelisation tool, h
 If you want to learn how to use our simple consumption prospective models for France, you can jump directly in [Prospective_conso](Models/Prospective_conso/README.md). 
 
 If you want to use a more advanced case with 7 nodes in Europe to model the future european electric system, you can jump directly in [Seven_node_Europe](Models/Seven_node_Europe/README.md). 
+
+list of available web page with examples/documentation :
+[one node operation optim](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Basic_France_models/Operation_optimisation/case_operation_step_by_step_learning.html) 
+[one node planification optim](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Basic_France_models/Planing_optimisation/case_planing_step_by_step_learning.html)
+[two node operation optim]
+[two node planification optim]
+[7 node EU model Vs historical data](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Seven_node_Europe/Simulation_analysis_Historical.html)
+[7 node EU model for 2030](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Seven_node_Europe/Simulation_analysis_2030.html)
+[time series of consumption model](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Basic_France_models/Consumption/Consumption_TS_manipulation_examples.html)
+[time series of availability/production]((https://robingirard.github.io/Energy-Alternatives-Planing/Models/Basic_France_models/Production/Production_visualisation_and_analysis.html))
+[residential heating consumption evolution](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Prospective_conso/Production/Evolution_ResTer_Heating_2D.html)
+[transport consumption evolution](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Prospective_conso/Production/Evolution_Transport_2D.html)
+[industry consumption evolution](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Prospective_conso/Production/Evolution_industrie.html)
+
+
 
 ## 3- functions folder <a class="anchor" id="functions"></a>
 Contains:  
