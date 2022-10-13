@@ -10,9 +10,9 @@ The tool is generic and works with an excel file as input. Its root principle ar
  
 All the python code relies on the use of panda module in a vectorised way.
 Several cases studies are available : 
- - Residential and tertiary heating/building evolution (France) Evolution_ResTer_Heating_2D.ipynb [notebook](./Evolution_ResTer_Heating_2D.ipynb) -- [see associated web page](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Prospective_conso/Production/Evolution_ResTer_Heating_2D.html). 
- - Transport evolutino (France) Evolution_Transport_2D.html [notebook](./Evolution_Transport_2D.html) -- [see associated web page](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Prospective_conso/Production/Evolution_Transport_2D.html).
- - Industry evolution (France, on 5 sectors : Steel, Ammonia, olefine, hydrogen, ceramics) Evolution_industrie.ipynb [notebook](./Evolution_industrie.ipynb) -- [see associated web page](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Prospective_conso/Production/Evolution_industrie.html).
+ - Residential and tertiary heating/building evolution (France) Evolution_ResTer_Heating_2D.ipynb [notebook](./Evolution_ResTer_Heating_2D.ipynb) -- [see associated web page](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Prospective_conso/Evolution_ResTer_Heating_2D.html). 
+ - Transport evolutino (France) Evolution_Transport_2D.html [notebook](./Evolution_Transport_2D.html) -- [see associated web page](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Prospective_conso/Evolution_Transport_2D.html).
+ - Industry evolution (France, on 5 sectors : Steel, Ammonia, olefine, hydrogen, ceramics) Evolution_industrie.ipynb [notebook](./Evolution_industrie.ipynb) -- [see associated web page](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Prospective_conso/Evolution_industrie.html).
 
 Other cases were available but need a code update 
 
