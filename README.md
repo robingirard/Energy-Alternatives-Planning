@@ -34,6 +34,8 @@ There, you will find tutorials on how to use the simulation/modelisation tool, h
 
 If you want to learn how to use our simple consumption prospective models for France, you can jump directly in [Prospective_conso](Models/Prospective_conso/README.md). 
 
+If you want to use a more advanced case with 7 nodes in Europe to model the future european electric system, you can jump directly in [Seven_node_Europe](Models/Seven_node_Europe/README.md). 
+
 ## 3- functions folder <a class="anchor" id="functions"></a>
 Contains:  
  - [tools](functions/f_tools.py) that can be used to facilitate the interface between pyomo optimisation models results and parameters and panda. 
