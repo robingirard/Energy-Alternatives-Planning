@@ -44,7 +44,7 @@ list of available web page with examples/documentation :
 [7 node EU model Vs historical data](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Seven_node_Europe/Simulation_analysis_Historical.html)
 [7 node EU model for 2030](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Seven_node_Europe/Simulation_analysis_2030.html)
 [time series of consumption model](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Basic_France_models/Consumption/Consumption_TS_manipulation_examples.html)
-[time series of availability/production]((https://robingirard.github.io/Energy-Alternatives-Planing/Models/Basic_France_models/Production/Production_visualisation_and_analysis.html))
+[time series of availability/production](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Basic_France_models/Production/Production_visualisation_and_analysis.html)
 [residential heating consumption evolution](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Prospective_conso/Evolution_ResTer_Heating_2D.html)
 [transport consumption evolution](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Prospective_conso/Evolution_Transport_2D.html)
 [industry consumption evolution](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Prospective_conso/Evolution_industrie.html)
