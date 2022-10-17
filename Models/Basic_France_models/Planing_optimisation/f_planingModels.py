@@ -371,7 +371,7 @@ def Model_SingleNode_online_flex(Parameters):
     model.availabilityFactor = Param(model.Date_TECHNOLOGIES, domain=PercentFraction, default=1,
                                      initialize=availabilityFactor.loc[:, "availabilityFactor"].squeeze().to_dict())
     model.to_flex_consumption = Param(model.Date_FLEX_CONSUM, domain=NonNegativeReals, default=1,
-                                     initialize=to_flexible_consumption.loc[:, "areaConsumption"].squeeze().to_dict())
+                                     initialize=to_flexible_consumption.loc[:, "to_flex_consumption"].squeeze().to_dict())
     # with test of existing columns on TechParameters
     for COLNAME in TechParameters:
         if COLNAME not in ["TECHNOLOGIES", "AREAS"]:  ### each column in TechParameters will be a parameter
@@ -383,7 +383,11 @@ def Model_SingleNode_online_flex(Parameters):
             exec("model." + COLNAME + " =Param(model.STOCK_TECHNO,mutable=False, domain=NonNegativeReals,default=0," +
                  "initialize=StorageParameters." + COLNAME + ".squeeze().to_dict())")
 
-    ConsoParameters_=ConsoParameters.join(to_flexible_consumption.groupby("FLEX_CONSUM").max().rename(columns={"areaConsumption" : "max_power"}))
+
+    if "to_flex_consumption" not in ConsoParameters:
+        ConsoParameters_=ConsoParameters.join(to_flexible_consumption.groupby("FLEX_CONSUM").max().rename(columns={"to_flex_consumption" : "max_power"}))
+    else:
+        ConsoParameters_=ConsoParameters.rename(columns={"to_flex_consumption" : "max_power"})
 
     for COLNAME in ConsoParameters_:
         if COLNAME not in ["FLEX_CONSUM", "AREAS"]:  ### each column in StorageParameters will be a parameter

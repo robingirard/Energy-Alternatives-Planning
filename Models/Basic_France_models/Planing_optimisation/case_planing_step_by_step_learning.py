@@ -39,6 +39,11 @@ solverpath['cplex']=cplexPATH+"/"+"cplex"
 solver = 'mosek'
 #endregion
 
+pd.options.display.width = 0
+pd.set_option('display.max_rows', 500)
+pd.set_option('display.max_columns', 500)
+pd.set_option('display.width', 1000)
+
 InputConsumptionFolder='Models/Basic_France_models/Consumption/Data/'
 InputProductionFolder='Models/Basic_France_models/Production/Data/'
 InputPlaningFolder='Models/Basic_France_models/Planing_optimisation/Data/'
@@ -94,10 +99,10 @@ energyCtrDual
 round(energyCtrDual.energyCtr,2).unique()
 
 # Analyse CapacityCtr
-CapacityCtrDual=Constraints['CapacityCtr'].pivot(index="Date",columns='TECHNOLOGIES', values='CapacityCtr')*1000000;
-round(CapacityCtrDual,2)
-round(CapacityCtrDual.OldNuke,2).unique() ## if you increase by Delta the installed capacity of nuke you decrease by xxx the cost when nuke is not sufficient
-round(CapacityCtrDual.CCG,2).unique() ## increasing the capacity of CCG as no effect on prices
+#CapacityCtrDual=Constraints['maxCapacityCtr'].pivot(index="Date",columns='TECHNOLOGIES', values='CapacityCtr')*1000000;
+#round(CapacityCtrDual,2)
+#round(CapacityCtrDual.OldNuke,2).unique() ## if you increase by Delta the installed capacity of nuke you decrease by xxx the cost when nuke is not sufficient
+#round(CapacityCtrDual.CCG,2).unique() ## increasing the capacity of CCG as no effect on prices
 #endregion
 
 #region II - Ramp Single area : loading parameters loading parameterscase with ramp constraints
@@ -134,110 +139,37 @@ Delta=(production_df.sum(axis=1) - areaConsumption.areaConsumption);
 abs(Delta).max()
 #endregion
 
-#region II - Ramp Single area : visualisation and lagrange multipliers
-fig=MyStackedPlotly(y_df=production_df,Conso = areaConsumption)
-fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
-plotly.offline.plot(fig, filename=GraphicalResultsFolder+'file.html') ## offline
-#fig2.show()
-
-#### lagrange multipliers
-Constraints= getConstraintsDual_panda(model)
-
-# Analyse energyCtr
-energyCtrDual=Constraints['energyCtr']; energyCtrDual['energyCtr']=energyCtrDual['energyCtr']*1000000
-energyCtrDual
-round(energyCtrDual.energyCtr,2).unique()
-
-# Analyse CapacityCtr
-CapacityCtrDual=Constraints['CapacityCtr'].pivot(index="Date",columns='TECHNOLOGIES', values='CapacityCtr')*1000000;
-round(CapacityCtrDual,2)
-round(CapacityCtrDual.OldNuke,2).unique() ## if you increase by Delta the installed capacity of nuke you decrease by xxx the cost when nuke is not sufficient
-round(CapacityCtrDual.CCG,2).unique() ## increasing the capacity of CCG as no effect on prices
-#endregion
-
-#region III - Ramp multiple area : loading parameters
-Zones="FR_DE_GB_ES"
-year=2016
-Selected_AREAS=["FR","DE"]
-Selected_TECHNOLOGIES=['OldNuke', 'CCG','WindOnShore',"curtailment"] #you'll add 'Solar' after #'NewNuke', 'HydroRiver', 'HydroReservoir','WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
-
-#### reading CSV files
-areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["AREAS","Date"])
-availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["AREAS","Date","TECHNOLOGIES"])
-TechParameters = pd.read_csv(InputFolder+'Planing_MultiNode_DE-FR_TECHNOLOGIES_AREAS.csv',
-                             sep=',',decimal='.',skiprows=0,comment="#").set_index(["AREAS","TECHNOLOGIES"])
-
-ExchangeParameters = pd.read_csv(InputFolder+'Hypothese_DE-FR_AREAS_AREAS.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["AREAS","AREAS.1"])
-#### Selection of subset
-TechParameters=TechParameters.loc[(Selected_AREAS,Selected_TECHNOLOGIES),:]
-areaConsumption=areaConsumption.loc[(Selected_AREAS,slice(None)),:]
-availabilityFactor=availabilityFactor.loc[(Selected_AREAS,slice(None),Selected_TECHNOLOGIES),:]
-TechParameters.loc[(slice(None),"OldNuke"),'RampConstraintMoins']=0.01 ## a bit strong to put in light the effect
-TechParameters.loc[(slice(None),"OldNuke"),'RampConstraintPlus']=0.02 ## a bit strong to put in light the effect
-#endregion
-
-#region III - Ramp multiple area : solving and loading results
-### small data cleaning
-availabilityFactor.availabilityFactor[availabilityFactor.availabilityFactor>1]=1
-model = GetElectricSystemModel_Planing(Parameters={"areaConsumption"      :   areaConsumption,
-                                                   "availabilityFactor"   :   availabilityFactor,
-                                                   "TechParameters"       :   TechParameters,
-                                                   "ExchangeParameters"   : ExchangeParameters})
-
-opt = SolverFactory(solver)
-results=opt.solve(model)
-Variables=getVariables_panda_indexed(model)
-print(extractCosts(Variables))
-print(extractEnergyCapacity(Variables))
-
-production_df=EnergyAndExchange2Prod(Variables)
-
-### Check sum Prod = Consumption
-Delta= production_df.sum(axis=1)-areaConsumption.areaConsumption
-abs(Delta).sum()
-
-## adding dates
-
-fig=MyAreaStackedPlot(production_df,Conso=areaConsumption)
-fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
-plotly.offline.plot(fig, filename='file.html') ## offline
-
-Constraints= getConstraintsDual_panda(model)
-Constraints.keys()
-#endregion
-
-#region IV Ramp+Storage single area : loading parameters
+#region III Ramp+Storage single area : loading parameters
 Zones="FR"
 year=2013
 
 Selected_TECHNOLOGIES=['OldNuke','WindOnShore', 'CCG',"curtailment",'HydroRiver', 'HydroReservoir',"Solar"] ## try adding 'HydroRiver', 'HydroReservoir'
 
 #### reading CSV files
-areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
+areaConsumption = pd.read_csv(InputConsumptionFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
-availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
+availabilityFactor = pd.read_csv(InputProductionFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
-TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1BIS_TECHNOLOGIES.csv',
+TechParameters = pd.read_csv(InputPlaningFolder+'Planing-RAMP1BIS_TECHNOLOGIES.csv',
                              sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
-StorageParameters = pd.read_csv(InputFolder+'Planing-RAMP1_STOCK_TECHNO.csv',sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
+StorageParameters = pd.read_csv(InputPlaningFolder+'Planing-RAMP1_STOCK_TECHNO.csv',sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
 
 #### Selection of subset
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
 TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
 #TechParameters.loc["CCG",'capacity']=100000 ## margin to make everything work
-TechParameters.loc["CCG",'maxCapacity']=50000
-TechParameters.loc["OldNuke",'maxCapacity']=30000
-TechParameters.loc["OldNuke",'RampConstraintMoins']=0.02 ## a bit strong to put in light the effect
-TechParameters.loc["OldNuke",'RampConstraintPlus']=0.02 ## a bit strong to put in light the effect
+TechParameters.loc["CCG",'maxCapacity']=70000
+TechParameters.loc["OldNuke",'maxCapacity']=35000
+TechParameters.loc["OldNuke",'RampConstraintMoins']=0.03 ## a bit strong to put in light the effect
+TechParameters.loc["OldNuke",'RampConstraintPlus']=0.03 ## a bit strong to put in light the effect
 #endregion
 
-#region IV Ramp+Storage single area : solving and loading results
-model = GetElectricSystemModel_Planing(Parameters={"areaConsumption"      :   areaConsumption,
+#region III Ramp+Storage single area : solving and loading results
+model = GetElectricSystemModel_PlaningSingleNode_withStorage(Parameters={"areaConsumption"      :   areaConsumption,
                                                    "availabilityFactor"   :   availabilityFactor,
                                                    "TechParameters"       :   TechParameters,
-                                                   "StorageParameters"   : StorageParameters})
+                                                 "StorageParameters": StorageParameters})
+
 if solver in solverpath :  opt = SolverFactory(solver,executable=solverpath[solver])
 else : opt = SolverFactory(solver)
 results=opt.solve(model)
@@ -256,20 +188,20 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 #fig.show()
 #endregion
 
-#region V Case Storage + CCG + PV + Wind + hydro (Ramp+Storage single area) : loading parameters
+#region IV Case Storage + CCG + PV + Wind + hydro (Ramp+Storage single area) : loading parameters
 Zones="FR"
 year=2013
 
 Selected_TECHNOLOGIES=['CCG', 'WindOnShore','WindOffShore','Solar',"curtailment",'HydroRiver', 'HydroReservoir']
 
 #### reading CSV files
-areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
+areaConsumption = pd.read_csv(InputConsumptionFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
-availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
+availabilityFactor = pd.read_csv(InputProductionFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
-TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1BIS_TECHNOLOGIES.csv',
+TechParameters = pd.read_csv(InputPlaningFolder+'Planing-RAMP1BIS_TECHNOLOGIES.csv',
                              sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
-StorageParameters = pd.read_csv(InputFolder+'Planing-RAMP1_STOCK_TECHNO.csv',
+StorageParameters = pd.read_csv(InputPlaningFolder+'Planing-RAMP1_STOCK_TECHNO.csv',
                                 sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
 #### Selection of subset
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
@@ -277,12 +209,17 @@ TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
 #TechParameters.loc["CCG",'capacity']=100000 ## margin to make everything work
 TechParameters.loc["CCG",'energyCost']=100
 TechParameters.loc["CCG",'maxCapacity']=50000
-TechParameters.loc["CCG",'RampConstraintMoins']=0.5 ## a bit strong to put in light the effect
-TechParameters.loc["CCG",'RampConstraintPlus']=0.5 ## a bit strong to put in light the effect
+TechParameters.loc["WindOnShore",'capacityCost']=120000 #€/MW/year - investment+O&M fixed cost
+TechParameters.loc["Solar",'capacityCost']=65000 #€/MW/year
+TechParameters.loc["CCG",'RampConstraintMoins']=0.4 ## a bit strong to put in light the effect
+TechParameters.loc["CCG",'RampConstraintPlus']=0.4 ## a bit strong to put in light the effect
+StorageParameters.loc["Battery1","p_max"]=10000 # this is not optimized - batteries
+StorageParameters.loc["Battery2","p_max"]=7000 # this is not optimized - Pumped HS
+StorageParameters.loc["Battery2","c_max"]=StorageParameters.loc["Battery2","p_max"]*20 # this is not optimized 20h of Pumped HS
 #endregion
 
-#region V Case Storage + CCG + PV + Wind (Ramp+Storage single area) : solving and loading results
-model = GetElectricSystemModel_Planing(Parameters={"areaConsumption"      :   areaConsumption,
+#region IV Case Storage + CCG + PV + Wind + hydro  (Ramp+Storage single area) : solving and loading results
+model = GetElectricSystemModel_PlaningSingleNode_withStorage(Parameters={"areaConsumption"      :   areaConsumption,
                                                    "availabilityFactor"   :   availabilityFactor,
                                                    "TechParameters"       :   TechParameters,
                                                    "StorageParameters"   : StorageParameters})
@@ -305,177 +242,82 @@ plotly.offline.plot(fig, filename='file.html') ## offline
 #fig.show()
 #endregion
 
-#region VI Case Storage + CCG + Nuke (Ramp+Storage single area) : loading parameters
-Zones="FR"
-year=2013
-
-Selected_TECHNOLOGIES=['CCG', 'NewNuke',"curtailment",'HydroRiver', 'HydroReservoir']
-
-#### reading CSV files
-areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
-availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
-TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1BIS_TECHNOLOGIES.csv',
-                             sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
-StorageParameters = pd.read_csv(InputFolder+'Planing-RAMP1_STOCK_TECHNO.csv',sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
-
-
-#### Selection of subset
-availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
-TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
-TechParameters.loc["CCG",'energyCost']=300
-TechParameters.loc["CCG",'maxCapacity']=50000
-TechParameters.loc["CCG",'RampConstraintMoins']=0.05 ## a bit strong to put in light the effect
-TechParameters.loc["CCG",'RampConstraintPlus']=0.05 ## a bit strong to put in light the effect
-TechParameters.loc["NewNuke",'RampConstraintMoins']=0.01 ## a bit strong to put in light the effect
-TechParameters.loc["NewNuke",'RampConstraintPlus']=0.02 ## a bit strong to put in light the effect
-#endregion
-
-#region VI Case Storage + CCG + Nuke (Ramp+Storage single area) : solving and loading results
-model = GetElectricSystemModel_Planing(Parameters={"areaConsumption"      :   areaConsumption,
-                                                   "availabilityFactor"   :   availabilityFactor,
-                                                   "TechParameters"       :   TechParameters,
-                                                   "StorageParameters"   : StorageParameters})
-if solver in solverpath :  opt = SolverFactory(solver,executable=solverpath[solver])
-else : opt = SolverFactory(solver)
-results=opt.solve(model)
-Variables = getVariables_panda_indexed(model)
-Constraints = getConstraintsDual_panda(model)
-
-print(extractCosts(Variables))
-print(extractEnergyCapacity(Variables))
-
-
-production_df=Variables['energy'].pivot(index="Date",columns='TECHNOLOGIES', values='energy')
-stockage=Variables['storageOut'].pivot(index='Date',columns='STOCK_TECHNO',values='storageOut').sum(axis=1)-Variables['storageIn'].pivot(index='Date',columns='STOCK_TECHNO',values='storageIn').sum(axis=1)
-areaConsumption['Storage']=stockage
-areaConsumption['NewConsumption']=areaConsumption['areaConsumption']-stockage
-Delta= production_df.sum(axis=1)-areaConsumption["NewConsumption"]
-print(sum(abs(Delta)))
-production_df.loc[:,'Storage'] = areaConsumption["Storage"] ### put storage in the production time series
-production_df.sum(axis=0)/10**6 ### energies produites TWh
-production_df[production_df>0].sum(axis=0)/10**6 ### energies produites TWh
-production_df.max(axis=0)/1000 ### Pmax en GW
-
-Date_d=pd.date_range(start=str(year)+"-01-01 00:00:00",end=str(year)+"-12-31 23:00:00",   freq="1H")
-production_df.index=Date_d; areaConsumption.index=Date_d;
-fig=MyStackedPlotly(y_df=production_df, Conso=areaConsumption)
-fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
-plotly.offline.plot(fig, filename='file.html') ## offline
-#fig.show()
-#endregion
-
-#region VI Ramp+Storage Multi area : loading parameters
-Zones="FR_DE_GB_ES"
-year=2016
-Selected_AREAS=["FR","DE"]
-Selected_TECHNOLOGIES=['OldNuke', 'CCG','WindOnShore',"curtailment"] #you'll add 'Solar' after #'NewNuke', 'HydroRiver', 'HydroReservoir','WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
-
-#### reading CSV files
-TechParameters = pd.read_csv(InputFolder+'Planing_MultiNode_DE-FR_TECHNOLOGIES_AREAS.csv',
-                             sep=',',decimal='.',comment="#").set_index(["AREAS","TECHNOLOGIES"])
-areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["AREAS","Date"])
-availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["AREAS","Date","TECHNOLOGIES"])
-
-ExchangeParameters = pd.read_csv(InputFolder+'Hypothese_DE-FR_AREAS_AREAS.csv',
-                                 sep=',',decimal='.',skiprows=0,comment="#").set_index(["AREAS","AREAS.1"])
-StorageParameters = pd.read_csv(InputFolder+'Planing_MultiNode_AREAS_DE-FR_STOCK_TECHNO.csv',sep=',',decimal='.',comment="#",skiprows=0).set_index(["AREAS","STOCK_TECHNO"])
-
-#### Selection of subset
-TechParameters=TechParameters.loc[(Selected_AREAS,Selected_TECHNOLOGIES),:]
-areaConsumption=areaConsumption.loc[(Selected_AREAS,slice(None)),:]
-availabilityFactor=availabilityFactor.loc[(Selected_AREAS,slice(None),Selected_TECHNOLOGIES),:]
-TechParameters.loc[(slice(None),'CCG'),'energyCost']=300 ## margin to make everything work
-TechParameters.loc[(slice(None),"OldNuke"),'RampConstraintMoins']=0.01 ## a bit strong to put in light the effect
-TechParameters.loc[(slice(None),"OldNuke"),'RampConstraintPlus']=0.02 ## a bit strong to put in light the effect
-#endregion
-
-#region VI Ramp+Storage multi area : solving and loading results
-model = GetElectricSystemModel_Planing(Parameters={"areaConsumption"      :   areaConsumption,
-                                                   "availabilityFactor"   :   availabilityFactor,
-                                                   "TechParameters"       :   TechParameters,
-                                                   "StorageParameters"   : StorageParameters,
-                                                   "ExchangeParameters" : ExchangeParameters})
-if solver in solverpath :  opt = SolverFactory(solver,executable=solverpath[solver])
-else : opt = SolverFactory(solver)
-results=opt.solve(model)
-Variables = getVariables_panda_indexed(model)
-Constraints = getConstraintsDual_panda(model)
-
-print(extractCosts(Variables))
-#print(extractEnergyCapacity(Variables))
-
-production_df=EnergyAndExchange2Prod(Variables)
-stockage=Variables['storageOut'].pivot(index=['AREAS','Date'],columns='STOCK_TECHNO',values='storageOut').sum(axis=1)-Variables['storageIn'].pivot(index=['AREAS','Date'],columns='STOCK_TECHNO',values='storageIn').sum(axis=1)
-areaConsumption['Storage']=stockage
-areaConsumption['NewConsumption']=areaConsumption['areaConsumption']-stockage
-Delta=(production_df.sum(axis=1) - areaConsumption.NewConsumption); ## comparaison à la conso incluant le stockage
-abs(Delta).max()
-production_df.loc[:,'Storage'] = -areaConsumption["Storage"] #### ajout du stockage comme production
-Delta=(production_df.sum(axis=1) - areaConsumption.areaConsumption);
-abs(Delta).max()
-
-fig=MyAreaStackedPlot(production_df,Conso=areaConsumption)
-fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
-plotly.offline.plot(fig, filename='file.html') ## offline
-#fig.show()
-
-abs(areaConsumption["Storage"]).groupby(by="AREAS").sum() ## stockage
-production_df.groupby(by="AREAS").sum()/10**6 ### energies produites TWh
-production_df[production_df>0].groupby(by="AREAS").sum()/10**6 ### energies produites TWh
-production_df.groupby(by="AREAS").max()/1000 ### Pmax en GW ### le stockage ne fait rien en Allemagne ??? bizarre
-production_df.groupby(by="AREAS").min()/1000 ### Pmax en GW
-#endregion
-
-#region VII - Simple single area +4 million EV +  demande side management +30TWh H2: loading parameters
+#region V - Simple single area +4 million EV +  demande side management +30TWh H2: loading parameters
 Zones="FR" ; year=2013
 #### reading areaConsumption availabilityFactor and TechParameters CSV files
-areaConsumption = pd.read_csv(InputFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
-availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
+#areaConsumption = pd.read_csv(InputConsumptionFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
+
+TemperatureThreshold = 15
+ConsoTempe_df=pd.read_csv(InputConsumptionFolder+'ConsumptionTemperature_1996TO2019_FR.csv',parse_dates=['Date']).\
+    set_index(["Date"])[str(year)]
+ConsoTempe_df=ConsoTempe_df[~ConsoTempe_df.index.duplicated(keep='first')]
+(ConsoTempeYear_decomposed_df,Thermosensibilite)=Decomposeconso(ConsoTempe_df,TemperatureThreshold=TemperatureThreshold)
+
 
 #obtaining industry-metal consumption
-Profile_df=pd.read_csv(InputFolder+"ConsumptionDetailedProfiles.csv").set_index(["Mois", "heures",'Nature', 'type', 'UsagesGroupe', 'UsageDetail', "WeekDay"])
-Profile_df_merged=ComplexProfile2Consumption(Profile_df,areaConsumption,TemperatureName='areaConsumption') #TODO : change ComplexProfile2Consumption to adapt to the new date format
-#Profile_df_merged_spread_0=Profile_df_merged.groupby(["Date","type"]).sum().reset_index().drop(columns=["areaConsumption"]).pivot(index="Date", columns=['type'], values='Conso');
-Profile_df_merged_spread = Profile_df_merged.groupby(["Date","Nature","UsagesGroupe","type"]).sum().reset_index().drop(columns=["areaConsumption"]).pivot(index="Date", columns=["Nature",'type',"UsagesGroupe"], values='Conso');
-steel_consumption=Profile_df_merged_spread.loc[:,("MineraiMetal","Ind",'Process')]*areaConsumption.loc[:,"areaConsumption"]
-steel_consumption.iloc[0]=110
+#  & x["type"] == "Ind" & x["UsageDetail"] == "Process").\
+Profile_df_sans_chauffage=pd.read_csv(InputConsumptionFolder+"ConsumptionDetailedProfiles.csv").\
+    rename(columns={'heures':'Heure',"WeekDay":"Jour"}).\
+    replace({"Jour" :{"Sat": "Samedi" , "Week":"Semaine"  , "Sun": "Dimanche"}}). \
+    query('UsagesGroupe != "Chauffage"'). \
+    assign(is_steel=lambda x: x["Nature"].isin(["MineraiMetal"])).\
+    set_index(["Mois", "Heure",'Nature', 'type',"is_steel", 'UsagesGroupe', 'UsageDetail', "Jour"]).\
+    groupby(["Mois","Jour","Heure","type","is_steel"]).sum().\
+    merge(add_day_month_hour(df=ConsoTempeYear_decomposed_df,semaine_simplifie=True,French=True,to_index=True),
+          how="outer",left_index=True,right_index=True).reset_index().set_index("Date")[["type","is_steel","Conso"]]. \
+    pivot_table(index="Date", columns=["type","is_steel"], values='Conso')
+Profile_df_sans_chauffage.columns = ["Autre","Ind_sans_acier","Ind_acier","Residentiel","Tertiaire"]
+
+Profile_df_sans_chauffage=Profile_df_sans_chauffage.loc[:,Profile_df_sans_chauffage.sum(axis=0)>0]
+Profile_df_n=Profile_df_sans_chauffage.div(Profile_df_sans_chauffage.sum(axis=1), axis=0) ### normalisation par 1 et multiplication
+for col in Profile_df_sans_chauffage.columns:
+    Profile_df_sans_chauffage[col]=Profile_df_n[col]*ConsoTempeYear_decomposed_df["NTS_C"]
+
+steel_consumption=Profile_df_sans_chauffage.loc[:,"Ind_acier"]
 steel_consumption.max()
 steel_consumption[steel_consumption.isna()]=110
 steel_consumption.isna().sum()
 # if you want to change thermal sensitivity + add electric vehicle
-ConsoTempe_df=pd.read_csv(InputFolder+'ConsumptionTemperature_1996TO2019_FR.csv',parse_dates=['Date']).set_index(["Date"]) #
-ConsoTempe_df_nodup=ConsoTempe_df.loc[~ConsoTempe_df.index.duplicated(),:]
-(ConsoTempeYear_decomposed_df,Thermosensibilite)=Decomposeconso(areaConsumption.join(ConsoTempe_df_nodup)[['areaConsumption','Temperature']],
-                                                                TemperatureThreshold=15,ConsumptionName="areaConsumption")
-areaConsumption = areaConsumption.assign(areaConsumption = ConsoTempeYear_decomposed_df.loc[:,'TS_C']+ConsoTempeYear_decomposed_df.loc[:,'NTS_C'])#+VE_consumption.loc[:,'Consumption'])
 
-VEProfile_df=pd.read_csv(InputFolder+'EVModel.csv', sep=';')
+VEProfile_df=pd.read_csv(InputConsumptionFolder+'EVModel.csv', sep=';')
 NbVE=10 # millions
-ev_consumption = NbVE*Profile2Consumption(Profile_df=VEProfile_df,Temperature_df = ConsoTempe_df_nodup.loc[str(year)][['Temperature']])[['Consumption']]
+ev_consumption = NbVE*Profile2Consumption(Profile_df=VEProfile_df,Temperature_df = ConsoTempe_df.loc[str(year)][['Temperature']])[['Consumption']]
 
-TechParameters = pd.read_csv(InputFolder+'Planing-RAMP1BIS_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
-StorageParameters = pd.read_csv(InputFolder + 'Planing-RAMP1_STOCK_TECHNO.csv', sep=',', decimal='.',
+h2_Energy = 30000## H2 volume in GWh/year
+h2_Energy_flat_consumption = ev_consumption.Consumption*0+h2_Energy/8760
+to_flexible_consumption=pd.DataFrame({'to_flex_consumption': steel_consumption,'FLEX_CONSUM' : 'Steel'}).reset_index().set_index(['Date','FLEX_CONSUM']).\
+    append(pd.DataFrame({'to_flex_consumption': ev_consumption.Consumption,'FLEX_CONSUM' : 'EV'}).reset_index().set_index(['Date','FLEX_CONSUM'])).\
+    append(pd.DataFrame({'to_flex_consumption': h2_Energy_flat_consumption,'FLEX_CONSUM' : 'H2'}).reset_index().set_index(['Date','FLEX_CONSUM']))
+
+availabilityFactor = pd.read_csv(InputProductionFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
+
+
+
+TechParameters = pd.read_csv(InputPlaningFolder+'Planing-RAMP1BIS_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
+StorageParameters = pd.read_csv(InputPlaningFolder + 'Planing-RAMP1_STOCK_TECHNO.csv', sep=',', decimal='.',
                                 skiprows=0).set_index(["STOCK_TECHNO"])
-ConsoParameters = pd.read_csv(InputFolder + "Planing-Conso-FLEX_CONSUM.csv", sep=";").set_index(["FLEX_CONSUM"])
+ConsoParameters = pd.read_csv(InputPlaningFolder + "Planing-Conso-FLEX_CONSUM.csv", sep=";").set_index(["FLEX_CONSUM"])
+ConsoParameters_ = ConsoParameters.join(
+    to_flexible_consumption.groupby("FLEX_CONSUM").max().rename(columns={"to_flexible_consumption": "max_power"}))
 
 Selected_TECHNOLOGIES=['OldNuke','CCG','TAC', 'WindOnShore', 'WindOffShore','HydroReservoir','HydroRiver','Solar','curtailment']#you can add technologies here
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
 TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
 
+TechParameters.loc["CCG",'energyCost']=100
+TechParameters.loc["CCG",'maxCapacity']=50000
+TechParameters.loc["WindOnShore",'capacityCost']=120000 #€/MW/year - investment+O&M fixed cost
+TechParameters.loc["Solar",'capacityCost']=65000 #€/MW/year
+TechParameters.loc["CCG",'RampConstraintMoins']=0.4 ## a bit strong to put in light the effect
+TechParameters.loc["CCG",'RampConstraintPlus']=0.4 ## a bit strong to put in light the effect
+StorageParameters.loc["Battery1","p_max"]=10000 # this is not optimized - batteries
+StorageParameters.loc["Battery2","p_max"]=7000 # this is not optimized - Pumped HS
+StorageParameters.loc["Battery2","c_max"]=StorageParameters.loc["Battery2","p_max"]*20 # this is not optimized 20h of Pumped HS
 
 
-h2_Energy = 30000## H2 volume in GWh/year
-h2_Energy_flat_consumption = ev_consumption.Consumption*0+h2_Energy/8760
-to_flex_consumption=pd.DataFrame({'to_flex_consumption': steel_consumption,'FLEX_CONSUM' : 'Steel'}).reset_index().set_index(['Date','FLEX_CONSUM']).\
-    append(pd.DataFrame({'to_flex_consumption': ev_consumption.Consumption,'FLEX_CONSUM' : 'EV'}).reset_index().set_index(['Date','FLEX_CONSUM'])).\
-    append(pd.DataFrame({'to_flex_consumption': h2_Energy_flat_consumption,'FLEX_CONSUM' : 'H2'}).reset_index().set_index(['Date','FLEX_CONSUM']))
+areaConsumption=pd.DataFrame(ConsoTempeYear_decomposed_df.loc[:,"Consumption"]-steel_consumption,columns=["areaConsumption"])
 
-ConsoParameters_ = ConsoParameters.join(
-    to_flex_consumption.groupby("FLEX_CONSUM").max().rename(columns={"to_flex_consumption": "max_power"}))
+
 
 
 def labour_ratio_cost(df):  # higher labour costs at night
@@ -494,21 +336,18 @@ labour_ratio["labour_ratio"] = labour_ratio["Date"].apply(labour_ratio_cost)
 labour_ratio.set_index(["Date","FLEX_CONSUM"], inplace=True)
 #model.labour_ratio = Param(model.Date, initialize=labour_ratio.squeeze().to_dict())
 
-labour_ratio.head()
-to_flex_consumption.head()
-
-ConsoParameters.loc['H2','LoadCost']
-
 
 # endregion
-# €/kW/an coût fixe additionnel pour un GW d'électrolyseur en plus en supposant que l'on construit
 
-model =  GetElectricSystemModel_Planing(Parameters={"areaConsumption"      :   areaConsumption,
+#region V - Simple single area +4 million EV +  demande side management +30TWh H2: solving and loading results
+
+# €/kW/an coût fixe additionnel pour un GW d'électrolyseur en plus en supposant que l'on construit
+model =  Model_SingleNode_online_flex(Parameters={"areaConsumption"      :   areaConsumption,
                                            "availabilityFactor"   :   availabilityFactor,
                                            "TechParameters"       :   TechParameters,
                                            "StorageParameters"   : StorageParameters,
-                                           "to_flex_consumption" : to_flex_consumption,
-                                           "ConsoParameters_" : ConsoParameters_,
+                                           "to_flexible_consumption" : to_flexible_consumption,
+                                           "ConsoParameters" : ConsoParameters_,
                                            "labour_ratio": labour_ratio})
 
 
@@ -522,14 +361,16 @@ print(extractCosts(Variables))
 print(extractEnergyCapacity(Variables))
 Constraints = getConstraintsDual_panda(model)
 
+production_df=Variables['energy'].pivot(index="Date",columns='TECHNOLOGIES', values='energy')
+production_df.loc[:,'Storage'] = Variables['storageOut'].pivot(index='Date',columns='STOCK_TECHNO',values='storageOut').sum(axis=1)-Variables['storageIn'].pivot(index='Date',columns='STOCK_TECHNO',values='storageIn').sum(axis=1) ### put storage in the production time series
+production_df.sum(axis=0)/10**6 ### energies produites TWh
+production_df[production_df>0].sum(axis=0)/10**6 ### energies produites TWh
+production_df.max(axis=0)/1000 ### Pmax en GW
 
 
-# if you want to change thermal sensitivity + add electric vehicle
-ConsoTempe_df=pd.read_csv(InputConsumptionFolder+'ConsumptionTemperature_1996TO2019_FR.csv',parse_dates=['Date']).set_index(["Date"]) #
-ConsoTempe_df_nodup=ConsoTempe_df.loc[~ConsoTempe_df.index.duplicated(),:]
-(ConsoTempeYear_decomposed_df,Thermosensibilite)=Decomposeconso(areaConsumption.join(ConsoTempe_df_nodup)[['areaConsumption','Temperature']],
-                                                                TemperatureThreshold=15,ConsumptionName="areaConsumption")
-VEProfile_df=pd.read_csv(InputConsumptionFolder+'EVModel.csv', sep=';')
-NbVE=4 # millions
-VE_consumption = NbVE*Profile2Consumption(Profile_df=VEProfile_df,Temperature_df = ConsoTempe_df_nodup.loc[str(year)][['Temperature']])[['Consumption']]
-areaConsumption = areaConsumption.assign(areaConsumption = ConsoTempeYear_decomposed_df.loc[:,'TS_C']+1*ConsoTempeYear_decomposed_df.loc[:,'NTS_C']+VE_consumption.loc[:,'Consumption'])
+fig=MyStackedPlotly(y_df=production_df, Conso=areaConsumption)
+fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
+plotly.offline.plot(fig, filename='file.html') ## offline
+
+#endregion
+

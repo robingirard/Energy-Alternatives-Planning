@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 from functions.f_graphicalTools import * #Il faut préciser le chemin où vous avez sauvegardé les données csv
 #endregion
 
-
 #region Disponibilité sur la France période 2013-2016
 Zones="FR"
 year=2013
@@ -21,17 +20,83 @@ year=2013
 MyTech= 'OldNuke'  ### 'Thermal' 'OldNuke' 'HydroRiver' 'HydroReservoir' 'WindOnShore' 'Solar'
 availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_FR.csv',
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date'])
-print(availabilityFactor['TECHNOLOGIES'].unique() ) ### available technologies
+availabilityFactor.loc[:,"TIMESTAMP"]=pd.to_datetime(availabilityFactor.loc[:,"Date"])
 tabl=availabilityFactor[availabilityFactor['TECHNOLOGIES']==MyTech]
-fig=MyPlotly(x_df=tabl.TIMESTAMP,y_df=tabl[['availabilityFactor']],fill=False)
+tabl_ = tabl.reset_index().assign(TIMESTAMP_=range(1, len(tabl) + 1)).drop(
+    columns="TIMESTAMP")
+
+fig=MyPlotly(x_df=tabl_.TIMESTAMP_,y_df=tabl[['availabilityFactor']],fill=False)
 
 fig = go.Figure()
-fig.add_trace(go.Scatter(x=tabl['TIMESTAMP'],y=tabl['availabilityFactor'],line=dict(color="#000000"),name="original"))
+fig=fig.add_trace(go.Scatter(x=tabl_['TIMESTAMP_'],y=tabl['availabilityFactor'],line=dict(color="#000000"),name="original"))
 for newyear in range(2013,2016):
     availabilityFactor = pd.read_csv(InputFolder + 'availabilityFactor' + str(newyear) + '_' + str(Zones) + '.csv',
                                      sep=',', decimal='.', skiprows=0,parse_dates=['Date'])
+    availabilityFactor.loc[:, "TIMESTAMP"] = pd.to_datetime(availabilityFactor.loc[:, "Date"])
     tabl = availabilityFactor[availabilityFactor['TECHNOLOGIES'] == MyTech]
-    fig.add_trace(go.Scatter(x=tabl['TIMESTAMP'],y=tabl['availabilityFactor'],
+    tabl_ = tabl.reset_index().assign(TIMESTAMP_=range(1, len(tabl) + 1)).drop(
+        columns="TIMESTAMP")
+    fig.add_trace(go.Scatter(x=tabl_['TIMESTAMP_'],y=tabl['availabilityFactor'],
+                             line=dict(color="#9CA2A8",width=1),
+                             name=newyear))
+#fig.show()
+plotly.offline.plot(fig, filename='file.html')
+#endregion
+
+#region la même chose mais avec l'éolien
+Zones="FR"
+year=2013
+
+MyTech= 'WindOnShore'  ### 'Thermal' 'OldNuke' 'HydroRiver' 'HydroReservoir' 'WindOnShore' 'Solar'
+availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_FR.csv',
+                                sep=',',decimal='.',skiprows=0,parse_dates=['Date'])
+availabilityFactor.loc[:,"TIMESTAMP"]=pd.to_datetime(availabilityFactor.loc[:,"Date"])
+tabl=availabilityFactor[availabilityFactor['TECHNOLOGIES']==MyTech]
+tabl_ = tabl.reset_index().assign(TIMESTAMP_=range(1, len(tabl) + 1)).drop(
+    columns="TIMESTAMP")
+
+fig=MyPlotly(x_df=tabl_.TIMESTAMP_,y_df=tabl[['availabilityFactor']],fill=False)
+
+fig = go.Figure()
+fig=fig.add_trace(go.Scatter(x=tabl_['TIMESTAMP_'],y=tabl['availabilityFactor'],line=dict(color="#000000"),name="original"))
+for newyear in range(2013,2016):
+    availabilityFactor = pd.read_csv(InputFolder + 'availabilityFactor' + str(newyear) + '_' + str(Zones) + '.csv',
+                                     sep=',', decimal='.', skiprows=0,parse_dates=['Date'])
+    availabilityFactor.loc[:, "TIMESTAMP"] = pd.to_datetime(availabilityFactor.loc[:, "Date"])
+    tabl = availabilityFactor[availabilityFactor['TECHNOLOGIES'] == MyTech]
+    tabl_ = tabl.reset_index().assign(TIMESTAMP_=range(1, len(tabl) + 1)).drop(
+        columns="TIMESTAMP")
+    fig.add_trace(go.Scatter(x=tabl_['TIMESTAMP_'],y=tabl['availabilityFactor'],
+                             line=dict(color="#9CA2A8",width=1),
+                             name=newyear))
+#fig.show()
+plotly.offline.plot(fig, filename='file.html')
+#endregion
+
+#region la même chose mais avec le PV
+Zones="FR"
+year=2013
+
+MyTech= 'Solar'  ### 'Thermal' 'OldNuke' 'HydroRiver' 'HydroReservoir' 'WindOnShore' 'Solar'
+availabilityFactor = pd.read_csv(InputFolder+'availabilityFactor'+str(year)+'_FR.csv',
+                                sep=',',decimal='.',skiprows=0,parse_dates=['Date'])
+availabilityFactor.loc[:,"TIMESTAMP"]=pd.to_datetime(availabilityFactor.loc[:,"Date"])
+tabl=availabilityFactor[availabilityFactor['TECHNOLOGIES']==MyTech]
+tabl_ = tabl.reset_index().assign(TIMESTAMP_=range(1, len(tabl) + 1)).drop(
+    columns="TIMESTAMP")
+
+fig=MyPlotly(x_df=tabl_.TIMESTAMP_,y_df=tabl[['availabilityFactor']],fill=False)
+
+fig = go.Figure()
+fig=fig.add_trace(go.Scatter(x=tabl_['TIMESTAMP_'],y=tabl['availabilityFactor'],line=dict(color="#000000"),name="original"))
+for newyear in range(2013,2016):
+    availabilityFactor = pd.read_csv(InputFolder + 'availabilityFactor' + str(newyear) + '_' + str(Zones) + '.csv',
+                                     sep=',', decimal='.', skiprows=0,parse_dates=['Date'])
+    availabilityFactor.loc[:, "TIMESTAMP"] = pd.to_datetime(availabilityFactor.loc[:, "Date"])
+    tabl = availabilityFactor[availabilityFactor['TECHNOLOGIES'] == MyTech]
+    tabl_ = tabl.reset_index().assign(TIMESTAMP_=range(1, len(tabl) + 1)).drop(
+        columns="TIMESTAMP")
+    fig.add_trace(go.Scatter(x=tabl_['TIMESTAMP_'],y=tabl['availabilityFactor'],
                              line=dict(color="#9CA2A8",width=1),
                              name=newyear))
 #fig.show()
@@ -61,8 +126,7 @@ Hydraulique.max()
 Hydraulique.HydroLake.sum()/7000
 #endregion
 
-
-#
+#region more nuke availability for France
 DispoNukeTotal = pd.read_csv(InputFolder+'DispoNukeTotal2007_2017.csv',
                                 sep=';',decimal=',',skiprows=0,
                       dtype={'Dates':str, 'Availability':np.float64})
@@ -80,3 +144,5 @@ for newyear in range(2007,2016):
                              name=newyear))
 #fig.show()
 plotly.offline.plot(fig, filename='file.html')
+
+#endregion
