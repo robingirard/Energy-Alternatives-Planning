@@ -355,6 +355,7 @@ def non_valid_data(sim_param):
     return is_there_a_problem
 
 
+
 # sim_param=sim_param_voyageurs
 def launch_simulation(sim_param):
     sim_param["energy_need_variable_name"] = "energy_need_per_" + sim_param["volume_variable_name"]
@@ -366,25 +367,28 @@ def launch_simulation(sim_param):
         sim_stock = 0
     else:
         sim_stock = initialize_Simulation(sim_param)
-        for year in progressbar(range(int(sim_param["date_debut"]) + 1, int(sim_param["date_fin"]) + 1), "Computing: ",40):
+        cur_year = sim_param["years"][0]
+        for year_i in range(1,len(sim_param["years"])):
             # if year ==2038: break
-            sim_stock[year] = sim_stock[year - 1].copy()
+            prec_year = cur_year
+            cur_year = sim_param["years"][year_i]
+            sim_stock[cur_year] = sim_stock[prec_year].copy()
 
             base_index_old = (*sim_param["base_index_tuple"], "old")
             base_index_renovated = (*sim_param["base_index_tuple"], "renovated")
-            base_index_year_new = (*sim_param["base_index_tuple"], year, "new")
-            base_index_year_renovated = (*sim_param["base_index_tuple"],year, "renovated")
+            base_index_year_new = (*sim_param["base_index_tuple"], cur_year, "new")
+            base_index_year_renovated = (*sim_param["base_index_tuple"],cur_year, "renovated")
 
             # destruction
             # if "old_taux_disp" in sim_param:
             #     sim_stock[year].loc[:, sim_param["volume_variable_name"]] -= \
             #         sim_param["old_taux_disp"][year] * sim_stock[year].loc[:, sim_param["volume_variable_name"]]
             if "old_taux_disp" in sim_param:
-                adjusted_old_taux_disp = sim_param["old_taux_disp"][year] * sim_stock[year].loc[:,
+                adjusted_old_taux_disp = sim_param["old_taux_disp"][cur_year] * sim_stock[cur_year].loc[:,
                                                                             sim_param["volume_variable_name"]].sum() / \
-                                         sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old].sum()
-                sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] -= adjusted_old_taux_disp * \
-                                                                                          sim_stock[year][sim_param[
+                                         sim_stock[cur_year][sim_param["volume_variable_name"]].loc[base_index_old].sum()
+                sim_stock[cur_year][sim_param["volume_variable_name"]].loc[base_index_old] -= adjusted_old_taux_disp * \
+                                                                                          sim_stock[cur_year][sim_param[
                                                                                               "volume_variable_name"]].loc[
                                                                                               base_index_old]
 
@@ -399,11 +403,11 @@ def launch_simulation(sim_param):
             #                       sim_stock[year-1][sim_param["volume_variable_name"]].loc[base_index_old]
 
             Unit_2_retrofit_TMP = sim_param[sim_param["retrofit_change_variable_name"]].loc[
-                (*sim_param["base_index_tuple"], year)]
-            Unit_remain = sub_keep_positive(sim_stock[year].loc[base_index_old, sim_param["volume_variable_name"]],
+                (*sim_param["base_index_tuple"], cur_year)]
+            Unit_remain = sub_keep_positive(sim_stock[cur_year].loc[base_index_old, sim_param["volume_variable_name"]],
                                             Unit_2_retrofit_TMP)
             Unit_2_retrofit = (
-                    sim_stock[year][sim_param["volume_variable_name"]].loc[base_index_old] - Unit_remain.rm_index(
+                    sim_stock[cur_year][sim_param["volume_variable_name"]].loc[base_index_old] - Unit_remain.rm_index(
                 "old_new"))
             if ((Unit_2_retrofit_TMP - Unit_2_retrofit).sum() > 0.005 * Unit_2_retrofit_TMP.sum()):
                 print("warning, too much retrofit, excess of " + str(
@@ -411,29 +415,29 @@ def launch_simulation(sim_param):
 
             Transition = sim_param["retrofit_Transition"].loc[base_index_year_renovated, :].rm_index("year").rm_index(
                 "old_new")
-            Energy_needs_2_retrofit=sim_stock[year - 1][sim_param["energy_need_variable_name"]].loc[
+            Energy_needs_2_retrofit=sim_stock[prec_year][sim_param["energy_need_variable_name"]].loc[
                 (*sim_param["base_index_tuple"], "old")]
             Renovated_units,Renovated_energy_need = apply_transition(Unit_2_retrofit,Energy_needs_2_retrofit, Transition, sim_param)
             if (abs(Unit_2_retrofit.sum() - Renovated_units.sum()) > 0.005 * Unit_2_retrofit_TMP.sum()):
                 print("warning, Transition does not sum to one")
-            Renovated_energy_need = (1 - sim_param["retrofit_improvement"].loc[(*sim_param["base_index_tuple"], year)]) * Renovated_energy_need
+            Renovated_energy_need = (1 - sim_param["retrofit_improvement"].loc[(*sim_param["base_index_tuple"], cur_year)]) * Renovated_energy_need
 
-            sim_stock = update_heat_need(sim_stock=sim_stock, year=year,
+            sim_stock = update_heat_need(sim_stock=sim_stock, year=cur_year,
                                          New_units=Renovated_units,
                                          New_energy_need=Renovated_energy_need,
                                          sim_param=sim_param,
                                          target="renovated")
 
-            sim_stock[year].loc[
+            sim_stock[cur_year].loc[
                 (*sim_param["base_index_tuple"], "old"), sim_param["volume_variable_name"]] = Unit_remain
 
             # neuf
             if sim_param["new_yearly_variable_name"] in sim_param:
-                sim_stock = update_heat_need(sim_stock=sim_stock, year=year,
+                sim_stock = update_heat_need(sim_stock=sim_stock, year=cur_year,
                                              New_units=sim_param[sim_param["new_yearly_variable_name"]].loc[
-                                                 (*sim_param["base_index_tuple"], year)],
+                                                 (*sim_param["base_index_tuple"], cur_year)],
                                              New_energy_need=sim_param["new_energy"].loc[
-                                                 (*sim_param["base_index_tuple"], year)],
+                                                 (*sim_param["base_index_tuple"], cur_year)],
                                              sim_param=sim_param,
                                              target='new')
 
@@ -442,18 +446,18 @@ def launch_simulation(sim_param):
                 for key in sim_param[func]:
                     args = inspect.getfullargspec(sim_param[func][key]).args
                     if args == ['x']:
-                        sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                        sim_stock[cur_year].loc[:, key] = sim_stock[cur_year].apply(
                             lambda x: sim_param[func][key](x), axis=1).fillna(0)
                     elif args == ['x', 'sim_param']:
-                        sim_stock[year].loc[:, key] = sim_stock[year].apply(
+                        sim_stock[cur_year].loc[:, key] = sim_stock[cur_year].apply(
                             lambda x: sim_param[func][key](x, sim_param), axis=1).fillna(0)
                     elif args == ['x', 'sim_param', 'year']:
-                        sim_stock[year].loc[:, key] = sim_stock[year].apply(
-                            lambda x: sim_param[func][key](x, sim_param, year), axis=1).fillna(0)
+                        sim_stock[cur_year].loc[:, key] = sim_stock[cur_year].apply(
+                            lambda x: sim_param[func][key](x, sim_param, cur_year), axis=1).fillna(0)
                     else:
                         print("Warnings, function func defined with arguments " + str(
                             args) + " only x | x,sim_param | x,sim_param,year implemented")
-            sim_stock[year] = sim_stock[year].fillna(0)
+            sim_stock[cur_year] = sim_stock[cur_year].fillna(0)
 
     return sim_stock
 
