@@ -24,7 +24,7 @@ InputFolder = 'Input data/2030/'
 InputFolder_other="Input data/Conso flex files/"
 
 
-def main_2030(weather_year=2018,carbon_tax=60,gas_price_coef=1,coal_price_coef=1,number_of_sub_techs=1,error_deactivation=False,fr_flex_consum={'conso':{"nbVE":5,"steel_twh":5,"H2_twh":25},'ratio':{"VE_ratio":0,"steel_ratio":0,"H2_ratio":0}}):
+def main_2030(weather_year=2018,carbon_tax=60,gas_price_coef=1,coal_price_coef=1,number_of_sub_techs=1,error_deactivation=False):
     start_time = datetime.now()
     year=2030
     ctax_ini = 30
@@ -51,7 +51,7 @@ def main_2030(weather_year=2018,carbon_tax=60,gas_price_coef=1,coal_price_coef=1
                                     decimal='.', comment="#", skiprows=0).set_index(["AREAS", "STOCK_TECHNO"])
     #Import consumption data
     areaConsumption = pd.read_csv(
-        InputFolder + str(year) + '_MultiNodeAreaConsumption_' + str(weather_year) + '_data_FR_no_H2_EV_Steel.csv',
+        InputFolder + str(year) + '_MultiNodeAreaConsumption_' + str(weather_year) + '_data_no_H2_EV_Steel.csv',
         decimal='.', skiprows=0, parse_dates=['Date'])
     areaConsumption.dropna(inplace=True)
     areaConsumption["Date"] = pd.to_datetime(areaConsumption["Date"])
@@ -81,8 +81,8 @@ def main_2030(weather_year=2018,carbon_tax=60,gas_price_coef=1,coal_price_coef=1
     areaConsumption=CHP_processing_future(areaConsumption,year,weather_year)
 
     #Flexibility data inclusion
-    ConsoParameters_,labour_ratio,to_flex_consumption=Flexibility_data_processing(fr_flex_consum,areaConsumption,2030,weather_year)
-    to_flex_consumption
+    ConsoParameters_,labour_ratio,to_flex_consumption=Flexibility_data_processing(areaConsumption,2030,weather_year)
+
     #Marginal cost adjustment and merit order simulation
     TechParameters=Marginal_cost_adjustment(TechParameters,number_of_sub_techs,techs,areas,carbon_tax,ctax_ini,gas_price_coef,coal_price_coef)
 
