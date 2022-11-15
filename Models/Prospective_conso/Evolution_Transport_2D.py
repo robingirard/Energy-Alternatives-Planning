@@ -150,3 +150,4 @@ y_df.emissions=y_df.emissions/10**3
 fig = px.bar(y_df,x="class", y=Var, color="Categorie", title="Wide-Form Input",color_discrete_map=color_dict)
 fig=fig.update_layout(title_text="Emissions par mode de transport (en MTCO2)", xaxis_title="Categorie",yaxis_title="Emissions [MTCO2]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
+

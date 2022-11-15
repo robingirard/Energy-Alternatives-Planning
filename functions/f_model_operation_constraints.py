@@ -6,18 +6,18 @@ from functions.f_tools import *
 
 def set_Operation_Constraints_energyCapacityexchange(EQs,model):
     Set_names = get_allSetsnames(model)
-    match list(Set_names):
-        case[*my_set_names] if allin(["FLEX_CONSUM", "AREAS", 'STOCK_TECHNO'], my_set_names):
-            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(exchange|AREAS) + sum(storageOut-storageIn|STOCK_TECHNO) == total_consumption"
-        case [*my_set_names] if allin(["FLEX_CONSUM", 'STOCK_TECHNO'], my_set_names):
-            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(storageOut-storageIn|STOCK_TECHNO) == total_consumption"
-        case[*my_set_names] if allin(["AREAS", 'STOCK_TECHNO'], my_set_names):
-            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(exchange|AREAS) + sum(storageOut-storageIn|STOCK_TECHNO) == areaConsumption"
-        case [*my_set_names] if "AREAS" in my_set_names:
-            energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(exchange|AREAS) == areaConsumption"
-        case[*my_set_names] if 'STOCK_TECHNO' in my_set_names:
+    my_set_names=list(Set_names)
+    if allin(["FLEX_CONSUM", "AREAS", 'STOCK_TECHNO'], my_set_names):
+        energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(exchange|AREAS) + sum(storageOut-storageIn|STOCK_TECHNO) == total_consumption"
+    elif allin(["FLEX_CONSUM", 'STOCK_TECHNO'], my_set_names):
+        energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(storageOut-storageIn|STOCK_TECHNO) == total_consumption"
+    elif allin(["AREAS", 'STOCK_TECHNO'], my_set_names):
+        energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(exchange|AREAS) + sum(storageOut-storageIn|STOCK_TECHNO) == areaConsumption"
+    elif  "AREAS" in my_set_names:
+        energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(exchange|AREAS) == areaConsumption"
+    elif  'STOCK_TECHNO' in my_set_names:
             energyCtr_EQ = "sum(energy|TECHNOLOGIES) + sum(storageOut-storageIn|STOCK_TECHNO) == areaConsumption"
-        case _: # single area without storage
+    else: # single area without storage
             energyCtr_EQ = "sum(energy|TECHNOLOGIES) == areaConsumption"
 
     EQs["energyCtr"] = {
@@ -317,28 +317,27 @@ def set_Operation_Constraints_rampCtrPlus(model):
     :return:
     """
     Set_names = get_allSetsnames(model)
-    match list(Set_names):
-        case [*my_set_names] if "AREAS" in my_set_names:
-            # multiple area
-            def rampCtrPlus_rule(model, area, t, tech):  # INEQ forall t<
-                if model.RampConstraintPlus[(area, tech)] > 0:
-                    t_plus_1 = t + timedelta(hours=1)
-                    return model.energy[area, t_plus_1, tech] - model.energy[area, t, tech] <= model.capacity[
-                        area, tech] * \
-                           model.RampConstraintPlus[area, tech]*model.availabilityFactor[area,t,tech];
-                else:
-                    return Constraint.Skip
-            model.rampCtrPlus = Constraint(model.AREAS, model.Date_MinusOne, model.TECHNOLOGIES, rule=rampCtrPlus_rule)
-        case _:
-            # single area
-            def rampCtrPlus_rule(model, t, tech):  # INEQ forall t<
-                if model.RampConstraintPlus[tech] > 0:
-                    t_plus_1 = t + timedelta(hours=1)
-                    return model.energy[t_plus_1, tech] - model.energy[t, tech] <= model.capacity[tech] * \
-                           model.RampConstraintPlus[tech]*model.availabilityFactor[t,tech];
-                else:
-                    return Constraint.Skip
-            model.rampCtrPlus = Constraint(model.Date_MinusOne, model.TECHNOLOGIES, rule=rampCtrPlus_rule)
+    if "AREAS" in Set_names:
+        def rampCtrPlus_rule(model, area, t, tech):  # INEQ forall t<
+            if model.RampConstraintPlus[(area, tech)] > 0:
+                t_plus_1 = t + timedelta(hours=1)
+                return model.energy[area, t_plus_1, tech] - model.energy[area, t, tech] <= model.capacity[
+                    area, tech] * \
+                       model.RampConstraintPlus[area, tech] * model.availabilityFactor[area, t, tech];
+            else:
+                return Constraint.Skip
+
+        model.rampCtrPlus = Constraint(model.AREAS, model.Date_MinusOne, model.TECHNOLOGIES, rule=rampCtrPlus_rule)
+    else: ## AREAS not in Set_names
+        def rampCtrPlus_rule(model, t, tech):  # INEQ forall t<
+            if model.RampConstraintPlus[tech] > 0:
+                t_plus_1 = t + timedelta(hours=1)
+                return model.energy[t_plus_1, tech] - model.energy[t, tech] <= model.capacity[tech] * \
+                       model.RampConstraintPlus[tech] * model.availabilityFactor[t, tech];
+            else:
+                return Constraint.Skip
+
+        model.rampCtrPlus = Constraint(model.Date_MinusOne, model.TECHNOLOGIES, rule=rampCtrPlus_rule)
 
     return model;
 
@@ -350,8 +349,7 @@ def set_Operation_Constraints_rampCtrMoins(model):
     :return:
     """
     Set_names = get_allSetsnames(model)
-    match list(Set_names):
-        case [*my_set_names] if "AREAS" in my_set_names:
+    if "AREAS" in Set_names:
             # multiple area
             def rampCtrMoins_rule(model, area, t, tech):  # INEQ forall t<
                 if model.RampConstraintMoins[area, tech] > 0.:
@@ -363,7 +361,7 @@ def set_Operation_Constraints_rampCtrMoins(model):
                     return Constraint.Skip
             model.rampCtrMoins = Constraint(model.AREAS, model.Date_MinusOne, model.TECHNOLOGIES,
                                             rule=rampCtrMoins_rule)
-        case _:
+    else:
             # single area
             def rampCtrMoins_rule(model, t, tech):  # INEQ forall t<
                 if model.RampConstraintMoins[tech] > 0:
@@ -384,8 +382,7 @@ def set_Operation_Constraints_rampCtrPlus2(model):
         :return:
     """
     Set_names = get_allSetsnames(model)
-    match list(Set_names):
-        case [*my_set_names] if "AREAS" in my_set_names:
+    if "AREAS" in Set_names:
             # multiple area
             def rampCtrPlus2_rule(model, area, t, tech):  # INEQ forall t<
                 if model.RampConstraintPlus2[(area, tech)] > 0.:
@@ -400,7 +397,7 @@ def set_Operation_Constraints_rampCtrPlus2(model):
 
             model.rampCtrPlus2 = Constraint(model.AREAS, model.Date_MinusThree, model.TECHNOLOGIES,
                                             rule=rampCtrPlus2_rule)
-        case _:
+    else:
             # single area
             def rampCtrPlus2_rule(model, t, tech):  # INEQ forall t<
                 if model.RampConstraintPlus2[tech] > 0:
@@ -425,8 +422,7 @@ def set_Operation_Constraints_rampCtrMoins2(model):
     :return:
     """
     Set_names = get_allSetsnames(model)
-    match list(Set_names):
-        case [*my_set_names] if "AREAS" in my_set_names:
+    if "AREAS" in Set_names:
             # multiple area
             def rampCtrMoins2_rule(model, area, t, tech):  # INEQ forall t<
                 if model.RampConstraintMoins2[(area, tech)] > 0:
@@ -440,7 +436,7 @@ def set_Operation_Constraints_rampCtrMoins2(model):
                     return Constraint.Skip
             model.rampCtrMoins2 = Constraint(model.AREAS, model.Date_MinusThree, model.TECHNOLOGIES,
                                              rule=rampCtrMoins2_rule)
-        case _:
+    else:
             # single area
             def rampCtrMoins2_rule(model, t, tech):  # INEQ forall t<
                 if model.RampConstraintMoins2[tech] > 0:
@@ -468,13 +464,12 @@ def set_Operation_Constraints_StoragePowerUBCtr(model):
     :return:
     """
     Set_names = get_allSetsnames(model)
-    match list(Set_names):
-        case [*my_set_names] if "AREAS" in my_set_names:
+    if "AREAS" in Set_names:
             # multiple area
             def StoragePowerUB_rule(model, area, t, s_tech):  # INEQ forall t
                 return model.storageIn[area, t, s_tech] - model.Pmax[area, s_tech] <= 0
             model.StoragePowerUBCtr = Constraint(model.AREAS, model.Date, model.STOCK_TECHNO, rule=StoragePowerUB_rule)
-        case _:
+    else:
             # single area
             def StoragePowerUB_rule(model, t, s_tech):  # INEQ forall t
                 return model.storageIn[t, s_tech] - model.Pmax[s_tech] <= 0
@@ -490,13 +485,12 @@ def set_Operation_Constraints_StoragePowerLBCtr(model):
     :return:
     """
     Set_names = get_allSetsnames(model)
-    match list(Set_names):
-        case [*my_set_names] if "AREAS" in my_set_names:
+    if "AREAS" in Set_names:
             # multiple area
             def StoragePowerLB_rule(model, area, t, s_tech, ):  # INEQ forall t
                 return model.storageOut[area, t, s_tech] - model.Pmax[area, s_tech] <= 0
             model.StoragePowerLBCtr = Constraint(model.AREAS, model.Date, model.STOCK_TECHNO, rule=StoragePowerLB_rule)
-        case _:
+    else:
             # single area
             def StoragePowerLB_rule(model, t, s_tech, ):  # INEQ forall t
                 return model.storageOut[t, s_tech] - model.Pmax[s_tech] <= 0
@@ -512,8 +506,7 @@ def set_Operation_Constraints_StorageLevelCtr(model):
     :return:
     """
     Set_names = get_allSetsnames(model)
-    match list(Set_names):
-        case [*my_set_names] if "AREAS" in my_set_names:
+    if "AREAS" in Set_names:
             # multiple area
             def StorageLevel_rule(model, area, t, s_tech):  # EQ forall t
                 if t != min(getattr(model, "Date").data()):
@@ -538,7 +531,7 @@ def set_Operation_Constraints_StorageLevelCtr(model):
                 return model.stockLevel_ini[area,s_tech] <= model.Cmax[area,s_tech]
             model.StorageLevel_iniCtr = Constraint(model.AREAS,model.STOCK_TECHNO, rule=StorageLevel_ini_rule)
 
-        case _:
+    else:
             # single area
             def StorageLevel_rule(model, t, s_tech):  # EQ forall t
                 if t != min(getattr(model, "Date").data()):
@@ -571,14 +564,13 @@ def set_Operation_Constraints_StorageCapacityCtr(model):
     :return:
     """
     Set_names = get_allSetsnames(model)
-    match list(Set_names):
-        case [*my_set_names] if "AREAS" in my_set_names:
+    if "AREAS" in my_set_names:
             # multiple area
             def StorageCapacity_rule(model, area, t, s_tech, ):  # INEQ forall t
                 return model.stockLevel[area, t, s_tech] <= model.Cmax[area, s_tech]
 
             model.StorageCapacityCtr = Constraint(model.AREAS, model.Date, model.STOCK_TECHNO, rule=StorageCapacity_rule)
-        case _:
+    else:
             # single area
             def StorageCapacity_rule(model, t, s_tech, ):  # INEQ forall t
                 return model.stockLevel[t, s_tech] <= model.Cmax[s_tech]
@@ -602,15 +594,14 @@ def set_Operation_Constraints_CapacityCtr(model):
     Set_names = get_allSetsnames(model)
 
     ### CapacityCtr definition
-    match list(Set_names):
-        case [*my_set_names] if "AREAS" in my_set_names:
+    if "AREAS" in Set_names:
             #multiple area (with or without storage)
             def CapacityCtr_rule(model, area, t, tech):  # INEQ forall t, tech
                 return model.capacity[area, tech] * model.availabilityFactor[area, t, tech] >= model.energy[
                     area, t, tech]
             model.CapacityCtr = Constraint(model.AREAS, model.Date, model.TECHNOLOGIES, rule=CapacityCtr_rule)
 
-        case _:
+    else:
             # single area (with or without storage)
             def Capacity_rule(model, t, tech):  # INEQ forall t, tech
                 return model.capacity[tech] * model.availabilityFactor[t, tech] >= model.energy[t, tech]
@@ -632,9 +623,9 @@ def set_Operation_Constraints_energyCtr(model):
     """
 
     Set_names = get_allSetsnames(model)
+    my_set_names=list(Set_names)
     ### CapacityCtr definition
-    match list(Set_names):
-        case[*my_set_names] if allin(["FLEX_CONSUM", "AREAS", 'STOCK_TECHNO'], my_set_names):
+    if allin(["FLEX_CONSUM", "AREAS", 'STOCK_TECHNO'], my_set_names):
             # multiple area and storage and flex conso
 
             def energyCtr_rule(model,area, t):  # INEQ forall t
@@ -646,7 +637,7 @@ def set_Operation_Constraints_energyCtr(model):
             model.energyCtr = Constraint(model.AREAS, model.Date, rule=energyCtr_rule)
 
 
-        case [*my_set_names] if allin(["FLEX_CONSUM", 'STOCK_TECHNO'], my_set_names):
+    elif allin(["FLEX_CONSUM", 'STOCK_TECHNO'], my_set_names):
             # simple area and storage and flex conso
             def energyCtr_rule(model, t):  # INEQ forall t
                 return sum(model.energy[t, tech] for tech in model.TECHNOLOGIES) + sum(
@@ -654,7 +645,7 @@ def set_Operation_Constraints_energyCtr(model):
                        model.total_consumption[t]
 
             model.energyCtr = Constraint(model.Date, rule=energyCtr_rule)
-        case [*my_set_names] if allin(["AREAS", 'STOCK_TECHNO'], my_set_names):
+    elif allin(["AREAS", 'STOCK_TECHNO'], my_set_names):
             # multiple area and storage
             def energyCtr_rule(model, area, t):  # INEQ forall t
                 return sum(model.energy[area, t, tech] for tech in model.TECHNOLOGIES) + sum(
@@ -680,7 +671,7 @@ def set_Operation_Constraints_energyCtr(model):
         #                model.areaConsumption[t]
         #     model.energyCtr = Constraint(model.Date, rule=energyCtr_rule)
 
-        case _:
+    else:
             # single area without storage
             def energyCtr_rule(model, t):  # INEQ forall t
                 return sum(model.energy[t, tech] for tech in model.TECHNOLOGIES) == model.areaConsumption[t]

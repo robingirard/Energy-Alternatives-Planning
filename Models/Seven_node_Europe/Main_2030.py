@@ -2,7 +2,6 @@ import os
 import warnings
 
 import pandas as pd
-
 warnings.filterwarnings("ignore")
 
 #from functions.f_optimization import *

@@ -98,8 +98,8 @@ def set_Planing_Constraints_storageCapacityCtr(model):
     """
     # Storage max capacity constraint
     Set_names = get_allSetsnames(model)
-    match list(Set_names):
-        case [*my_set_names] if "AREAS" in my_set_names:
+    my_set_names=list(Set_names)
+    if "AREAS" in my_set_names:
             # multiple area without storage
             def storageCapacitysup_rule(model, area, s_tech):  # INEQ forall s_tech
                 return model.Cmax[area, s_tech] <= model.c_max[area, s_tech]
@@ -107,7 +107,7 @@ def set_Planing_Constraints_storageCapacityCtr(model):
             def storageCapacityinf_rule(model, area, s_tech):  # INEQ forall s_tech
                 return model.Cmax[area, s_tech] >= model.c_min[area, s_tech]
             model.storageCapacityinfCtr = Constraint(model.AREAS, model.STOCK_TECHNO, rule=storageCapacityinf_rule)
-        case _:
+    else:
             # single area without storage
             def storageCapacitysup_rule(model, s_tech):  # INEQ forall s_tech
                 return model.Cmax[s_tech] <= model.c_max[s_tech]
@@ -127,13 +127,13 @@ def set_Planing_Constraints_storagePowerCtr(model):
     """
     # Storage max power constraint
     Set_names = get_allSetsnames(model)
-    match list(Set_names):
-        case [*my_set_names] if "AREAS" in my_set_names:
+    my_set_names=list(Set_names)
+    if "AREAS" in my_set_names:
             # multiple area without storage
             def storagePower_rule(model, area, s_tech):  # INEQ forall s_tech
                 return model.Pmax[area, s_tech] <= model.p_max[area, s_tech]
             model.storagePowerCtr = Constraint(model.AREAS, model.STOCK_TECHNO, rule=storagePower_rule)
-        case _:
+    else:
             # single area without storage
             def storagePower_rule(model, s_tech):  # INEQ forall s_tech
                 return model.Pmax[s_tech] <= model.p_max[s_tech]
