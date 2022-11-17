@@ -1,4 +1,4 @@
-from functions.f_graphicalTools import *
+from EnergyAlternativesPlaning.f_graphicalTools import *
 from Models.Belfort.Simulations.f_consumptionBelfort import *
 
 import os

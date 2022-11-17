@@ -1,7 +1,7 @@
 from datetime import timedelta
 import pandas as pd
 from pyomo.core import *
-from functions.f_tools import *
+from EnergyAlternativesPlaning.f_tools import *
 
 def set_Planing_Constraints_maxminCapacityCtr(model):
     """

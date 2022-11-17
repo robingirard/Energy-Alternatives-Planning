@@ -1,6 +1,6 @@
 import pandas as pd
 
-from functions.f_tools import *
+from EnergyAlternativesPlaning.f_tools import *
 
 #region general constraints
 

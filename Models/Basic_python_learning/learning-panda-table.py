@@ -13,7 +13,7 @@ import copy
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 
-from functions.f_graphicalTools import * #Il faut préciser le chemin où vous avez sauvegardé les données csv
+from EnergyAlternativesPlaning.f_graphicalTools import * #Il faut préciser le chemin où vous avez sauvegardé les données csv
 #endregions
 
 Zones="FR"

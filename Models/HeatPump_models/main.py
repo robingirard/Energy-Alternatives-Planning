@@ -1,7 +1,7 @@
 #region imports
 
-from functions.f_heat_pump import *
-from functions.f_graphicalTools import *
+from EnergyAlternativesPlaning.f_heat_pump import *
+from EnergyAlternativesPlaning.f_graphicalTools import *
 Data_Folder = "Models/HeatPump_models/data/"
 GraphicalResultsFolder = "Models/HeatPump_models/graphics/"
 #endregion

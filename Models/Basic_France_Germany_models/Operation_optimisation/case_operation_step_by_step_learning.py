@@ -2,9 +2,9 @@
 #region importation of modules
 
 from Models.Basic_France_models.Operation_optimisation.f_operationModels import *
-from functions.f_tools import *
-from functions.f_graphicalTools import *
-from functions.f_consumptionModels import *
+from EnergyAlternativesPlaning.f_tools import *
+from EnergyAlternativesPlaning.f_graphicalTools import *
+from EnergyAlternativesPlaning.f_consumptionModels import *
 
 ## locally defined models
 from Models.Basic_France_Germany_models.Operation_optimisation.f_operationModels import *

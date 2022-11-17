@@ -2,8 +2,8 @@ import os
 import warnings
 warnings.filterwarnings("ignore")
 
-#from functions.f_optimization import *
-from functions.f_consumptionModels import *
+#from EnergyAlternativesPlaning.f_optimization import *
+from EnergyAlternativesPlaning.f_consumptionModels import *
 from pyomo.opt import SolverFactory
 
 from Models.Seven_node_Europe.Data_processing_functions import *

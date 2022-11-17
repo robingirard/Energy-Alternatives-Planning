@@ -3,8 +3,8 @@
 from IPython import get_ipython;
 get_ipython().magic('reset -sf')
 import pandas as pd
-from functions.f_tools import *
-from functions.f_graphicalTools import *
+from EnergyAlternativesPlaning.f_tools import *
+from EnergyAlternativesPlaning.f_graphicalTools import *
 from Models.Prospective_conso.f_evolution_tools import *
 from mycolorpy import colorlist as mcp
 import numpy as np

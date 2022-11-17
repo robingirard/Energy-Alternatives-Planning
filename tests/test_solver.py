@@ -2,7 +2,7 @@
 import time
 
 from Models.Basic_France_models.Operation_optimisation.f_operationModels import *
-from functions.f_tools import *
+from EnergyAlternativesPlaning.f_tools import *
 import sys
 
 def test_solvers_operation_multizone():

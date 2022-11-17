@@ -17,9 +17,9 @@ if (myhost=="jupyter-sop"):
 #import docplex
 
 
-from functions.f_graphicalTools import *
-from functions.f_consumptionModels import *
-from functions.f_model_definition import *
+from EnergyAlternativesPlaning.f_graphicalTools import *
+from EnergyAlternativesPlaning.f_consumptionModels import *
+from EnergyAlternativesPlaning.f_model_definition import *
 from Models.Basic_France_models.Planing_optimisation.f_planingModels import *
 
 #endregion

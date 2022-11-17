@@ -15,10 +15,10 @@ from pyomo.core import *
 from pyomo.opt import SolverFactory
 
 
-from functions.f_model_definition import *
-from functions.f_model_cost_functions import *
-from functions.f_model_planing_constraints import *
-from functions.f_model_operation_constraints import *
+from EnergyAlternativesPlaning.f_model_definition import *
+from EnergyAlternativesPlaning.f_model_cost_functions import *
+from EnergyAlternativesPlaning.f_model_planing_constraints import *
+from EnergyAlternativesPlaning.f_model_operation_constraints import *
 
 
 

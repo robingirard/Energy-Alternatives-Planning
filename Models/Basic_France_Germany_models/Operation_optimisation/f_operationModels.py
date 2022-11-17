@@ -11,9 +11,9 @@ from datetime import timedelta
 import pandas as pd
 from pyomo.environ import *
 from pyomo.core import *
-from functions.f_tools import *
-from functions.f_model_definition import *
-from functions.f_model_operation_constraints import *
+from EnergyAlternativesPlaning.f_tools import *
+from EnergyAlternativesPlaning.f_model_definition import *
+from EnergyAlternativesPlaning.f_model_operation_constraints import *
 
 
 def GetElectricSystemModel_GestionMultiNode(Parameters,LineEfficiency=1):

@@ -7,8 +7,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
 
 pd.options.mode.chained_assignment = None  # default='warn'
-from functions.f_tools import *
-from functions.f_graphicalTools import *
+from EnergyAlternativesPlaning.f_tools import *
+from EnergyAlternativesPlaning.f_graphicalTools import *
 from Models.Prospective_conso.f_evolution_tools import *
 import plotly.express as px
 from mycolorpy import colorlist as mcp
@@ -65,7 +65,7 @@ sim_param["retrofit_change_surface"] = sim_param["retrofit_change_surface"] * si
 # When data is not given for every string index (typically vecteurs), we complete
 sim_param = complete_missing_indexes(data_set_from_excel, sim_param, Index_names, dim_names)
 
-## We define some functions which will calculate at each time step the energy need, consumption, emissions...
+## We define some EnergyAlternativesPlaning which will calculate at each time step the energy need, consumption, emissions...
 sim_param = set_model_functions(sim_param)
 
 # We lanch the simulation

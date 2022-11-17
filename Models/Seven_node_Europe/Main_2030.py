@@ -4,8 +4,8 @@ import warnings
 import pandas as pd
 warnings.filterwarnings("ignore")
 
-#from functions.f_optimization import *
-from functions.f_consumptionModels import *
+#from EnergyAlternativesPlaning.f_optimization import *
+from EnergyAlternativesPlaning.f_consumptionModels import *
 from Models.Seven_node_Europe.Data_processing_functions import *
 from Models.Seven_node_Europe.Multinode_model import *
 

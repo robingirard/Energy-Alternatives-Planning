@@ -30,11 +30,11 @@ import time
 import datetime
 import seaborn as sb
 
-from functions.anaelle.f_multiResourceModels import *
-from functions.anaelle.f_optimization import *
-from functions.anaelle.f_graphicalTools import *
-from functions.anaelle.f_optimModel_elec import *
-from functions.anaelle.f_InputScenario import *
+from EnergyAlternativesPlaning.anaelle.f_multiResourceModels import *
+from EnergyAlternativesPlaning.anaelle.f_optimization import *
+from EnergyAlternativesPlaning.anaelle.f_graphicalTools import *
+from EnergyAlternativesPlaning.anaelle.f_optimModel_elec import *
+from EnergyAlternativesPlaning.anaelle.f_InputScenario import *
 
 # Change this if you have other solvers obtained here
 ## https://ampl.com/products/solvers/open-source/

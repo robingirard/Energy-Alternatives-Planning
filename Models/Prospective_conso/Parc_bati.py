@@ -5,7 +5,7 @@ import numpy as np
 from scipy.special import gamma
 from time import time
 from copy import deepcopy
-from functions.f_graphicalTools import *
+from EnergyAlternativesPlaning.f_graphicalTools import *
 
 Data_folder = "Models/Prospective_conso/data/"
 base_dpe_residentiel_df=pd.read_csv(Data_folder+'base_logement_agregee.csv', sep=';', decimal='.')

@@ -1,7 +1,7 @@
 from datetime import timedelta
 import pandas as pd
 from pyomo.core import *
-from functions.f_tools import *
+from EnergyAlternativesPlaning.f_tools import *
 #default={"areaConsumption":"0","availabilityFactor":"1", "labour_ratio":"1"}; mutable ={"areaConsumption" : "True"}; domain ={"availabilityFactor" : "PercentFraction","maxExchangeCapacity" : "NonNegativeReals","a_minus": "NonNegativeReals","a_plus": "NonNegativeReals"}
 def Create_pyomo_model_sets_parameters(Parameters,
                                  default={"areaConsumption":"0","availabilityFactor":"1", "labour_ratio":"1"},
