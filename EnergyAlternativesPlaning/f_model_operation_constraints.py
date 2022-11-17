@@ -564,7 +564,8 @@ def set_Operation_Constraints_StorageCapacityCtr(model):
     :return:
     """
     Set_names = get_allSetsnames(model)
-    if "AREAS" in my_set_names:
+    my_set_names=list(Set_names)
+    if "AREAS" in Set_names:
             # multiple area
             def StorageCapacity_rule(model, area, t, s_tech, ):  # INEQ forall t
                 return model.stockLevel[area, t, s_tech] <= model.Cmax[area, s_tech]

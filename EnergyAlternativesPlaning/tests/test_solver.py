@@ -4,10 +4,13 @@ import time
 from Models.Basic_France_models.Operation_optimisation.f_operationModels import *
 from EnergyAlternativesPlaning.f_tools import *
 import sys
+import importlib_resources
+pkg = importlib_resources.files("packagename")
 
 def test_solvers_operation_multizone():
-    InputFolder = '../Data/input/'
 
+
+    #pkg_data_file = pkg / "data" / "data.csv"
     BaseSolverPath = '/Users/robin.girard/Documents/Code/Packages/solvers/ampl_macosx64'
     sys.path.append(BaseSolverPath)
     solvers = [ 'knitro', 'cbc']  # 'glpk' is too slow 'cplex' and 'xpress' do not work

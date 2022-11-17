@@ -1,0 +1,7 @@
+pandas
+numpy
+pyomo
+Mosek
+plotly
+sklearn
+mycolorpy

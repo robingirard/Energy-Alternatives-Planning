@@ -39,6 +39,7 @@ solverpath['cplex']=cplexPATH+"/"+"cplex"
 solver = 'mosek'
 #endregion
 
+#region location of data + output visualisation settings
 pd.options.display.width = 0
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
@@ -48,6 +49,7 @@ InputConsumptionFolder='Models/Basic_France_models/Consumption/Data/'
 InputProductionFolder='Models/Basic_France_models/Production/Data/'
 InputPlaningFolder='Models/Basic_France_models/Planing_optimisation/Data/'
 GraphicalResultsFolder="Models/Basic_France_models/Planing_optimisation/GraphicalResults/"
+#endregion
 
 #region I - Simple single area : loading parameters
 year=2013

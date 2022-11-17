@@ -1,24 +1,13 @@
-name : energyalternatives
+name : EnergyAlternativesPlaning
 channels:
   - conda-forge
   - defaults
 dependencies :
-    - python
     - pandas
-    - jupyter
     - numpy
-    - pytest
-    - pip
-    - glpk
-    - seaborn
-    - qgrid
-    - openpyxl
-    - nb_conda
     - pip :
-      - plotnine
       - pyomo
       - Mosek
-      - xarray
       - plotly
       - matplotlib==3.5.2
       - sklearn

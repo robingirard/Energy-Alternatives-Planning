@@ -10,7 +10,6 @@ from __future__ import division
 from pyomo.core import *
 from pyomo.opt import SolverFactory
 
-
 from EnergyAlternativesPlaning.f_model_definition import *
 from EnergyAlternativesPlaning.f_model_cost_functions import *
 from EnergyAlternativesPlaning.f_model_planing_constraints import *

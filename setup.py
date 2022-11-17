@@ -1,8 +1,10 @@
 from setuptools import setup
+import os
+#TODO utiliser Pathlib
 
 setup(
     name='EnergyAlternativesPlaning',
-    version='0.1.1',
+    version='0.1.2',
     description='A Python package for energy system modeling',
     url='https://github.com/robingirard/Energy-Alternatives-Planing',
     author='Robin Girard',
@@ -14,11 +16,9 @@ setup(
                       'pyomo',
                       'Mosek',
                       'plotly',
-                      'matplotlib',
                       'sklearn',
-                      'mycolorpy'
-                      ],
-
+                      'mycolorpy'],
+    package_data={"EnergyAlternativesPlaning" : ["*.csv", "*.xlsx"]},
     classifiers=[
         'Development Status :: 1 - Planning',
         'Intended Audience :: Science/Research',
