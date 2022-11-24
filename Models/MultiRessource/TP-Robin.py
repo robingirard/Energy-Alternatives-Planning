@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import sys
 import time
 import datetime
-import seaborn as sb
+#import seaborn as sb
 
 from Models.MultiRessource.f_Models_TP_Robin import *
 from EnergyAlternativesPlaning.f_tools import *

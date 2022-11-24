@@ -4,8 +4,9 @@ channels:
   - defaults
 dependencies :
     - jupyter
-    - gurobipy
     - pip
+    - scipy
     - pip :
+      - gurobipy
       - EnergyAlternativesPlaning
 
