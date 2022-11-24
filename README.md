@@ -19,10 +19,16 @@ The installation relies on the use of a conda environment. Instruction is below
 
 ## 1 - Installations  <a class="anchor" id="installations"></a>
 
-Once you have downloaded the Energy-Alternatives-Planing folder, in the terminal, you need to create the conda environment thanks to the conda.yml file:
+You need to have conda installed and to clone le project (either with git or just by downloading the [zip](https://github.com/robingirard/Energy-Alternatives-Planing/archive/refs/heads/master.zip) file associated to the project)
+
+* [Anaconda 3.8 distribution](https://www.anaconda.com/distribution/) or [Miniconda3 distribution](https://docs.conda.io/en/latest/miniconda.html)
+* To clone buildingmodel's Gitlab repository, [Git](https://git-scm.com/downloads) (On Windows, [Git for Windows](https://git-for-windows.github.io/) is preferred)
+
+
+Once you have downloaded the Energy-Alternatives-Planing folder, you need to open a terminal in order to create the conda environment thanks to the conda.yml file:
 
     conda env create --file conda.yml
-    conda activate energyalternatives
+    conda activate PlaninModel_env
 
 
 ## 2- Models Folder <a class="anchor" id="CasDEtude"></a>

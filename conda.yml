@@ -1,15 +1,10 @@
-name : EnergyAlternativesPlaning
+name : PlaninModel_env
 channels:
   - conda-forge
   - defaults
 dependencies :
-    - pandas
-    - numpy
+    - jupyter
+    - pip
     - pip :
-      - pyomo
-      - Mosek
-      - plotly
-      - matplotlib==3.5.2
-      - sklearn
-      - mycolorpy
+      - EnergyAlternativesPlaning
 

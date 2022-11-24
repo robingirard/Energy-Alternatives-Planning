@@ -32,8 +32,8 @@ def GetElectricSystemModel_MultiResources_SingleNode(areaConsumption, availabili
 
     TECHNOLOGIES= set(TechParameters.index.get_level_values('TECHNOLOGIES').unique())
     RESOURCES= set(ResParameters.index.get_level_values('RESOURCES').unique())
-    TIMESTAMP= set(areaConsumption.index.get_level_values('TIMESTAMP').unique())
-    TIMESTAMP_list= areaConsumption.index.get_level_values('TIMESTAMP').unique()
+    Date= set(areaConsumption.index.get_level_values('Date').unique())
+    Date_list= areaConsumption.index.get_level_values('Date').unique()
 
     #####################
     #    Pyomo model    #
@@ -49,27 +49,27 @@ def GetElectricSystemModel_MultiResources_SingleNode(areaConsumption, availabili
     ###############
     model.TECHNOLOGIES  = Set(initialize=TECHNOLOGIES,ordered=False)
     model.RESOURCES  = Set(initialize=RESOURCES,ordered=False)
-    model.TIMESTAMP     = Set(initialize=TIMESTAMP,ordered=False)
-    model.TIMESTAMP_TECHNOLOGIES =  model.TIMESTAMP * model.TECHNOLOGIES
+    model.Date     = Set(initialize=Date,ordered=False)
+    model.Date_TECHNOLOGIES =  model.Date * model.TECHNOLOGIES
     model.RESOURCES_TECHNOLOGIES  = model.RESOURCES * model.TECHNOLOGIES
-    model.TIMESTAMP_RESOURCES = model.TIMESTAMP * model.RESOURCES
+    model.Date_RESOURCES = model.Date * model.RESOURCES
 
     #Subset of Simple only required if ramp constraint
-    model.TIMESTAMP_MinusOne = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 1],ordered=False)
-    model.TIMESTAMP_MinusThree = Set(initialize=TIMESTAMP_list[: len(TIMESTAMP) - 3],ordered=False)
+    model.Date_MinusOne = Set(initialize=Date_list[: len(Date) - 1],ordered=False)
+    model.Date_MinusThree = Set(initialize=Date_list[: len(Date) - 3],ordered=False)
 
 
     ###############
     # Parameters ##
     ###############
 
-    model.areaConsumption =     Param(model.TIMESTAMP_RESOURCES,default=0,
+    model.areaConsumption =     Param(model.Date_RESOURCES,default=0,
                                       initialize=areaConsumption.loc[:,"areaConsumption"].squeeze().to_dict(),domain=Any)
-    model.availabilityFactor =  Param( model.TIMESTAMP_TECHNOLOGIES, domain=PercentFraction,default=1,
+    model.availabilityFactor =  Param( model.Date_TECHNOLOGIES, domain=PercentFraction,default=1,
                                       initialize=availabilityFactor.loc[:,"availabilityFactor"].squeeze().to_dict())
     model.conversionFactor = Param(model.RESOURCES_TECHNOLOGIES, default=0,
                                    initialize=conversionFactor.loc[:, "conversionFactor"].squeeze().to_dict())
-    model.importCost = Param(model.TIMESTAMP_RESOURCES, mutable=True,default=0,
+    model.importCost = Param(model.Date_RESOURCES, mutable=True,default=0,
                                       initialize=ResParameters.loc[:,"importCost"].squeeze().to_dict(), domain=Any)
     #with test of existing columns on TechParameters
     for COLNAME in TechParameters:
@@ -83,7 +83,7 @@ def GetElectricSystemModel_MultiResources_SingleNode(areaConsumption, availabili
     
     #In this section, variables are separated in two categories : decision variables wich are the reals variables of the otimisation problem (these are noted Dvar), and problem variables which are resulting of calculation and are convenient for the readability and the analyse of results (these are noted Pvar)
     
-    model.power_Dvar = Var(model.TIMESTAMP, model.TECHNOLOGIES, domain=NonNegativeReals) ### Power of a conversion mean at time t
+    model.power_Dvar = Var(model.Date, model.TECHNOLOGIES, domain=NonNegativeReals) ### Power of a conversion mean at time t
     model.powerCosts_Pvar = Var(model.TECHNOLOGIES)  ### Marginal cost for a conversion mean, explicitely defined by definition powerCostsDef
     model.capacity_Dvar = Var(model.TECHNOLOGIES, domain=NonNegativeReals) ### Capacity of a conversion mean
     model.capacityCosts_Pvar = Var(model.TECHNOLOGIES) ### Fixed costs for a conversion mean, explicitely defined by definition capacityCostsDef

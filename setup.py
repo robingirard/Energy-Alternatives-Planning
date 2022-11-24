@@ -4,7 +4,7 @@ import os
 
 setup(
     name='EnergyAlternativesPlaning',
-    version='0.1.2',
+    version='0.1.3',
     description='A Python package for energy system modeling',
     url='https://github.com/robingirard/Energy-Alternatives-Planing',
     author='Robin Girard',
@@ -15,6 +15,7 @@ setup(
                       'numpy',
                       'pyomo',
                       'Mosek',
+                      'gurobipy',
                       'plotly',
                       'sklearn',
                       'mycolorpy'],
