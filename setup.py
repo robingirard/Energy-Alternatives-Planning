@@ -15,7 +15,6 @@ setup(
                       'numpy',
                       'pyomo',
                       'Mosek',
-                      'gurobipy',
                       'plotly',
                       'sklearn',
                       'mycolorpy'],
