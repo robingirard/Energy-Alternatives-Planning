@@ -182,10 +182,18 @@ def set_Operation_Constraints_total_consumptionCtr(model):
     """
     # Total consumption constraint
     # LoadCost;flex_ratio;max_ratio
-    def total_consumption_rule(model, t,area):
-        return model.total_consumption[area,t] == model.areaConsumption[area,t] + sum(
-            model.flex_consumption[area,t, name] for name in model.FLEX_CONSUM)
-    model.total_consumptionCtr = Constraint(model.Date, model.AREAS, rule=total_consumption_rule)
+    Set_names = get_allSetsnames(model)
+    if 'AREAS' in Set_names:
+        def total_consumption_rule(model, t,area):
+            return model.total_consumption[area,t] == model.areaConsumption[area,t] + sum(
+                model.flex_consumption[area,t, name] for name in model.FLEX_CONSUM)
+        model.total_consumptionCtr = Constraint(model.Date, model.AREAS, rule=total_consumption_rule)
+
+    else:
+        def total_consumption_rule(model, t):
+            return model.total_consumption[t] == model.areaConsumption[t] + sum(
+                model.flex_consumption[t, name] for name in model.FLEX_CONSUM)
+        model.total_consumptionCtr = Constraint(model.Date, rule=total_consumption_rule)
     return model
 
 def set_Operation_Constraints_max_powerCtr(model):
@@ -196,9 +204,16 @@ def set_Operation_Constraints_max_powerCtr(model):
     :return:
     """
     # Online flexible consumption constraints
-    def max_power_rule(model, area,conso_type, t):
-        return model.max_power[area,conso_type] + model.increased_max_power[area,conso_type] >= model.flex_consumption[area,t, conso_type]
-    model.max_powerCtr = Constraint(model.AREAS,model.FLEX_CONSUM, model.Date, rule=max_power_rule)
+    Set_names = get_allSetsnames(model)
+    if 'AREAS' in Set_names:
+        def max_power_rule(model, area,conso_type, t):
+            return model.max_power[area,conso_type] + model.increased_max_power[area,conso_type] >= model.flex_consumption[area,t, conso_type]
+        model.max_powerCtr = Constraint(model.AREAS,model.FLEX_CONSUM, model.Date, rule=max_power_rule)
+
+    else:
+        def max_power_rule(model,conso_type, t):
+            return model.max_power[conso_type] + model.increased_max_power[conso_type] >= model.flex_consumption[t, conso_type]
+        model.max_powerCtr = Constraint(model.FLEX_CONSUM, model.Date, rule=max_power_rule)
     return model
 
 def set_Operation_Constraints_consum_eq_day_Ctr(model):
@@ -212,15 +227,27 @@ def set_Operation_Constraints_consum_eq_day_Ctr(model):
     Date_list["day"] = Date_list.Date.apply(lambda x: x.dayofyear)
 
     # consumption equality within the same week
-    def consum_eq_day(model, area,t_day, conso_type):
-        if model.flex_type[area,conso_type] == 'day':
-            #Date_list=getattr(model, "Date").data()
-            t_range = Date_list.Date[Date_list.day == t_day]  # range((t_week-1)*7*24+1,(t_week)*7*24)
-            return sum(model.flex_consumption[area,t, conso_type] for t in t_range) == sum(
-                model.to_flex_consumption[area,t, conso_type] for t in t_range)
-        else:
-            return Constraint.Skip
-    model.consum_eq_day_Ctr = Constraint(model.AREAS,model.DAY_Date, model.FLEX_CONSUM, rule=consum_eq_day)
+    Set_names = get_allSetsnames(model)
+    if 'AREAS' in Set_names:
+        def consum_eq_day(model, area,t_day, conso_type):
+            if model.flex_type[area,conso_type] == 'day':
+                #Date_list=getattr(model, "Date").data()
+                t_range = Date_list.Date[Date_list.day == t_day]  # range((t_week-1)*7*24+1,(t_week)*7*24)
+                return sum(model.flex_consumption[area,t, conso_type] for t in t_range) == sum(
+                    model.to_flex_consumption[area,t, conso_type] for t in t_range)
+            else:
+                return Constraint.Skip
+        model.consum_eq_day_Ctr = Constraint(model.AREAS,model.DAY_Date, model.FLEX_CONSUM, rule=consum_eq_day)
+    else:
+        def consum_eq_day(model, t_day, conso_type):
+            if model.flex_type[conso_type] == 'day':
+                #Date_list=getattr(model, "Date").data()
+                t_range = Date_list.Date[Date_list.day == t_day]  # range((t_week-1)*7*24+1,(t_week)*7*24)
+                return sum(model.flex_consumption[t, conso_type] for t in t_range) == sum(
+                    model.to_flex_consumption[t, conso_type] for t in t_range)
+            else:
+                return Constraint.Skip
+        model.consum_eq_day_Ctr = Constraint(model.DAY_Date, model.FLEX_CONSUM, rule=consum_eq_day)
     return model
 def set_Operation_Constraints_consum_eq_week_Ctr(model):
     """
@@ -233,15 +260,27 @@ def set_Operation_Constraints_consum_eq_week_Ctr(model):
     Date_list["week"] = Date_list.Date.apply(lambda x: x.isocalendar().week)
 
     # consumption equality within the same week
-    def consum_eq_week(model, area,t_week, conso_type):
-        if model.flex_type[area,conso_type] == 'week':
-            #Date_list=getattr(model, "Date").data()
-            t_range = Date_list.Date[Date_list.week == t_week]  # range((t_week-1)*7*24+1,(t_week)*7*24)
-            return sum(model.flex_consumption[area,t, conso_type] for t in t_range) == sum(
-                model.to_flex_consumption[area,t, conso_type] for t in t_range)
-        else:
-            return Constraint.Skip
-    model.consum_eq_week_Ctr = Constraint(model.AREAS,model.WEEK_Date, model.FLEX_CONSUM, rule=consum_eq_week)
+    Set_names = get_allSetsnames(model)
+    if 'AREAS' in Set_names:
+        def consum_eq_week(model, area,t_week, conso_type):
+            if model.flex_type[area,conso_type] == 'week':
+                #Date_list=getattr(model, "Date").data()
+                t_range = Date_list.Date[Date_list.week == t_week]  # range((t_week-1)*7*24+1,(t_week)*7*24)
+                return sum(model.flex_consumption[area,t, conso_type] for t in t_range) == sum(
+                    model.to_flex_consumption[area,t, conso_type] for t in t_range)
+            else:
+                return Constraint.Skip
+        model.consum_eq_week_Ctr = Constraint(model.AREAS,model.WEEK_Date, model.FLEX_CONSUM, rule=consum_eq_week)
+    else:
+        def consum_eq_week(model, t_week, conso_type):
+            if model.flex_type[conso_type] == 'week':
+                #Date_list=getattr(model, "Date").data()
+                t_range = Date_list.Date[Date_list.week == t_week]  # range((t_week-1)*7*24+1,(t_week)*7*24)
+                return sum(model.flex_consumption[t, conso_type] for t in t_range) == sum(
+                    model.to_flex_consumption[t, conso_type] for t in t_range)
+            else:
+                return Constraint.Skip
+        model.consum_eq_week_Ctr = Constraint(model.WEEK_Date, model.FLEX_CONSUM, rule=consum_eq_week)
     return model
 
 def set_Operation_Constraints_consum_eq_year_Ctr(model):
@@ -251,13 +290,24 @@ def set_Operation_Constraints_consum_eq_year_Ctr(model):
     :param model:
     :return:
     """
-    def consum_eq_year(model, area, conso_type):
-        if model.flex_type[area,conso_type] == 'year':
-            return sum(model.flex_consumption[area,t, conso_type] for t in model.Date) == sum(
-                model.to_flex_consumption[area,t, conso_type] for t in model.Date)
-        else:
-            return Constraint.Skip
-    model.consum_eq_year_Ctr = Constraint(model.AREAS, model.FLEX_CONSUM, rule=consum_eq_year)
+    Set_names = get_allSetsnames(model)
+    if 'AREAS' in Set_names:
+        def consum_eq_year(model, area, conso_type):
+            if model.flex_type[area,conso_type] == 'year':
+                return sum(model.flex_consumption[area,t, conso_type] for t in model.Date) == sum(
+                    model.to_flex_consumption[area,t, conso_type] for t in model.Date)
+            else:
+                return Constraint.Skip
+        model.consum_eq_year_Ctr = Constraint(model.AREAS, model.FLEX_CONSUM, rule=consum_eq_year)
+
+    else:
+        def consum_eq_year(model, conso_type):
+            if model.flex_type[conso_type] == 'year':
+                return sum(model.flex_consumption[t, conso_type] for t in model.Date) == sum(
+                    model.to_flex_consumption[t, conso_type] for t in model.Date)
+            else:
+                return Constraint.Skip
+        model.consum_eq_year_Ctr = Constraint(model.FLEX_CONSUM, rule=consum_eq_year)
     return model
 
 def set_Operation_Constraints_consum_flex_Ctr(model):
@@ -267,10 +317,18 @@ def set_Operation_Constraints_consum_flex_Ctr(model):
     :param model:
     :return:
     """
-    def consum_flex_rule(model, area,t, conso_type):
-        return model.flex_consumption[area,t, conso_type] == model.to_flex_consumption[area,t, conso_type] * (
-                    1 - model.flex[area,t, conso_type])
-    model.consum_flex_Ctr = Constraint(model.AREAS,model.Date, model.FLEX_CONSUM, rule=consum_flex_rule)
+
+    Set_names = get_allSetsnames(model)
+    if 'AREAS' in Set_names:
+        def consum_flex_rule(model, area,t, conso_type):
+            return model.flex_consumption[area,t, conso_type] == model.to_flex_consumption[area,t, conso_type] * (
+                        1 - model.flex[area,t, conso_type])
+        model.consum_flex_Ctr = Constraint(model.AREAS,model.Date, model.FLEX_CONSUM, rule=consum_flex_rule)
+    else:
+        def consum_flex_rule(model, t, conso_type):
+            return model.flex_consumption[t, conso_type] == model.to_flex_consumption[t, conso_type] * (
+                        1 - model.flex[t, conso_type])
+        model.consum_flex_Ctr = Constraint(model.Date, model.FLEX_CONSUM, rule=consum_flex_rule)
     return model
 
 def set_Operation_Constraints_flex_variation_supinf_Ctr(model):
@@ -282,14 +340,27 @@ def set_Operation_Constraints_flex_variation_supinf_Ctr(model):
     :param model:
     :return:
     """
+    Set_names = get_allSetsnames(model)
+    if 'AREAS' in Set_names:
+        def flex_variation_sup_rule(model, area,t, conso_type):
+            return model.flex[area,t, conso_type] <= model.flex_ratio[area,conso_type]
+        model.flex_variation_sup_Ctr = Constraint(model.AREAS,model.Date, model.FLEX_CONSUM, rule=flex_variation_sup_rule)
 
-    def flex_variation_sup_rule(model, area,t, conso_type):
-        return model.flex[area,t, conso_type] <= model.flex_ratio[area,conso_type]
-    model.flex_variation_sup_Ctr = Constraint(model.AREAS,model.Date, model.FLEX_CONSUM, rule=flex_variation_sup_rule)
+        def flex_variation_inf_rule(model, area,t, conso_type):
+            return model.flex[area,t, conso_type] >= -model.flex_ratio[area,conso_type]
+        model.flex_variation_inf_Ctr = Constraint(model.AREAS,model.Date, model.FLEX_CONSUM, rule=flex_variation_inf_rule)
+    else:
+        def flex_variation_sup_rule(model, t, conso_type):
+            return model.flex[t, conso_type] <= model.flex_ratio[conso_type]
 
-    def flex_variation_inf_rule(model, area,t, conso_type):
-        return model.flex[area,t, conso_type] >= -model.flex_ratio[area,conso_type]
-    model.flex_variation_inf_Ctr = Constraint(model.AREAS,model.Date, model.FLEX_CONSUM, rule=flex_variation_inf_rule)
+        model.flex_variation_sup_Ctr = Constraint(model.Date, model.FLEX_CONSUM,
+                                                  rule=flex_variation_sup_rule)
+
+        def flex_variation_inf_rule(model, t, conso_type):
+            return model.flex[t, conso_type] >= -model.flex_ratio[conso_type]
+
+        model.flex_variation_inf_Ctr = Constraint(model.Date, model.FLEX_CONSUM,
+                                                  rule=flex_variation_inf_rule)
     return model
     #Labour cost for flexibility consumption constraint
 
@@ -300,10 +371,15 @@ def set_Operation_Constraints_a_plus_minusCtr(model):
     :param model:
     :return:
     """
-
-    def a_plus_minus_rule(model,area,conso_type,t):
-        return model.flex_consumption[area,t,conso_type]-model.to_flex_consumption[area,t,conso_type]==model.a_plus[area,t,conso_type]-model.a_minus[area,t,conso_type]
-    model.a_plus_minusCtr=Constraint(model.AREAS,model.FLEX_CONSUM,model.Date,rule=a_plus_minus_rule)
+    Set_names = get_allSetsnames(model)
+    if 'AREAS' in Set_names:
+        def a_plus_minus_rule(model,area,conso_type,t):
+            return model.flex_consumption[area,t,conso_type]-model.to_flex_consumption[area,t,conso_type]==model.a_plus[area,t,conso_type]-model.a_minus[area,t,conso_type]
+        model.a_plus_minusCtr=Constraint(model.AREAS,model.FLEX_CONSUM,model.Date,rule=a_plus_minus_rule)
+    else:
+        def a_plus_minus_rule(model,conso_type,t):
+            return model.flex_consumption[t,conso_type]-model.to_flex_consumption[t,conso_type]==model.a_plus[t,conso_type]-model.a_minus[t,conso_type]
+        model.a_plus_minusCtr=Constraint(model.FLEX_CONSUM,model.Date,rule=a_plus_minus_rule)
     return model
 
 #endregion
