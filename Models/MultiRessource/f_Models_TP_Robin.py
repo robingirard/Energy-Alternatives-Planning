@@ -42,10 +42,10 @@ def loadScenario(scenario, printTables=False):
         df[k1].index.name = 'RESOURCES'
         df[k1] = df[k1].reset_index(['RESOURCES']).melt(id_vars=['RESOURCES'], var_name='TECHNOLOGIES',value_name='storageFactor' + k2)
 
-    df['dissipation'] = pd.concat(pd.DataFrame(
-        data={'dissipation': df_sconv.loc[tech]['dissipation'],
-              'RESOURCES': df_sconv.loc[tech]['resource'],
-              'TECHNOLOGIES': tech}, index={0}) for tech in stechSet)
+    df['dissipation'] = pd.DataFrame.from_dict(
+        data={'dissipation': [df_sconv.loc[tech]['dissipation'] for tech in stechSet],
+              'RESOURCES': [df_sconv.loc[tech]['resource'] for tech in stechSet],
+              'TECHNOLOGIES': [tech for tech in stechSet]})
     storageFactors = pd.merge(df['charge'], df['discharge'], how='outer').fillna(0)
     storageFactors = pd.merge(storageFactors, df['dissipation'], how='outer').fillna(0).set_index(
         ['RESOURCES', 'TECHNOLOGIES'])
