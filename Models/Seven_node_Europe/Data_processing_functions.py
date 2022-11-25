@@ -71,7 +71,7 @@ def Marginal_cost_adjustment(TechParameters,number_of_sub_techs,techs,areas,carb
                         if sub != 0.5 :
                             v = u.reset_index().copy()
                             v["TECHNOLOGIES"] = tech + str(sub)[2:]
-                            v["energyCost"] = v["energyCost"] + v["margvarCost"] * v["minCapacity"] * (sub - 0.5) * 2
+                            v["energyCost"] = v["energyCost"] + v["margvarCost"] * v["maxCapacity"] * (sub - 0.5) * 2
                             v["minCapacity"] = v["minCapacity"] / n
                             v["maxCapacity"] = v["maxCapacity"] / n
                             v.set_index(["AREAS", "TECHNOLOGIES"], inplace=True)
@@ -80,7 +80,7 @@ def Marginal_cost_adjustment(TechParameters,number_of_sub_techs,techs,areas,carb
                         if abs(sub-(0.5-step/2))<epsilon or abs(sub-(0.5+step/2))<epsilon:
                             v = u.reset_index().copy()
                             v["TECHNOLOGIES"] = tech + str(sub)[2:]
-                            v["energyCost"] = v["energyCost"] + v["margvarCost"] * v["minCapacity"] * (sub - 0.5) * 2
+                            v["energyCost"] = v["energyCost"] + v["margvarCost"] * v["maxCapacity"] * (sub - 0.5) * 2
                             v["minCapacity"] = v["minCapacity"] / 4
                             v["maxCapacity"] = v["maxCapacity"] / 4
                             v.set_index(["AREAS", "TECHNOLOGIES"], inplace=True)
@@ -88,7 +88,7 @@ def Marginal_cost_adjustment(TechParameters,number_of_sub_techs,techs,areas,carb
                         else:
                             v = u.reset_index().copy()
                             v["TECHNOLOGIES"] = tech + str(sub)[2:]
-                            v["energyCost"] = v["energyCost"] + v["margvarCost"] * v["minCapacity"] * (sub - 0.5) * 2
+                            v["energyCost"] = v["energyCost"] + v["margvarCost"] * v["maxCapacity"] * (sub - 0.5) * 2
                             v["minCapacity"] = v["minCapacity"] / n
                             v["maxCapacity"] = v["maxCapacity"] / n
                             v.set_index(["AREAS", "TECHNOLOGIES"], inplace=True)
@@ -118,9 +118,12 @@ def CHP_processing(areaConsumption,year):
     return areaConsumption
 
 
-def Flexibility_data_processing(areaConsumption,year,weather_year):
+def Flexibility_data_processing(areaConsumption,year,weather_year,no_flex):
     ConsoParameters = pd.read_csv(InputFolder_other + "2030_Planing-Conso-FLEX_CONSUM.csv",
                                   sep=";")
+    if no_flex:
+        ConsoParameters["flex_ratio"]=0
+
     areas_list=ConsoParameters.AREAS.unique()
     ConsoParameters_=pd.DataFrame(columns=["AREAS","FLEX_CONSUM","unit","add_consum","LoadCost","flex_ratio","flex_type","labourcost"],data=np.array([[None]*8])).set_index(["AREAS", "FLEX_CONSUM"])
     ConsoParameters.set_index(["AREAS", "FLEX_CONSUM"], inplace=True)
