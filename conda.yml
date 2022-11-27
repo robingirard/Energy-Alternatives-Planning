@@ -6,6 +6,7 @@ dependencies :
     - jupyter
     - pip
     - scipy
+    - openpyxl
     - pip :
       - gurobipy
       - EnergyAlternativesPlaning
