@@ -23,11 +23,23 @@ InputFolder = 'Input data/2030/'
 InputFolder_other="Input data/Conso flex files/"
 
 
-def main_2030(weather_year=2018,carbon_tax=60,gas_price_coef=1,coal_price_coef=1,number_of_sub_techs=1,error_deactivation=False):
+def main_2030(weather_year=2018,carbon_tax=60,gas_price_coef=1,coal_price_coef=1,number_of_sub_techs=1,error_deactivation=False,no_fossil_mini=False,no_flex=False,noREmax=False,noREmin=False):
     start_time = datetime.now()
     year=2030
     ctax_ini = 30
 
+    instance="_ctax"+str(carbon_tax)+"gpc"+str(gas_price_coef)+"cpc"+str(coal_price_coef)
+    if no_fossil_mini:
+        instance+="_no_fossil_mini"
+    if no_flex:
+        instance+="_no"
+    instance+="_flex"
+
+    if noREmax:
+        instance+="_noREmax"
+    if noREmin:
+        instance+="_noREmin"
+    print("Ongoing instance: "+instance)
     if weather_year not in range(2017, 2020):
         print('No weather data for ' + str(weather_year))
         print("Weather data is available from 2017 to 2019")
@@ -75,18 +87,30 @@ def main_2030(weather_year=2018,carbon_tax=60,gas_price_coef=1,coal_price_coef=1
     techs = TechParameters.TECHNOLOGIES.unique()
     areas = TechParameters.AREAS.unique()
     TechParameters.set_index(["AREAS", "TECHNOLOGIES"], inplace=True)
-
+    if no_fossil_mini:
+        for tech in ["Coal","Lignite","CCG","TAC"]:
+            for area in areas:
+                TechParameters.loc[(area,tech),"minCapacity"]=0
+    if noREmax:
+        for tech in ["Solar","WindOnShore","WindOffShore"]:
+            for area in areas:
+                TechParameters.loc[(area,tech),"maxCapacity"]=20*TechParameters.loc[(area,tech),"maxCapacity"]
+    if noREmin:
+        for tech in ["Solar","WindOnShore","WindOffShore"]:
+            for area in areas:
+                TechParameters.loc[(area,tech),"minCapacity"]=0
     #CHP inclusion
     areaConsumption=CHP_processing_future(areaConsumption,year,weather_year)
 
     #Flexibility data inclusion
-    ConsoParameters_,labour_ratio,to_flex_consumption=Flexibility_data_processing(areaConsumption,2030,weather_year)
+    ConsoParameters_,labour_ratio,to_flex_consumption=Flexibility_data_processing(areaConsumption,2030,weather_year,no_flex)
 
     #Marginal cost adjustment and merit order simulation
     TechParameters=Marginal_cost_adjustment(TechParameters,number_of_sub_techs,techs,areas,carbon_tax,ctax_ini,gas_price_coef,coal_price_coef)
 
     #Curtailment adjustment
     TechParameters=Curtailment_adjustment(TechParameters,minCapacity=5000,maxCapacity=5000,EnergyNbHourCap=20)
+    TechParameters.to_csv("test.csv")
     ##############################
     # Model creation and solving #
     ##############################
@@ -122,11 +146,30 @@ def main_2030(weather_year=2018,carbon_tax=60,gas_price_coef=1,coal_price_coef=1
     ##############################
     Variables = getVariables_panda_indexed(model)
 
-
-    with open('Result_2030.pickle', 'wb') as f:
+    with open('Result files/Result_2030'+instance+'.pickle', 'wb') as f:
         pickle.dump(Variables, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     end_time = datetime.now()
     print('\t Total duration: {}'.format(end_time - start_time))
     return Variables
-# main_2030(weather_year=2018,number_of_sub_techs=1)
+
+for (ctax,gpc,cpc) in [(90,2.5,2.5),(30,1,1)]:
+    for (no_fossil_mini,noREmax,noREmin) in [(False,False,False),(True,False,False),(True,True,False),(True,True,True)]:
+        for no_flex in [True,False]:
+            ldir=os.listdir("Result files")
+
+            instance = "_ctax" + str(ctax) + "gpc" + str(gpc) + "cpc" + str(cpc)
+            if no_fossil_mini:
+                instance += "_no_fossil_mini"
+            if no_flex:
+                instance += "_no"
+            instance += "_flex"
+            if noREmax:
+                instance += "_noREmax"
+            if noREmin:
+                instance += "_noREmin"
+
+            if "Result_2030"+instance+".pickle" not in ldir:
+                main_2030(weather_year=2018,carbon_tax=ctax,gas_price_coef=gpc,coal_price_coef=cpc,number_of_sub_techs=7,no_fossil_mini=no_fossil_mini,no_flex=no_flex,noREmax=noREmax,noREmin=noREmin)
+            else:
+                print("Instance "+instance+" already calculated")
