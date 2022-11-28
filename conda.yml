@@ -9,5 +9,7 @@ dependencies :
     - openpyxl
     - pip :
       - gurobipy
+      - openpyxl
+      - scikit-learn
       - EnergyAlternativesPlaning
 
