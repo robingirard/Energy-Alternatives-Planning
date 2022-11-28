@@ -11,5 +11,6 @@ dependencies :
       - gurobipy
       - openpyxl
       - scikit-learn
+      - seaborn
       - EnergyAlternativesPlaning
 

@@ -2,7 +2,7 @@ from datetime import timedelta
 import pandas as pd
 from pyomo.core import *
 
-from EnergyAlternativesPlaning import *
+# from EnergyAlternativesPlaning import *
 from EnergyAlternativesPlaning.f_tools import *
 from EnergyAlternativesPlaning.f_model_definition import *
 from EnergyAlternativesPlaning.f_model_cost_functions import *
@@ -10,9 +10,9 @@ from EnergyAlternativesPlaning.f_model_planing_constraints import *
 from EnergyAlternativesPlaning.f_model_operation_constraints import *
 
 def GetElectricitySystemModel(Parameters):
-    ########
-    # Sets #
-    ########
+    #####################
+    # Sets & Parameters #
+    #####################
     model=Create_pyomo_model_sets_parameters(Parameters)
 
     #############
