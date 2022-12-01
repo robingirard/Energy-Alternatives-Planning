@@ -128,7 +128,6 @@ def Thermosensibility(areaConsumption,xls_file):
         NewConsoTempeYear_decomposed_df = Recompose(ConsoTempeYear_decomposed_df, NewThermosensibilite,
                                                     TemperatureThreshold=15)
     areaConsumption.loc[(area,slice(None)),"areaConsumption"]=NewConsoTempeYear_decomposed_df["Consumption"]
-    areaConsumption.to_excel('test.xlsx')
     return areaConsumption
 
 def Flexibility_data_processing(areaConsumption,year,xls_file):
