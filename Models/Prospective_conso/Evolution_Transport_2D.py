@@ -18,11 +18,11 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 #endregion
-
+#need_reduction	0,1
 #region chargement des données voyageurs
 start = time.process_time()
 dim_names=["Categorie","year","Vecteur"];
-Index_names = ["Categorie"];Energy_system_name="Categorie"
+Index_names = ["Categorie"]; Energy_system_name="Categorie"
 data_set_from_excel =  pd.read_excel(Data_folder+"Hypotheses_Transport_1D.xlsx", None);
 sim_param = extract_sim_param(data_set_from_excel,Index_names = Index_names,dim_names=dim_names,Energy_system_name=Energy_system_name)
 sim_param["init_sim_stock"]=create_initial_parc(sim_param).sort_index()
@@ -41,6 +41,7 @@ sim_param_voyageurs = sim_param
 end = time.process_time()
 print("Chargement des données, des modèles et interpolation terminés en : "+str(end-start)+" secondes")
 #endregion
+#sim_param["need_reduction"]
 
 #region chargement des données fret
 start = time.process_time()
@@ -84,6 +85,15 @@ col_class_dict={'Bus et cars GNV' : 1, 'Bus et cars H2':1, 'Bus et cars diesel':
  'deux roues diesel':6, 'deux roues électrique':6,
  'Avion fret  international': 7, 'Bateau fret  international': 7,'Train fret':7}
 
+Var = "Mds_voy_km"
+y_df = sim_stock_df.groupby(["year",Energy_system_name])[Var].sum().to_frame().reset_index().\
+    pivot(index=['year'], columns=Energy_system_name).loc[[year for year in sim_param["years"][1:]],Var]
+y_df.columns=pd.MultiIndex.from_tuples([(str(col_class_dict[key]),key) for key in y_df.columns])
+
+fig = MyStackedPlotly(y_df=y_df)
+fig=fig.update_layout(title_text="Mds_voy_km par mode de transport", xaxis_title="Année",yaxis_title="Mds_voy_km")
+plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
+
 
 Var = "Conso"
 y_df = sim_stock_df.groupby(["year",Energy_system_name])[Var].sum().to_frame().reset_index().\
@@ -101,7 +111,7 @@ y_df = sim_stock_df.groupby(["year",Energy_system_name])[Var].sum().to_frame().r
 y_df.columns=pd.MultiIndex.from_tuples([(str(col_class_dict[key]),key) for key in y_df.columns])
 
 fig = MyStackedPlotly(y_df=y_df)
-fig=fig.update_layout(title_text="Emissions de GES par mode de chauffage (en MtCO2e)", xaxis_title="Année",yaxis_title="Conso [MtCO2e]")
+fig=fig.update_layout(title_text="Emissions de GES par mode de transport (en MtCO2e)", xaxis_title="Année",yaxis_title="Conso [MtCO2e]")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 
 ### représentation par vecteur
@@ -114,17 +124,6 @@ plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 y_df = sim_stock_df.groupby(["year"])[[ 'emissions_'+Vecteur for Vecteur in sim_param["Vecteurs"]]].sum().loc[[year for year in sim_param["years"][1:]],:]/10**3
 fig = MyStackedPlotly(y_df=y_df)
 fig=fig.update_layout(title_text="Emissions par vecteur [MT CO2]", xaxis_title="Année",yaxis_title="CO2 [MT]")
-plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
-#endregion
-
-#region others
-Var = "Mds_voy_km"
-y_df = sim_stock_df.groupby(["year",Energy_system_name])[Var].sum().to_frame().reset_index().\
-    pivot(index=['year'], columns=Energy_system_name).loc[[year for year in sim_param["years"][1:]],Var]
-y_df.columns=pd.MultiIndex.from_tuples([(str(col_class_dict[key]),key) for key in y_df.columns])
-
-fig = MyStackedPlotly(y_df=y_df)
-fig=fig.update_layout(title_text="Mds_voy_km par mode de transport", xaxis_title="Année",yaxis_title="Mds_voy_km")
 plotly.offline.plot(fig, filename=Graphic_folder+'file.html') ## offline
 #endregion
 

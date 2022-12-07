@@ -531,13 +531,27 @@ def set_model_functions(sim_param,compute_peak=True):
 
 
 def set_model_functions_simple(sim_param):
+    if "need_reduction" in sim_param:
+        def f_Compute_Volume(x, sim_param, year):
+            Energy_system = x.name[0]
+            return x[sim_param["volume_variable_name"]] *(1-sim_param["need_reduction"][(Energy_system, year)])
+        sim_param["f_Compute_Volume"] = {"reduced_"+sim_param["volume_variable_name"] : f_Compute_Volume}
+
     def f_Compute_conso(x, sim_param, year, Vecteur):
         Energy_system = x.name[0]
         if "remplissage" in x:
             conso_unitaire = sim_param["conso_unitaire_" + Vecteur][(Energy_system, year)]/x["remplissage"]
+            #if "need_reduction" in sim_param:
+                #print("coucou")
+            #    conso_unitaire = conso_unitaire *(1-sim_param["need_reduction"][(Energy_system, year)])
         else:
             conso_unitaire = sim_param["conso_unitaire_" + Vecteur][(Energy_system, year)]
-        return x["energy_need_per_" + sim_param["volume_variable_name"]] * x[sim_param["volume_variable_name"]]  * conso_unitaire
+        if "reduced_"+sim_param["volume_variable_name"] in x:
+            #print("coucou")
+            volume = x["reduced_"+sim_param["volume_variable_name"]]
+        else:
+            volume = x[sim_param["volume_variable_name"]]
+        return x["energy_need_per_" + sim_param["volume_variable_name"]] * volume * conso_unitaire
 
     for Vecteur in sim_param["Vecteurs"]:
         sim_param["f_Compute_conso_" + Vecteur] = {"conso_" + Vecteur: partial(f_Compute_conso, Vecteur=Vecteur)}
