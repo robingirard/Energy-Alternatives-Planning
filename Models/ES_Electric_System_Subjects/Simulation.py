@@ -16,7 +16,7 @@ if os.path.basename(os.getcwd()) != "ES_Electric_System_Subjects":
     os.chdir('Models/ES_Electric_System_Subjects/')
 
 
-def Simulation_multinode(xls_file,serialize=False):
+def Simulation_multinode(xls_file,serialize=False,resultfilename="Result"):
     start_time = datetime.now()
     year=2018
 
@@ -86,6 +86,7 @@ def Simulation_multinode(xls_file,serialize=False):
 
     if solver in solver_native_list:
         opt = SolverFactory(solver)
+        # opt.options['threads'] = 8
     else:
         opt = SolverFactory(solver,executable=solver_path,tee=tee_value)
 
@@ -98,14 +99,14 @@ def Simulation_multinode(xls_file,serialize=False):
     Variables = getVariables_panda_indexed(model)
 
     if serialize:
-        with open('Result.pickle', 'wb') as f:
+        with open(resultfilename+'.pickle', 'wb') as f:
             pickle.dump(Variables, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     end_time = datetime.now()
     print('Total duration: {}'.format(end_time - start_time))
     return Variables
 
-def Simulation_singlenode(xls_file,serialize=False):
+def Simulation_singlenode(xls_file,serialize=False,resultfilename='Result'):
     start_time = datetime.now()
     year=2018
 
@@ -171,6 +172,7 @@ def Simulation_singlenode(xls_file,serialize=False):
 
     if solver in solver_native_list:
         opt = SolverFactory(solver)
+        # optimizer.options['threads'] = 8
     else:
         opt = SolverFactory(solver,executable=solver_path,tee=tee_value)
 
@@ -182,7 +184,7 @@ def Simulation_singlenode(xls_file,serialize=False):
     ##############################
     Variables = getVariables_panda_indexed(model)
     if serialize:
-        with open('Result.pickle', 'wb') as f:
+        with open(resultfilename+'.pickle', 'wb') as f:
             pickle.dump(Variables, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     end_time = datetime.now()
@@ -193,5 +195,18 @@ def Simulation_singlenode(xls_file,serialize=False):
 # xls_file=pd.ExcelFile("Single_node_input.xlsx")
 # Simulation_singlenode(xls_file)
 #
-# xls_file=pd.ExcelFile("FR_ES_input.xlsx")
-# Simulation_multinode(xls_file)
+# xls_file=pd.ExcelFile("FR_DE_input.xlsx")
+# Simulation_multinode(xls_file,serialize=True)
+
+# if os.path.basename(os.getcwd()) != "Calculs":
+#     os.chdir('Calculs')
+# repertoire=os.listdir()
+# for file in repertoire:
+#     if file[-4:]=="xlsx":
+#         print(file)
+#         xls_file=pd.ExcelFile(file)
+#         Simulation_multinode(xls_file,serialize=True,resultfilename=file[:-5])
+#         del xls_file
+#     else:
+#         pass
+
