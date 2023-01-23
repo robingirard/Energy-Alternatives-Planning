@@ -137,10 +137,72 @@ def GetElectricitySystemModel(Parameters):
                 model.consum_flex_Ctr = Constraint(model.Date, model.FLEX_CONSUM, rule=consum_flex_rule)
         return model
 
+    def set_Operation_Constraints_consum_eq_year_Ctr(model):
+        """
+        sum(flex_consumption) = sum(to_flex_consumption)
+
+        :param model:
+        :return:
+        """
+        Set_names = get_allSetsnames(model)
+        my_set_names = list(Set_names)
+        model.del_component("consum_eq_year_Ctr")
+        model.del_component("consum_eq_year_Ctr_index")
+        if "CCG - H2" in list(model.TECHNOLOGIES) and "TAC - H2" in list(model.TECHNOLOGIES):
+            if 'AREAS' in my_set_names:
+                def consum_eq_year(model, area, conso_type):
+                    if model.flex_type[area, conso_type] == 'year':
+                        if conso_type == "H2":
+                            return sum(model.flex_consumption[area, t, conso_type] for t in model.Date) == sum(
+                                model.to_flex_consumption[area, t, conso_type] + model.h2_storage[area,t] for t in model.Date)
+                        else:
+                            return sum(model.flex_consumption[area, t, conso_type] for t in model.Date) == sum(
+                                model.to_flex_consumption[area, t, conso_type] for t in model.Date)
+                    else:
+                        return Constraint.Skip
+
+                model.consum_eq_year_Ctr = Constraint(model.AREAS, model.FLEX_CONSUM, rule=consum_eq_year)
+
+            else:
+                def consum_eq_year(model, conso_type):
+                    if model.flex_type[conso_type] == 'year':
+                        if conso_type == "H2":
+                            return sum(model.flex_consumption[t, conso_type] for t in model.Date) == sum(
+                                model.to_flex_consumption[t, conso_type] + model.h2_storage[t] for t in model.Date)
+                        else:
+                            return sum(model.flex_consumption[t, conso_type] for t in model.Date) == sum(
+                                model.to_flex_consumption[t, conso_type] for t in model.Date)
+                    else:
+                        return Constraint.Skip
+
+                model.consum_eq_year_Ctr = Constraint(model.FLEX_CONSUM, rule=consum_eq_year)
+        else:
+            if 'AREAS' in my_set_names:
+                def consum_eq_year(model, area, conso_type):
+                    if model.flex_type[area, conso_type] == 'year':
+                        return sum(model.flex_consumption[area, t, conso_type] for t in model.Date) == sum(
+                            model.to_flex_consumption[area, t, conso_type] for t in model.Date)
+                    else:
+                        return Constraint.Skip
+
+                model.consum_eq_year_Ctr = Constraint(model.AREAS, model.FLEX_CONSUM, rule=consum_eq_year)
+
+            else:
+                def consum_eq_year(model, conso_type):
+                    if model.flex_type[conso_type] == 'year':
+                        return sum(model.flex_consumption[t, conso_type] for t in model.Date) == sum(
+                            model.to_flex_consumption[t, conso_type] for t in model.Date)
+                    else:
+                        return Constraint.Skip
+
+                model.consum_eq_year_Ctr = Constraint(model.FLEX_CONSUM, rule=consum_eq_year)
+        return model
+
 
     model = storage_mw_mwh_binding(model)
     model = set_h2_storage_Ctr(model)
     model= set_Operation_Constraints_consum_flex_Ctr(model)
+    model= set_Operation_Constraints_consum_eq_year_Ctr(model)
 
 
     return model
