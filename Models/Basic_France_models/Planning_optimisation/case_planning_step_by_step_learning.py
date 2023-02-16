@@ -20,7 +20,7 @@ if (myhost=="jupyter-sop"):
 from EnergyAlternativesPlanning.f_graphicalTools import *
 from EnergyAlternativesPlanning.f_consumptionModels import *
 from EnergyAlternativesPlanning.f_model_definition import *
-from Models.Basic_France_models.Planning_optimisation.f_planingModels import *
+from Models.Basic_France_models.Planning_optimisation.f_planningModels import *
 
 #endregion
 
