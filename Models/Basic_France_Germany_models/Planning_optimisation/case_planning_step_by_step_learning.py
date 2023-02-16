@@ -40,7 +40,7 @@ solver = 'mosek'
 
 InputConsumptionFolder='Models/Basic_France_Germany_models/Consumption/Data/'
 InputProductionFolder='Models/Basic_France_Germany_models/Production/Data/'
-InputPlaningFolder='Models/Basic_France_Germany_models/Planning_optimisation/Data/'
+InputPlanningFolder='Models/Basic_France_Germany_models/Planning_optimisation/Data/'
 GraphicalResultsFolder="Models/Basic_France_Germany_models/Planning_optimisation/GraphicalResults/"
 InputEcoAndTech = 'Models/Basic_France_Germany_models/Economic_And_Tech_Assumptions/'
 
@@ -55,7 +55,7 @@ areaConsumption = pd.read_csv(InputConsumptionFolder+'areaConsumption'+str(year)
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["AREAS","Date"])
 availabilityFactor = pd.read_csv(InputProductionFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["AREAS","Date","TECHNOLOGIES"])
-TechParameters = pd.read_csv(InputPlaningFolder+'Planning_MultiNode_DE-FR_TECHNOLOGIES_AREAS.csv',
+TechParameters = pd.read_csv(InputPlanningFolder+'Planning_MultiNode_DE-FR_TECHNOLOGIES_AREAS.csv',
                              sep=',',decimal='.',skiprows=0,comment="#").set_index(["AREAS","TECHNOLOGIES"])
 ExchangeParameters = pd.read_csv(InputEcoAndTech+'Hypothese_DE-FR_AREAS_AREAS.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["AREAS","AREAS.1"])
 
@@ -70,7 +70,7 @@ TechParameters.loc[(slice(None),"OldNuke"),'RampConstraintPlus']=0.02 ## a bit s
 #region I- Ramp multiple area : solving and loading results
 ### small data cleaning
 availabilityFactor.availabilityFactor[availabilityFactor.availabilityFactor>1]=1
-model = GetElectricSystemModel_PlaningMultiNode(Parameters={"areaConsumption"      :   areaConsumption,
+model = GetElectricSystemModel_PlanningMultiNode(Parameters={"areaConsumption"      :   areaConsumption,
                                                    "availabilityFactor"   :   availabilityFactor,
                                                    "TechParameters"       :   TechParameters,
                                                    "ExchangeParameters"   : ExchangeParameters})
@@ -104,7 +104,7 @@ Selected_AREAS=["FR","DE"]
 Selected_TECHNOLOGIES=['OldNuke', 'CCG','WindOnShore',"curtailment"] #you'll add 'Solar' after #'NewNuke', 'HydroRiver', 'HydroReservoir','WindOnShore', 'WindOffShore', 'Solar', 'Curtailement'}
 
 #### reading CSV files
-TechParameters = pd.read_csv(InputPlaningFolder+'Planning_MultiNode_DE-FR_TECHNOLOGIES_AREAS.csv',
+TechParameters = pd.read_csv(InputPlanningFolder+'Planning_MultiNode_DE-FR_TECHNOLOGIES_AREAS.csv',
                              sep=',',decimal='.',comment="#").set_index(["AREAS","TECHNOLOGIES"])
 areaConsumption = pd.read_csv(InputConsumptionFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["AREAS","Date"])
@@ -112,7 +112,7 @@ availabilityFactor = pd.read_csv(InputProductionFolder+'availabilityFactor'+str(
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["AREAS","Date","TECHNOLOGIES"])
 ExchangeParameters = pd.read_csv(InputEcoAndTech+'Hypothese_DE-FR_AREAS_AREAS.csv',
                                  sep=',',decimal='.',skiprows=0,comment="#").set_index(["AREAS","AREAS.1"])
-StorageParameters = pd.read_csv(InputPlaningFolder+'Planning_MultiNode_AREAS_DE-FR_STOCK_TECHNO.csv',sep=',',decimal='.',comment="#",skiprows=0).set_index(["AREAS","STOCK_TECHNO"])
+StorageParameters = pd.read_csv(InputPlanningFolder+'Planning_MultiNode_AREAS_DE-FR_STOCK_TECHNO.csv',sep=',',decimal='.',comment="#",skiprows=0).set_index(["AREAS","STOCK_TECHNO"])
 
 #### Selection of subset
 TechParameters=TechParameters.loc[(Selected_AREAS,Selected_TECHNOLOGIES),:]
@@ -124,7 +124,7 @@ TechParameters.loc[(slice(None),"OldNuke"),'RampConstraintPlus']=0.02 ## a bit s
 #endregion
 
 #region II Ramp+Storage multi area : solving and loading results
-model = GetElectricSystemModel_PlaningMultiNode_withStorage(Parameters={"areaConsumption"      :   areaConsumption,
+model = GetElectricSystemModel_PlanningMultiNode_withStorage(Parameters={"areaConsumption"      :   areaConsumption,
                                                    "availabilityFactor"   :   availabilityFactor,
                                                    "TechParameters"       :   TechParameters,
                                                    "StorageParameters"   : StorageParameters,

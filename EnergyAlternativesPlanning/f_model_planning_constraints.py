@@ -3,7 +3,7 @@ import pandas as pd
 from pyomo.core import *
 from EnergyAlternativesPlanning.f_tools import *
 
-def set_Planing_Constraints_maxminCapacityCtr(model):
+def set_Planning_Constraints_maxminCapacityCtr(model):
     """
     maxCapacity>=capacity
 
@@ -12,11 +12,11 @@ def set_Planing_Constraints_maxminCapacityCtr(model):
     :param model:
     :return:
     """
-    model = set_Planing_Constraints_maxCapacityCtr(model) #  model.maxCapacity[tech] >= model.capacity[tech]
-    model = set_Planing_Constraints_minCapacityCtr(model) # model.minCapacity[tech] <= model.capacity[tech]
+    model = set_Planning_Constraints_maxCapacityCtr(model) #  model.maxCapacity[tech] >= model.capacity[tech]
+    model = set_Planning_Constraints_minCapacityCtr(model) # model.minCapacity[tech] <= model.capacity[tech]
     return model;
 
-def set_Planing_Constraints_maxCapacityCtr(model):
+def set_Planning_Constraints_maxCapacityCtr(model):
     """
      if "maxCapacity" exists --> maxCapacity>=capacity
     works with and without area
@@ -43,7 +43,7 @@ def set_Planing_Constraints_maxCapacityCtr(model):
 
     return model;
 
-def set_Planing_Constraints_minCapacityCtr(model):
+def set_Planning_Constraints_minCapacityCtr(model):
     """
     if "maxCapacity" exists -->minCapacity<=capacity
 
@@ -74,7 +74,7 @@ def set_Planing_Constraints_minCapacityCtr(model):
 
     return model;
 
-def set_Planing_Constraints_storageCapacityPowerCtr(model):
+def set_Planning_Constraints_storageCapacityPowerCtr(model):
     """
     Cmax <= c_max
 
@@ -85,11 +85,11 @@ def set_Planing_Constraints_storageCapacityPowerCtr(model):
     """
     Set_names = get_allSetsnames(model)
     if 'STOCK_TECHNO' in Set_names:
-        model = set_Planing_Constraints_storageCapacityCtr(model)
-        model = set_Planing_Constraints_storagePowerCtr(model)
+        model = set_Planning_Constraints_storageCapacityCtr(model)
+        model = set_Planning_Constraints_storagePowerCtr(model)
     return model
 
-def set_Planing_Constraints_storageCapacityCtr(model):
+def set_Planning_Constraints_storageCapacityCtr(model):
     """
     Cmax <= c_max
 
@@ -118,7 +118,7 @@ def set_Planing_Constraints_storageCapacityCtr(model):
 
     return model
 
-def set_Planing_Constraints_storagePowerCtr(model):
+def set_Planning_Constraints_storagePowerCtr(model):
     """
     Pmax <= p_max
 

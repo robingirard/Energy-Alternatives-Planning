@@ -147,7 +147,7 @@ def set_Operation_variables(model,verbose=False):
     model=math_to_pyomo_Vardef(Vars,model,verbose=verbose)
     return model
 
-def set_Planing_variables(model,verbose=False):
+def set_Planning_variables(model,verbose=False):
     """
     Defined variables :
 
@@ -211,7 +211,7 @@ def set_Operation_base_variables(model):
 
     return model
 
-def set_Planing_base_variables(model):
+def set_Planning_base_variables(model):
     """
     Defined variables :
 
@@ -282,7 +282,7 @@ def set_Operation_flex_variables(model):
             model.flex = Var(model.Date * model.FLEX_CONSUM, domain=Reals)
     return model
 
-def set_Planing_flex_variables(model):
+def set_Planning_flex_variables(model):
     """
     Defined variables :
 

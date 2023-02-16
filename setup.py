@@ -6,7 +6,7 @@ setup(
     name='EnergyAlternativesPlanning',
     version='0.1.3',
     description='A Python package for energy system modeling',
-    url='https://github.com/robingirard/Energy-Alternatives-Planing',
+    url='https://github.com/robingirard/Energy-Alternatives-Planning',
     author='Robin Girard',
     author_email='robin.girard@minesparis.psl.eu',
     license='MIT License',

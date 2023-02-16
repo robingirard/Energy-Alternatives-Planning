@@ -16,7 +16,7 @@ from EnergyAlternativesPlanning.f_model_cost_functions import *
 from EnergyAlternativesPlanning.f_model_planning_constraints import *
 from EnergyAlternativesPlanning.f_model_operation_constraints import *
 
-def GetElectricSystemModel_PlaningMultiNode(Parameters):
+def GetElectricSystemModel_PlanningMultiNode(Parameters):
     """
     This function creates the pyomo model and initlize the Parameters and (pyomo) Set values
     :param areaConsumption: panda table with consumption
@@ -162,14 +162,14 @@ def GetElectricSystemModel_PlaningMultiNode(Parameters):
     model   =   set_Operation_Constraints_stockCtr(model)
     model   =   set_Operation_Constraints_Ramp(model)
 
-    #other classical planing constraints
-    model = set_Planing_Constraints_maxCapacityCtr(model) #  model.maxCapacity[tech] >= model.capacity[tech]
-    model = set_Planing_Constraints_minCapacityCtr(model) # model.minCapacity[tech] <= model.capacity[tech]
+    #other classical Planning constraints
+    model = set_Planning_Constraints_maxCapacityCtr(model) #  model.maxCapacity[tech] >= model.capacity[tech]
+    model = set_Planning_Constraints_minCapacityCtr(model) # model.minCapacity[tech] <= model.capacity[tech]
 
     return model;
 
 
-def GetElectricSystemModel_PlaningMultiNode_withStorage(Parameters):
+def GetElectricSystemModel_PlanningMultiNode_withStorage(Parameters):
     """
     This function takes storage caracteristics, system caracteristics and optimise operation Set values
     :param areaConsumption: panda table with consumption
@@ -333,10 +333,10 @@ def GetElectricSystemModel_PlaningMultiNode_withStorage(Parameters):
     model   =   set_Operation_Constraints_Ramp(model)
     model   =   set_Operation_Constraints_Storage(model)
 
-    #other classical planing constraints
-    model   =   set_Planing_Constraints_maxCapacityCtr(model) #  model.maxCapacity[tech] >= model.capacity[tech]
-    model   =   set_Planing_Constraints_minCapacityCtr(model) # model.minCapacity[tech] <= model.capacity[tech]
-    model   =   set_Planing_Constraints_storageCapacityCtr(model)
-    model   =   set_Planing_Constraints_storagePowerCtr(model)
+    #other classical Planning constraints
+    model   =   set_Planning_Constraints_maxCapacityCtr(model) #  model.maxCapacity[tech] >= model.capacity[tech]
+    model   =   set_Planning_Constraints_minCapacityCtr(model) # model.minCapacity[tech] <= model.capacity[tech]
+    model   =   set_Planning_Constraints_storageCapacityCtr(model)
+    model   =   set_Planning_Constraints_storagePowerCtr(model)
 
     return model;

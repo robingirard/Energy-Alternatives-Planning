@@ -16,7 +16,7 @@ from EnergyAlternativesPlanning.f_model_planning_constraints import *
 from EnergyAlternativesPlanning.f_model_operation_constraints import *
 
 
-def GetElectricSystemModel_PlaningSingleNode(Parameters):
+def GetElectricSystemModel_PlanningSingleNode(Parameters):
     """
     This function creates the pyomo model and initlize the Parameters and (pyomo) Set values
     :param Parameters is a dictionnary with different panda tables :
@@ -146,7 +146,7 @@ def GetElectricSystemModel_PlaningSingleNode(Parameters):
     return model;
 
 
-def GetElectricSystemModel_PlaningSingleNode_withStorage(Parameters):
+def GetElectricSystemModel_PlanningSingleNode_withStorage(Parameters):
     """
     This function creates the pyomo model and initlize the Parameters and (pyomo) Set values
     :param Parameters is a dictionnary with different panda tables :
@@ -299,8 +299,8 @@ def GetElectricSystemModel_PlaningSingleNode_withStorage(Parameters):
                model.areaConsumption[t]
     model.energyCtr = Constraint(model.Date, rule=energyCtr_rule)
 
-    model = set_Planing_Constraints_maxCapacityCtr(model) #  model.maxCapacity[tech] >= model.capacity[tech]
-    model = set_Planing_Constraints_minCapacityCtr(model) # model.minCapacity[tech] <= model.capacity[tech]
+    model = set_Planning_Constraints_maxCapacityCtr(model) #  model.maxCapacity[tech] >= model.capacity[tech]
+    model = set_Planning_Constraints_minCapacityCtr(model) # model.minCapacity[tech] <= model.capacity[tech]
 
     # contraintes de stock puissance
     model=set_Operation_Constraints_Storage(model)
@@ -541,8 +541,8 @@ def Model_SingleNode_online_flex(Parameters):
 
     model.energyCtr = Constraint(model.Date, rule=energyCtr_rule)
 
-    model = set_Planing_Constraints_maxCapacityCtr(model) #  model.maxCapacity[tech] >= model.capacity[tech]
-    model = set_Planing_Constraints_minCapacityCtr(model) # model.minCapacity[tech] <= model.capacity[tech]
+    model = set_Planning_Constraints_maxCapacityCtr(model) #  model.maxCapacity[tech] >= model.capacity[tech]
+    model = set_Planning_Constraints_minCapacityCtr(model) # model.minCapacity[tech] <= model.capacity[tech]
 
     model = set_Operation_Constraints_Storage(model)
     model = set_Operation_Constraints_stockCtr(model)

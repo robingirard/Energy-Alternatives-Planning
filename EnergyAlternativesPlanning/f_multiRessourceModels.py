@@ -282,7 +282,7 @@ def GetElectricSystemModel_MultiResources_SingleNode_WithStorage(areaConsumption
     model.importCosts_Pvar = Var(model.RESOURCES) ### Cost of ressource imported, explicitely defined by definition importCostsDef
     model.energy_Pvar = Var(model.TIMESTAMP, model.RESOURCES)  ### Amount of a resource at time t
     
-    ### Planing variables
+    ### Planning variables
     model.capacity_Dvar = Var(model.TECHNOLOGIES, domain=NonNegativeReals) ### Capacity of a conversion mean
     model.capacityCosts_Pvar = Var(model.TECHNOLOGIES) ### Fixed costs for a conversion mean, explicitely defined by definition capacityCostsDef
     

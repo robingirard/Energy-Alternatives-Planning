@@ -47,7 +47,7 @@ pd.set_option('display.width', 1000)
 
 InputConsumptionFolder='Models/Basic_France_models/Consumption/Data/'
 InputProductionFolder='Models/Basic_France_models/Production/Data/'
-InputPlaningFolder='Models/Basic_France_models/Planning_optimisation/Data/'
+InputPlanningFolder='Models/Basic_France_models/Planning_optimisation/Data/'
 GraphicalResultsFolder="Models/Basic_France_models/Planning_optimisation/GraphicalResults/"
 #endregion
 
@@ -56,7 +56,7 @@ year=2013
 #### reading areaConsumption availabilityFactor and TechParameters CSV files
 areaConsumption = pd.read_csv(InputConsumptionFolder+'areaConsumption'+str(year)+'_FR.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
 availabilityFactor = pd.read_csv(InputProductionFolder+'availabilityFactor'+str(year)+'_FR.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
-TechParameters = pd.read_csv(InputPlaningFolder+'Planning-Simple_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
+TechParameters = pd.read_csv(InputPlanningFolder+'Planning-Simple_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
 TechParameters.head()
 #### Selection of subset
 Selected_TECHNOLOGIES=['OldNuke','CCG'] #you can add technologies here
@@ -66,7 +66,7 @@ TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
 #endregion
 
 #region I - Simple single area  : Solving and loading results
-model = GetElectricSystemModel_PlaningSingleNode(Parameters={"areaConsumption"      :   areaConsumption,
+model = GetElectricSystemModel_PlanningSingleNode(Parameters={"areaConsumption"      :   areaConsumption,
                                                    "availabilityFactor"   :   availabilityFactor,
                                                    "TechParameters"       :   TechParameters})
 
@@ -115,7 +115,7 @@ areaConsumption = pd.read_csv(InputConsumptionFolder+'areaConsumption'+str(year)
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
 availabilityFactor = pd.read_csv(InputProductionFolder+'availabilityFactor'+str(year)+'_FR.csv',
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
-TechParameters = pd.read_csv(InputPlaningFolder+'Planning-RAMP1BIS_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
+TechParameters = pd.read_csv(InputPlanningFolder+'Planning-RAMP1BIS_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
 
 #### Selection of subset
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
@@ -125,7 +125,7 @@ TechParameters.loc["OldNuke",'RampConstraintPlus']=0.02 ## a bit strong to put i
 #endregion
 
 #region II - Ramp Single area : solving and loading results
-model = GetElectricSystemModel_PlaningSingleNode(Parameters={"areaConsumption"      :   areaConsumption,
+model = GetElectricSystemModel_PlanningSingleNode(Parameters={"areaConsumption"      :   areaConsumption,
                                                    "availabilityFactor"   :   availabilityFactor,
                                                    "TechParameters"       :   TechParameters})
 opt = SolverFactory(solver)
@@ -152,9 +152,9 @@ areaConsumption = pd.read_csv(InputConsumptionFolder+'areaConsumption'+str(year)
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
 availabilityFactor = pd.read_csv(InputProductionFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
-TechParameters = pd.read_csv(InputPlaningFolder+'Planning-RAMP1BIS_TECHNOLOGIES.csv',
+TechParameters = pd.read_csv(InputPlanningFolder+'Planning-RAMP1BIS_TECHNOLOGIES.csv',
                              sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
-StorageParameters = pd.read_csv(InputPlaningFolder+'Planning-RAMP1_STOCK_TECHNO.csv',sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
+StorageParameters = pd.read_csv(InputPlanningFolder+'Planning-RAMP1_STOCK_TECHNO.csv',sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
 
 #### Selection of subset
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
@@ -167,7 +167,7 @@ TechParameters.loc["OldNuke",'RampConstraintPlus']=0.03 ## a bit strong to put i
 #endregion
 
 #region III Ramp+Storage single area : solving and loading results
-model = GetElectricSystemModel_PlaningSingleNode_withStorage(Parameters={"areaConsumption"      :   areaConsumption,
+model = GetElectricSystemModel_PlanningSingleNode_withStorage(Parameters={"areaConsumption"      :   areaConsumption,
                                                    "availabilityFactor"   :   availabilityFactor,
                                                    "TechParameters"       :   TechParameters,
                                                  "StorageParameters": StorageParameters})
@@ -201,9 +201,9 @@ areaConsumption = pd.read_csv(InputConsumptionFolder+'areaConsumption'+str(year)
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
 availabilityFactor = pd.read_csv(InputProductionFolder+'availabilityFactor'+str(year)+'_'+str(Zones)+'.csv',
                                 sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date","TECHNOLOGIES"])
-TechParameters = pd.read_csv(InputPlaningFolder+'Planning-RAMP1BIS_TECHNOLOGIES.csv',
+TechParameters = pd.read_csv(InputPlanningFolder+'Planning-RAMP1BIS_TECHNOLOGIES.csv',
                              sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
-StorageParameters = pd.read_csv(InputPlaningFolder+'Planning-RAMP1_STOCK_TECHNO.csv',
+StorageParameters = pd.read_csv(InputPlanningFolder+'Planning-RAMP1_STOCK_TECHNO.csv',
                                 sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
 #### Selection of subset
 availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
@@ -221,7 +221,7 @@ StorageParameters.loc["Battery2","c_max"]=StorageParameters.loc["Battery2","p_ma
 #endregion
 
 #region IV Case Storage + CCG + PV + Wind + hydro  (Ramp+Storage single area) : solving and loading results
-model = GetElectricSystemModel_PlaningSingleNode_withStorage(Parameters={"areaConsumption"      :   areaConsumption,
+model = GetElectricSystemModel_PlanningSingleNode_withStorage(Parameters={"areaConsumption"      :   areaConsumption,
                                                    "availabilityFactor"   :   availabilityFactor,
                                                    "TechParameters"       :   TechParameters,
                                                    "StorageParameters"   : StorageParameters})
@@ -295,10 +295,10 @@ availabilityFactor = pd.read_csv(InputProductionFolder+'availabilityFactor'+str(
 
 
 
-TechParameters = pd.read_csv(InputPlaningFolder+'Planning-RAMP1BIS_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
-StorageParameters = pd.read_csv(InputPlaningFolder + 'Planning-RAMP1_STOCK_TECHNO.csv', sep=',', decimal='.',
+TechParameters = pd.read_csv(InputPlanningFolder+'Planning-RAMP1BIS_TECHNOLOGIES.csv',sep=',',decimal='.',skiprows=0,comment="#").set_index(["TECHNOLOGIES"])
+StorageParameters = pd.read_csv(InputPlanningFolder + 'Planning-RAMP1_STOCK_TECHNO.csv', sep=',', decimal='.',
                                 skiprows=0).set_index(["STOCK_TECHNO"])
-ConsoParameters = pd.read_csv(InputPlaningFolder + "Planning-Conso-FLEX_CONSUM.csv", sep=";").set_index(["FLEX_CONSUM"])
+ConsoParameters = pd.read_csv(InputPlanningFolder + "Planning-Conso-FLEX_CONSUM.csv", sep=";").set_index(["FLEX_CONSUM"])
 ConsoParameters_ = ConsoParameters.join(
     to_flexible_consumption.groupby("FLEX_CONSUM").max().rename(columns={"to_flexible_consumption": "max_power"}))
 

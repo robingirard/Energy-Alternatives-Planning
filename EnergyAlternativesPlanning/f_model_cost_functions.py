@@ -1,6 +1,6 @@
 from EnergyAlternativesPlanning.f_tools import *
 
-def set_Planing_base_cost_function(model):
+def set_Planning_base_cost_function(model):
     """
     Definition of the cost function
 
@@ -20,19 +20,19 @@ def set_Planing_base_cost_function(model):
     :return:
     """
 
-    model = set_Planing_cost_OBJ(model) # min energyCosts + capacityCosts + storageCosts
-    model = set_Planing_cost_energyCostsCtr(model) # energyCosts = sum (energy * energyCost)
-    model = set_Planing_cost_capacityCostsCtr(model)#  capacityCosts = capacityCost * len(model.Date)/ 8760 *capacity
+    model = set_Planning_cost_OBJ(model) # min energyCosts + capacityCosts + storageCosts
+    model = set_Planning_cost_energyCostsCtr(model) # energyCosts = sum (energy * energyCost)
+    model = set_Planning_cost_capacityCostsCtr(model)#  capacityCosts = capacityCost * len(model.Date)/ 8760 *capacity
     Set_names = get_allSetsnames(model)
     if 'STOCK_TECHNO' in Set_names:
-        model = set_Planing_cost_storageCostsCtr(model) #  storageCosts = storageCost * Cmax
+        model = set_Planning_cost_storageCostsCtr(model) #  storageCosts = storageCost * Cmax
     if "FLEX_CONSUM" in Set_names:
-        model = Planing_cost_consumption_power_costCtr(model) #  consumption_power_cost = LoadCost * increased_max_power
-        model = set_Planing_cost_labour_costCtr(model) # lab_cost = labour_ratio * labourcost *(a_minus+a_plus)
+        model = Planning_cost_consumption_power_costCtr(model) #  consumption_power_cost = LoadCost * increased_max_power
+        model = set_Planning_cost_labour_costCtr(model) # lab_cost = labour_ratio * labourcost *(a_minus+a_plus)
 
     return model
 
-def set_Planing_cost_OBJ(model):
+def set_Planning_cost_OBJ(model):
     Set_names = get_allSetsnames(model)
     my_set_names=list(Set_names)
     if allin(["FLEX_CONSUM","AREAS", 'STOCK_TECHNO'], my_set_names):
@@ -92,7 +92,7 @@ def set_Planing_cost_OBJ(model):
             model.OBJ = Objective(rule=ObjectiveFunction_rule, sense=minimize)
     return model
 
-def set_Planing_cost_energyCostsCtr(model):
+def set_Planning_cost_energyCostsCtr(model):
     Set_names = get_allSetsnames(model)
     my_set_names=list(Set_names)
     if "AREAS" in my_set_names:
@@ -111,7 +111,7 @@ def set_Planing_cost_energyCostsCtr(model):
             model.energyCostsCtr = Constraint(model.TECHNOLOGIES, rule=energyCostsDef_rule)
     return model
 
-def set_Planing_cost_capacityCostsCtr(model):
+def set_Planning_cost_capacityCostsCtr(model):
     Set_names = get_allSetsnames(model)
     my_set_names=list(Set_names)
     if "AREAS" in my_set_names:
@@ -132,7 +132,7 @@ def set_Planing_cost_capacityCostsCtr(model):
             model.capacityCostsCtr = Constraint(model.TECHNOLOGIES, rule=capacityCostsDef_rule)
     return model
 
-def set_Planing_cost_storageCostsCtr(model):
+def set_Planning_cost_storageCostsCtr(model):
     Set_names = get_allSetsnames(model)
     my_set_names = list(Set_names)
     if "AREAS" in my_set_names:
@@ -154,7 +154,7 @@ def set_Planing_cost_storageCostsCtr(model):
     return model
 
 
-def Planing_cost_consumption_power_costCtr(model):
+def Planning_cost_consumption_power_costCtr(model):
     # definition of demand investiement cost
     Set_names = get_allSetsnames(model)
     my_set_names=list(Set_names)
@@ -172,7 +172,7 @@ def Planing_cost_consumption_power_costCtr(model):
 
     return model
 
-def set_Planing_cost_labour_costCtr(model):
+def set_Planning_cost_labour_costCtr(model):
     Set_names = get_allSetsnames(model)
     my_set_names=list(Set_names)
     if "AREAS" in my_set_names:

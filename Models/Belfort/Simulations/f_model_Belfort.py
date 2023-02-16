@@ -147,7 +147,7 @@ def GetElectricSystemModel_Belfort_SingleNode(areaConsumption,lossesRate,availab
     model.powerCosts_Pvar = Var(
             model.TECHNOLOGIES)  ### Marginal cost for a conversion mean, explicitely defined by definition powerCostsDef
 
-    ### Planing variables
+    ### Planning variables
     model.capacity_Dvar = Var(model.TECHNOLOGIES, domain=NonNegativeReals)  ### Capacity of a conversion mean
     model.capacityCosts_Pvar = Var(
             model.TECHNOLOGIES)  ### Fixed costs for a conversion mean, explicitely defined by definition capacityCostsDef
@@ -640,7 +640,7 @@ def GetElectricSystemModel_Belfort_SingleNode_H2(areaConsumption,lossesRate,avai
     model.powerCosts_Pvar = Var(
             model.TECHNOLOGIES)  ### Marginal cost for a conversion mean, explicitely defined by definition powerCostsDef
 
-    ### Planing variables
+    ### Planning variables
     model.capacity_Dvar = Var(model.TECHNOLOGIES, domain=NonNegativeReals)  ### Capacity of a conversion mean
     model.capacityCosts_Pvar = Var(
             model.TECHNOLOGIES)  ### Fixed costs for a conversion mean, explicitely defined by definition capacityCostsDef
@@ -1137,7 +1137,7 @@ def GetElectricSystemModel_Belfort_MultiNode(areaConsumption, lossesRate, availa
     model.powerCosts_Pvar = Var(
         model.AREAS, model.TECHNOLOGIES)  ### Marginal cost for a conversion mean, explicitely defined by definition powerCostsDef
 
-    ### Planing variables
+    ### Planning variables
     model.capacity_Dvar = Var(model.AREAS, model.TECHNOLOGIES, domain=NonNegativeReals)  ### Capacity of a conversion mean
     model.capacityCosts_Pvar = Var(
         model.AREAS, model.TECHNOLOGIES)  ### Fixed costs for a conversion mean, explicitely defined by definition capacityCostsDef

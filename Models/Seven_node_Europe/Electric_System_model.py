@@ -19,12 +19,12 @@ def GetElectricitySystemModel(Parameters):
     # Variables #
     #############
     model=set_Operation_variables(model)
-    model=set_Planing_variables(model)
+    model=set_Planning_variables(model)
 
     ################################
     # Cost EnergyAlternativesPlanning and objective #
     ################################
-    model=set_Planing_base_cost_function(model)
+    model=set_Planning_base_cost_function(model)
 
     #########################
     # Operation constraints #
@@ -37,8 +37,8 @@ def GetElectricitySystemModel(Parameters):
     ########################
     # Planning constraints #
     ########################
-    model=set_Planing_Constraints_maxminCapacityCtr(model)
-    model=set_Planing_Constraints_storageCapacityPowerCtr(model)
+    model=set_Planning_Constraints_maxminCapacityCtr(model)
+    model=set_Planning_Constraints_storageCapacityPowerCtr(model)
 
     ##########################
     # Additional constraints #
