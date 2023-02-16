@@ -3,7 +3,7 @@ import inspect
 import pandas as pd
 from functools import partial
 
-from EnergyAlternativesPlaning.f_tools import *
+from EnergyAlternativesPlanning.f_tools import *
 # from scipy.optimize import minimize, rosen, rosen_der
 import scipy.optimize as scop
 

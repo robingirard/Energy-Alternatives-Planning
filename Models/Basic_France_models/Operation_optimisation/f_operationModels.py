@@ -12,9 +12,9 @@ import pandas as pd
 import pyomo.environ
 from pyomo.environ import *
 from pyomo.core import *
-from EnergyAlternativesPlaning.f_tools import *
-from EnergyAlternativesPlaning.f_model_definition import *
-from EnergyAlternativesPlaning.f_model_operation_constraints import *
+from EnergyAlternativesPlanning.f_tools import *
+from EnergyAlternativesPlanning.f_model_definition import *
+from EnergyAlternativesPlanning.f_model_operation_constraints import *
 
 def GetElectricSystemModel_GestionSingleNode(Parameters):
     """

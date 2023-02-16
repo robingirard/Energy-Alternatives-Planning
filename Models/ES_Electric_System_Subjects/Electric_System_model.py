@@ -2,12 +2,12 @@ from datetime import timedelta
 import pandas as pd
 from pyomo.core import *
 
-# from EnergyAlternativesPlaning import *
-from EnergyAlternativesPlaning.f_tools import *
-from EnergyAlternativesPlaning.f_model_definition import *
-from EnergyAlternativesPlaning.f_model_cost_functions import *
-from EnergyAlternativesPlaning.f_model_planing_constraints import *
-from EnergyAlternativesPlaning.f_model_operation_constraints import *
+# from EnergyAlternativesPlanning import *
+from EnergyAlternativesPlanning.f_tools import *
+from EnergyAlternativesPlanning.f_model_definition import *
+from EnergyAlternativesPlanning.f_model_cost_functions import *
+from EnergyAlternativesPlanning.f_model_planning_constraints import *
+from EnergyAlternativesPlanning.f_model_operation_constraints import *
 
 def GetElectricitySystemModel(Parameters):
     #####################
@@ -22,7 +22,7 @@ def GetElectricitySystemModel(Parameters):
     model=set_Planing_variables(model)
 
     ################################
-    # Cost EnergyAlternativesPlaning and objective #
+    # Cost EnergyAlternativesPlanning and objective #
     ################################
     model=set_Planing_base_cost_function(model)
 
@@ -39,6 +39,7 @@ def GetElectricitySystemModel(Parameters):
     ########################
     model=set_Planing_Constraints_maxminCapacityCtr(model)
     model=set_Planing_Constraints_storageCapacityPowerCtr(model)
+    #model.= Constraint()
 
     ##########################
     # Additional constraints #

@@ -2,7 +2,7 @@
 import pandas as pd
 from pyomo.core import *
 
-from EnergyAlternativesPlaning.f_tools import *
+from EnergyAlternativesPlanning.f_tools import *
 from datetime import *
 
 def GetElectricSystemModel_Belfort_SingleNode(areaConsumption,lossesRate,availabilityFactor,

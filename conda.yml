@@ -3,14 +3,20 @@ channels:
   - conda-forge
   - defaults
 dependencies :
+    - python>=3.9
     - jupyter
     - pip
     - scipy
     - openpyxl
+    - pandas
+    - plotly
+    - numpy
+    - pyomo
     - pip :
       - gurobipy
       - openpyxl
       - scikit-learn
+      - sklearn
       - seaborn
-      - EnergyAlternativesPlaning
+      - mycolorpy
 

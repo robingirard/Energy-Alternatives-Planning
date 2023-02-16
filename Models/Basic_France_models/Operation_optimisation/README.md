@@ -8,6 +8,6 @@ This folder contains
    - several cases to learn step by step in [case_operation_step_by_step_learning.ipynb](./case_operation_step_by_step_learning.ipynb) (associated web page is see [here](https://robingirard.github.io/Energy-Alternatives-Planing/Models/Basic_France_models/Operation_optimisation/case_operation_step_by_step_learning.html))
    - a more detailed case of France in [case_simple_France.py](./case_simple_France.py) still simple because only one node !
  
-If you are interested in **planing** (optimisation of investment with operation constraints), you should go to Folder [Planing_optimisation](./../Planing_optimisation/README.md) in the same models folder. 
+If you are interested in **planing** (optimisation of investment with operation constraints), you should go to Folder [Planing_optimisation](../Planning_optimisation/README.md) in the same models folder. 
 If you are interested in **multi node** optimisation (of planing and operation), you should start with the 2 nodes models [Basic_France_Germany_models](./../Basic_France_Germany_models/README.md) or you could go further with the more realistic European 7 nodes model [Seven_node_Europe](./../Seven_node_Europe/README.md). 
 

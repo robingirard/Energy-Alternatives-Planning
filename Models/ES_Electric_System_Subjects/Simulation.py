@@ -4,8 +4,8 @@ import warnings
 import pandas as pd
 warnings.filterwarnings("ignore")
 
-#from EnergyAlternativesPlaning.f_optimization import *
-from EnergyAlternativesPlaning.f_consumptionModels import *
+#from EnergyAlternativesPlanning.f_optimization import *
+from EnergyAlternativesPlanning.f_consumptionModels import *
 from Models.ES_Electric_System_Subjects.Data_processing_functions import *
 from Models.ES_Electric_System_Subjects.Electric_System_model import *
 
@@ -183,6 +183,8 @@ def Simulation_singlenode(xls_file,serialize=False,resultfilename='Result'):
     # Data extraction and saving #
     ##############################
     Variables = getVariables_panda_indexed(model)
+    #Variables_dual = getConstraintsDual_panda_indexed(model)
+    #Variables_dual = getConstraintsDual_panda(model)
     if serialize:
         with open(resultfilename+'.pickle', 'wb') as f:
             pickle.dump(Variables, f, protocol=pickle.HIGHEST_PROTOCOL)

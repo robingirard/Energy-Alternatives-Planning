@@ -4,8 +4,8 @@ import warnings
 import pandas as pd
 warnings.filterwarnings("ignore")
 
-#from EnergyAlternativesPlaning.f_optimization import *
-from EnergyAlternativesPlaning.f_consumptionModels import *
+#from EnergyAlternativesPlanning.f_optimization import *
+from EnergyAlternativesPlanning.f_consumptionModels import *
 from Data_processing_functions import *
 from Electric_System_model import *
 

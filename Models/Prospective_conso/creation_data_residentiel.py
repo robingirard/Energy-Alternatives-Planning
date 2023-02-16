@@ -2,9 +2,9 @@
 #region Chargement des packages
 import numpy as np
 import pandas as pd
-from EnergyAlternativesPlaning.f_graphicalTools import *
-from EnergyAlternativesPlaning.f_graphicalTools import *
-from EnergyAlternativesPlaning.f_tools import *
+from EnergyAlternativesPlanning.f_graphicalTools import *
+from EnergyAlternativesPlanning.f_graphicalTools import *
+from EnergyAlternativesPlanning.f_tools import *
 from Models.Prospective_conso.f_evolution_tools import *
 Data_folder = "Models/Prospective_conso/data/"
 

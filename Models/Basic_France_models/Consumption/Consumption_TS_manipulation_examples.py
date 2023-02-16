@@ -10,9 +10,9 @@ import copy
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 from sklearn import linear_model
-from EnergyAlternativesPlaning.f_consumptionModels import * #Il faut préciser le chemin où vous avez sauvegardé les données csv
-from EnergyAlternativesPlaning.f_graphicalTools import * #Il faut préciser le chemin où vous avez sauvegardé les données csv
-from EnergyAlternativesPlaning.f_heat_pump import *
+from EnergyAlternativesPlanning.f_consumptionModels import * #Il faut préciser le chemin où vous avez sauvegardé les données csv
+from EnergyAlternativesPlanning.f_graphicalTools import * #Il faut préciser le chemin où vous avez sauvegardé les données csv
+from EnergyAlternativesPlanning.f_heat_pump import *
 #endregion
 
 #region  Load and visualize consumption

@@ -59,11 +59,11 @@ list of available web page with examples/documentation :
 
 ## 3- functions folder <a class="anchor" id="functions"></a>
 Contains:  
- - [tools](EnergyAlternativesPlaning/f_tools.py) that can be used to facilitate the interface between pyomo optimisation models results and parameters and panda. 
- - a set of predefined [planing](EnergyAlternativesPlaning/f_model_planing_constraints.py) and [operation](EnergyAlternativesPlaning/f_model_operation_constraints.py) constraints to model the electric system, 
- - demand modeling tools in ([f_consumptionModels.py](EnergyAlternativesPlaning/f_consumptionModels.py)) 
- - [graphical tools](EnergyAlternativesPlaning/f_graphicalTools.py). 
- - tools that are under developpement for a more "automatic" construction of models : [f_model_cost_functions.py](EnergyAlternativesPlaning/f_model_cost_functions.py) and [f_model_definition.py](EnergyAlternativesPlaning/f_model_definition.py)
+ - [tools](EnergyAlternativesPlanning/f_tools.py) that can be used to facilitate the interface between pyomo optimisation models results and parameters and panda. 
+ - a set of predefined [planing](EnergyAlternativesPlanning/f_model_planning_constraints.py) and [operation](EnergyAlternativesPlanning/f_model_operation_constraints.py) constraints to model the electric system, 
+ - demand modeling tools in ([f_consumptionModels.py](EnergyAlternativesPlanning/f_consumptionModels.py)) 
+ - [graphical tools](EnergyAlternativesPlanning/f_graphicalTools.py). 
+ - tools that are under developpement for a more "automatic" construction of models : [f_model_cost_functions.py](EnergyAlternativesPlanning/f_model_cost_functions.py) and [f_model_definition.py](EnergyAlternativesPlanning/f_model_definition.py)
 
 ## 4 Pycharm tips  <a class="anchor" id="pycharm"></a>
 If you're using PyCharm you should fix the environement in settings by choosing the right "python interpreter"

@@ -4,7 +4,7 @@ import csv
 import datetime
 import copy
 
-from EnergyAlternativesPlaning.f_consumptionModels import *
+from EnergyAlternativesPlanning.f_consumptionModels import *
 
 import os
 if os.path.basename(os.getcwd())=="Simulations":

@@ -1,5 +1,5 @@
 import pandas as pd
-from EnergyAlternativesPlaning.f_consumptionModels import *
+from EnergyAlternativesPlanning.f_consumptionModels import *
 
 InputFolder = 'Input data/'
 InputFolder_other="Input data/Conso flex files/"

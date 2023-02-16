@@ -1,8 +1,8 @@
 
 # region Chargement des packages
 import pandas as pd
-from EnergyAlternativesPlaning.f_tools import *
-from EnergyAlternativesPlaning.f_graphicalTools import *
+from EnergyAlternativesPlanning.f_tools import *
+from EnergyAlternativesPlanning.f_graphicalTools import *
 from Models.Prospective_conso.f_evolution_tools import *
 from mycolorpy import colorlist as mcp
 import numpy as np

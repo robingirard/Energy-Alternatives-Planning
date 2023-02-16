@@ -14,9 +14,9 @@ if os.path.basename(os.getcwd())=="Simulations":
 
 InputFolder='Models/Belfort/Conso/'
 
-from EnergyAlternativesPlaning.f_consumptionModels import *
+from EnergyAlternativesPlanning.f_consumptionModels import *
 from Models.Belfort.Simulations.f_consumptionBelfort import *
-from EnergyAlternativesPlaning.f_graphicalTools import *
+from EnergyAlternativesPlanning.f_graphicalTools import *
 
 Conso_df=pd.read_csv(InputFolder+'areaConsumption2019_FR.csv',sep=';',parse_dates=['Date']).set_index(["Date"])
 Temp_df=pd.read_csv(InputFolder+'Temp_FR_2017_2022.csv',sep=';',decimal='.',parse_dates=['Date']).set_index(["Date"])

@@ -11,6 +11,6 @@ This folder contains
    - a more detailed case of France and Germany should be created 
    
 
-If you are interested in **planing** (optimisation of investment with operation constraints), you should go to Folder [Planing_optimisation](./../Planing_optimisation/README.md) in the same models folder. 
+If you are interested in **planing** (optimisation of investment with operation constraints), you should go to Folder [Planing_optimisation](../Planning_optimisation/README.md) in the same models folder. 
 If you are interested in **simple node** optimisation (of planing and operation), you should go to models [Basic_France_models](./../Basic_Germany_models/README.md). 
 

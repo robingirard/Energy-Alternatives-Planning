@@ -15,7 +15,7 @@ import datetime
 #import seaborn as sb
 
 from Models.MultiRessource.f_Models_TP_Robin import *
-from EnergyAlternativesPlaning.f_tools import *
+from EnergyAlternativesPlanning.f_tools import *
 from Models.MultiRessource.scenarios_TP import *
 
 #endregion

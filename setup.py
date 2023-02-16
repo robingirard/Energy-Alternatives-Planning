@@ -3,14 +3,14 @@ import os
 #TODO utiliser Pathlib
 
 setup(
-    name='EnergyAlternativesPlaning',
+    name='EnergyAlternativesPlanning',
     version='0.1.3',
     description='A Python package for energy system modeling',
     url='https://github.com/robingirard/Energy-Alternatives-Planing',
     author='Robin Girard',
     author_email='robin.girard@minesparis.psl.eu',
     license='MIT License',
-    packages=['EnergyAlternativesPlaning'],
+    packages=['EnergyAlternativesPlanning'],
     install_requires=['pandas',
                       'numpy',
                       'pyomo',
@@ -18,7 +18,7 @@ setup(
                       'plotly',
                       'sklearn',
                       'mycolorpy'],
-    package_data={"EnergyAlternativesPlaning" : ["*.csv", "*.xlsx"]},
+    package_data={"EnergyAlternativesPlanning" : ["*.csv", "*.xlsx"]},
     classifiers=[
         'Development Status :: 1 - Planning',
         'Intended Audience :: Science/Research',
