@@ -1,0 +1,29 @@
+{
+    "_source": "RTE Annexe 12-3",
+    "_year": 2050,
+    "_unit": "t/MWh capacit\u00e9",
+    "Cu": {
+        "Battery": 1.24952380952381,
+        "Battery_EV": 0.65
+    },
+    "Al": {
+        "Battery": 1.28289473684211,
+        "Battery_EV": 1.2
+    },
+    "Co": {
+        "Battery": 0.104114795454545,
+        "Battery_EV": 0.102500487804878
+    },
+    "Ni": {
+        "Battery": 0.274085365853658,
+        "Battery_EV": 0.408166666666667
+    },
+    "steel": {
+        "Battery": 2.003875,
+        "Battery_EV": 1.5
+    },
+    "concrete": {
+        "Battery": 9.5975,
+        "Battery_EV": 9.05210526315789
+    }
+}

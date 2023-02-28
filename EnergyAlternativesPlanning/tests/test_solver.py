@@ -2,7 +2,7 @@
 import time
 
 from Models.Basic_France_models.Operation_optimisation.f_operationModels import *
-from EnergyAlternativesPlanning.f_tools import *
+from EnergyAlternativesPlaning.f_tools import *
 import sys
 import importlib_resources
 pkg = importlib_resources.files("packagename")

@@ -1,0 +1,53 @@
+{
+    "_source": "RTE Annexe 12-3",
+    "_year": 2050,
+    "_unit": "t/MW",
+    "Cu": {
+        "NewNuke": 1.6,
+        "Solar": 3.1,
+        "WindOnShore": 2.6,
+        "WindOffShore": 8.525,
+        "TAC": 0.79,
+        "CCG": 1.2
+    },
+    "Al": {
+        "NewNuke": 0.35,
+        "Solar": 14.7,
+        "WindOnShore": 0.69,
+        "WindOffShore": 1.075,
+        "TAC": 0.75,
+        "CCG": 1.1
+    },
+    "Co": {
+        "NewNuke": 3.8e-05,
+        "Solar": 0.0003169811320754715,
+        "WindOnShore": 3.4e-05,
+        "WindOffShore": 4.225e-05,
+        "TAC": 7.2e-06,
+        "CCG": 0.0018
+    },
+    "Ni": {
+        "NewNuke": 0.0,
+        "Solar": 0.0,
+        "WindOnShore": 0.0,
+        "WindOffShore": 0.0,
+        "TAC": 0.0,
+        "CCG": 0.0
+    },
+    "steel": {
+        "NewNuke": 67.0,
+        "Solar": 22.323529411764703,
+        "WindOnShore": 200.0,
+        "WindOffShore": 365.0,
+        "TAC": 6.3,
+        "CCG": 29.0
+    },
+    "concrete": {
+        "NewNuke": 533.0,
+        "Solar": 32.0,
+        "WindOnShore": 450.0,
+        "WindOffShore": 1305.0,
+        "TAC": 41.0,
+        "CCG": 36.0
+    }
+}

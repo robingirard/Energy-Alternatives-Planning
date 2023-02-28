@@ -1,0 +1,16 @@
+{
+    "_source" : "ADEME",
+    "_url" : "https://bilans-ges.ademe.fr/documentation/UPLOAD_DOC_EN/index.htm?conventionnel.htm",
+    "_unit" :"gCO2eq/kWh",
+    
+    "Nuclear": 6,
+    "Gas" : 418,
+    "Coal" : 1058,
+    "Oil" : 730,
+    "WindOnShore" : 10,
+    "WindOffShore" : 9,
+    "HydroReservoir" : 10,
+    "HydroRiver" : 13,
+    "Biomass" : 23.4,
+    "Solar" : 32
+}
