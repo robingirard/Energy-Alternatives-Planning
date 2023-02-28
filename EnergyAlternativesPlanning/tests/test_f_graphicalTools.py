@@ -9,6 +9,8 @@ import pandas as pd
 pd.options.plotting.backend = "plotly"
 
 import pickle
+import _pickle as cPickle
+import bz2
 
 import sys
 sys.path.append("..")
@@ -31,7 +33,10 @@ if __name__ == "__main__":
     flexConsumInputs = pd.read_excel(xls_file,"FLEX_CONSUM").set_index(["FLEX_CONSUM", "AREAS"])
     
     # 2/ Loading output (serialized dictionary of dataframes)    
-    with open("data/results.pkl",'rb') as f: Variables=pickle.load(f)
+    data = bz2.BZ2File("data/results.pkl.bz2", "rb")
+    Variables = cPickle.load(data)
+    
+    # with open("data/results.pkl",'rb') as f: Variables=pickle.load(f)
     
     # 3/ Metadata
     

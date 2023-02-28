@@ -15,4 +15,4 @@ Dash is running on http://127.0.0.1:8050/
 2. Open a web browser and go to the adress returned by dash (here http://127.0.0.1:8050)
 3. Follow the instructions
 
-Example data can be found in the `data` directory.
+Example data can be found in the `tests/data` directory
