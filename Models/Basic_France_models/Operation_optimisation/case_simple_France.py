@@ -1,5 +1,5 @@
 
-
+sys.path.append('.')
 #region importation of modules
 
 ## global tools
@@ -26,14 +26,16 @@ if (myhost=="jupyter-sop"):
     #  (2) definition of license
     os.environ["MOSEKLM_LICENSE_FILE"] = '@jupyter-sop'
 
-BaseSolverPath='/Users/robin.girard/Documents/Code/Packages/solvers/ampl_macosx64' ### change this to the folder with knitro ampl ...
+#BaseSolverPath='/Users/robin.girard/Documents/Code/Packages/solvers/ampl_macosx64' ### change this to the folder with knitro ampl ...
+BaseSolverPath='/opt/mosek/10.0/tools/platform/linux64x86/bin'; sys.path.append(BaseSolverPath)
+BaseSolverPath='/opt/gurobi1000/linux64/bin'; sys.path.append(BaseSolverPath)
 ## in order to obtain more solver see see https://ampl.com/products/solvers/open-source/
 ## for eduction this site provides also several professional solvers, that are more efficient than e.g. cbc
-sys.path.append(BaseSolverPath)
-solvers= ['gurobi','knitro','cbc'] # try 'glpk', 'cplex'
+
+solvers= ['gurobi_cl','knitro','cbc'] # try 'glpk', 'cplex'
 solverpath= {}
 for solver in solvers : solverpath[solver]=BaseSolverPath+'/'+solver
-solver= 'mosek' ## no need for solverpath with mosek.
+solver= 'glpk' ## no need for solverpath with mosek.
 #endregion
 
 InputConsumptionFolder='Models/Basic_France_models/Consumption/Data/'
@@ -43,7 +45,6 @@ InputOperationFolder='Models/Basic_France_models/Operation_optimisation/Data/'
 #region "simple" France loading parameters selecting technologies
 Zones="FR"
 year=2013
-
 Selected_TECHNOLOGIES=['OldNuke','Coal','CCG','TAC', 'WindOnShore','HydroReservoir','HydroRiver','Solar','curtailment']
 
 #### reading CSV files
@@ -57,7 +58,9 @@ StorageParameters = pd.read_csv(InputOperationFolder+'Gestion-RAMP1_STOCK_TECHNO
                                 sep=',',decimal='.',skiprows=0).set_index(["STOCK_TECHNO"])
 
 #### Selection of subset
-availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
+Selected_TECHNOLOGIES_a=[ ST for ST in Selected_TECHNOLOGIES if any(ST in x for x in availabilityFactor.reset_index()['TECHNOLOGIES'].unique())]
+
+availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES_a),:]
 TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
 #TechParameters.loc[TechParameters.TECHNOLOGIES=="CCG",'capacity']=15000 ## margin to make everything work
 #endregion

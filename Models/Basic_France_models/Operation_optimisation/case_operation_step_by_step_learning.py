@@ -29,6 +29,7 @@ BaseSolverPath='/Users/robin.girard/Documents/Code/Packages/solvers/ampl_macosx6
 ## in order to obtain more solver see see https://ampl.com/products/solvers/open-source/
 ## for eduction this site provides also several professional solvers, that are more efficient than e.g. cbc
 sys.path.append(BaseSolverPath)
+sys.path.append('/opt/mosek')
 solvers= ['gurobi','knitro','cbc'] # try 'glpk', 'cplex'
 solverpath= {}
 for solver in solvers : solverpath[solver]=BaseSolverPath+'/'+solver

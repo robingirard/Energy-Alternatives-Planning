@@ -1,5 +1,6 @@
 InputFolder='Models/Basic_France_models/Consumption/Data/'
-
+import sys
+sys.path.extend(['.'])
 #region importation of modules
 import numpy as np
 import seaborn as sns

@@ -113,7 +113,7 @@ def GetElectricSystemModel_PlanningSingleNode(Parameters):
 
     model.capacityCostsCtr = Constraint(model.TECHNOLOGIES, rule=capacityCostsDef_rule)
 
-    set_Operation_Constraints_CapacityCtr
+    #set_Operation_Constraints_CapacityCtr
     # contrainte de stock annuel
 
     # contrainte d'equilibre offre demande

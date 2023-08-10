@@ -61,11 +61,19 @@ def extractCosts(Variables):
             
     return df
 
+
+
+
+
+
 def extractEnergyCapacity(Variables) :
     
     if "AREAS" in Variables['energy'].columns:
-        
-        production_df = EnergyAndExchange2Prod(Variables)
+
+        if len(Variables['energy']['AREAS'].unique())==1:
+            production_df = Variables['energy'].pivot(index=['AREAS',"Date"], columns='TECHNOLOGIES', values='energy')
+        else:
+            production_df = EnergyAndExchange2Prod(Variables)
         EnergyCapacity_df = Variables['capacity'].set_index(["AREAS","TECHNOLOGIES"]) / 10 ** 3;
         EnergyCapacity_df = EnergyCapacity_df.merge(pd.DataFrame(Variables['energy'].groupby(by=["AREAS","TECHNOLOGIES"]).sum() / 10 ** 6), left_on=["AREAS","TECHNOLOGIES"], right_on=["AREAS","TECHNOLOGIES"])
         EnergyCapacity_df.columns = ["Capacity_GW", "Production_TWh"]
@@ -992,7 +1000,7 @@ def MyAreaStackedPlot(df_,Conso=-1,Selected_TECHNOLOGIES=-1,AREA_name="AREAS"):
         Conso_ = Conso.loc[(AREA,slice(None)),:].reset_index().set_index("Date").drop(["AREAS"], axis=1);
         production_df_ = df.loc[(AREA,slice(None)),:].reset_index().set_index("Date").drop(["AREAS"], axis=1);
         #Conso_.reset_index(inplace=True)
-        Conso_.loc[:,"ConsoImportExport"] = Conso_.loc[:,"areaConsumption"] - production_df_.loc[:,AREAS].sum(axis=1)
+        Conso_.loc[:,"ConsoImportExport"] = Conso_.loc[:,"areaConsumption"] - production_df_.sum(axis=1)
 
         fig = AppendMyStackedPlotly(fig,
                             y_df=production_df_,

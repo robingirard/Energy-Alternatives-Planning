@@ -56,6 +56,7 @@ def set_Operation_Constraints_energyCapacityexchange(EQs,model):
     return model
 
 
+
 def set_Operation_Constraints_stockCtr(model):
     """
     limit on the stock over a year

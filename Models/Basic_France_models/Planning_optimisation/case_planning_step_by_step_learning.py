@@ -1,5 +1,7 @@
 
 #region importation of modules
+import sys
+sys.path.extend(['.'])
 import os
 import sys
 if sys.platform != 'win32':
@@ -23,10 +25,10 @@ from EnergyAlternativesPlanning.f_model_definition import *
 from Models.Basic_France_models.Planning_optimisation.f_planningModels import *
 
 #endregion
-
+sys.path.append('/opt/mosek')
 #region Solver and data location definition
 InputFolder='Data/input/'
-solver= 'mosek' ## no need for solverpath with mosek.
+solver= 'gurobi' #'mosek' ## no need for solverpath with mosek.
 BaseSolverPath='/Users/robin.girard/Documents/Code/Packages/solvers/ampl_macosx64'
 sys.path.append(BaseSolverPath)
 
@@ -36,7 +38,8 @@ for solver in solvers : solverpath[solver]=BaseSolverPath+'/'+solver
 cplexPATH='/Applications/CPLEX_Studio1210/cplex/bin/x86-64_osx'
 sys.path.append(cplexPATH)
 solverpath['cplex']=cplexPATH+"/"+"cplex"
-solver = 'mosek'
+solver = 'mosek'#'mosek'
+
 #endregion
 
 #region location of data + output visualisation settings
@@ -60,7 +63,10 @@ TechParameters = pd.read_csv(InputPlanningFolder+'Planning-Simple_TECHNOLOGIES.c
 TechParameters.head()
 #### Selection of subset
 Selected_TECHNOLOGIES=['OldNuke','CCG'] #you can add technologies here
-availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
+Selected_TECHNOLOGIES_a=[ ST for ST in Selected_TECHNOLOGIES if any(ST in x for x in availabilityFactor.reset_index()['TECHNOLOGIES'].unique())]
+
+availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES_a),:]
+#availabilityFactor=availabilityFactor.loc[(slice(None),Selected_TECHNOLOGIES),:]
 TechParameters=TechParameters.loc[Selected_TECHNOLOGIES,:]
 #TechParameters.loc[TechParameters.TECHNOLOGIES=="OldNuke",'maxCapacity']=63000 ## Limit to actual installed capacity
 #endregion
@@ -70,8 +76,10 @@ model = GetElectricSystemModel_PlanningSingleNode(Parameters={"areaConsumption" 
                                                    "availabilityFactor"   :   availabilityFactor,
                                                    "TechParameters"       :   TechParameters})
 
-if solver in solverpath :  opt = SolverFactory(solver,executable=solverpath[solver])
-else : opt = SolverFactory(solver)
+if solver in solverpath :
+    opt = SolverFactory(solver,executable=solverpath[solver])
+    #opt = SolverFactory("gurobi", solver_io="python")
+else: opt = SolverFactory(solver)
 results=opt.solve(model)
 ## result analysis
 Variables=getVariables_panda_indexed(model)
