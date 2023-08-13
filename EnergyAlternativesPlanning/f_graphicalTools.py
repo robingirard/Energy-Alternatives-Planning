@@ -878,7 +878,9 @@ def MyStackedPlotly(y_df, Conso=-1,isModifyOrder=True,Names=-1,color_dict=None):
     :param Names:
     :return: 
     '''
-
+    if Conso.__class__.__name__=="DataFrame":
+        if not "areaConsumption" in Conso.columns:
+            Conso= Conso.rename(columns ={Conso.columns[0] : "areaConsumption"})
     if type(y_df.columns) == pd.MultiIndex:
         if len(y_df.columns[0]) == 2:
             i = 1

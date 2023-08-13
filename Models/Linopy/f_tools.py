@@ -1,6 +1,22 @@
 import pandas as pd
 import linopy
 import xarray as xr
+import pandas as pd
+
+def period_boolean_table(Date, period):
+    """
+    returns a boolean xarray table with the dimension Date x value(period) with Date == value(period)
+    :param Date:
+    :param period: "day_of_year", "weekofyear"
+    see https://pandas.pydata.org/docs/reference/api/pandas.Period.html
+    :return:
+    """
+    x_of_year = getattr(Date.to_period(), period)
+    x_of_year_xr = xr.DataArray(x_of_year, coords={"Date": Date})
+    x_of_year_values = pd.DataFrame(x_of_year).Date.unique()
+    x_of_year_values_xr = xr.DataArray(x_of_year_values, coords={period: x_of_year_values})
+    x_of_year_table = x_of_year_xr == x_of_year_values_xr
+    return x_of_year_table
 
 def get_index_in(xr,index,subset):
     return xr.get_index(index)[xr.get_index(index).isin(subset)]
@@ -15,31 +31,57 @@ xr.Dataset.get_index_in=get_index_in
 xr.Dataset.select = select
 
 def extractCosts_l(model):
-    Variables = {name: model.solution[name].to_dataframe().reset_index() for name in list(model.solution.keys())}
-    df = Variables['production_pl_capacity_costs'].set_index(["AREAS", "TECHNOLOGIES"]) / 10 ** 9;
-    df = df.merge(pd.DataFrame(Variables['production_op_variable_costs'].set_index(["AREAS", "TECHNOLOGIES"]) / 10 ** 9),
-                  left_on=["AREAS", "TECHNOLOGIES"], right_on=["AREAS", "TECHNOLOGIES"])
-    df.columns = ["Capacity_Milliards_euros", "Energy_Milliards_euros"]
 
+    res = {}
+    res["Variable_costs"] = (model.solution["production_op_variable_costs"]/ 10 ** 9).to_dataframe()
+    res["Variable_costs"].columns = ["Cost_10e9_euros"]
+    res["Variable_costs"]["type"] = "prod_energy"
+    res["capacity_costs"] = (model.solution["production_pl_capacity_costs"]/ 10 ** 9).to_dataframe()
+    res["capacity_costs"].columns = ["Cost_10e9_euros"]
+    res["capacity_costs"]["type"] = "prod_capacity"
+    if "flexconso_pl_increased_max_power_costs" in model.solution :
+        res["flexconso_capacity_cost"]= (model.solution["flexconso_pl_increased_max_power_costs"]/ 10 ** 9).to_dataframe()
+        res["flexconso_capacity_cost"].columns = ["Cost_10e9_euros"]
+        res["flexconso_capacity_cost"]["type"] = "flexconso_capacity"
+    if "storage_pl_capacity_costs" in model.solution:
+        res["storage_capacity_costs"] = (model.solution["storage_pl_capacity_costs"]/ 10 ** 9).to_dataframe()
+        res["storage_capacity_costs"].columns = ["Cost_10e9_euros"]
+        res["storage_capacity_costs"]["type"] = "storage_capacity"
+    return pd.concat([res[r] for r in res]).set_index(["type"],append=True) ## implicitly assuming second index is TECHNOLOGIES... strange
     # compute total
-    df["Total_Milliards_euros"] = df.sum(axis=1)
-    return df
+
+    return res
 
 def extractEnergyCapacity_l(model):
-    Variables = {name: model.solution[name].to_dataframe().reset_index() for name in list(model.solution.keys())}
-    if len(Variables['production_op_power']['AREAS'].unique()) == 1:
-        production_df = Variables['production_op_power'].pivot(index=['AREAS', "Date"], columns='TECHNOLOGIES', values='production_op_power')
-    else:
-        production_df = EnergyAndExchange2Prod(Variables)
-    EnergyCapacity_df = Variables['production_pl_capacity'].set_index(["AREAS", "TECHNOLOGIES"]) / 10 ** 3;
-    EnergyCapacity_df = EnergyCapacity_df.merge(
-        production_df.reset_index().melt(id_vars=["AREAS","Date"],var_name="TECHNOLOGIES",value_name="Production_TWh").\
-        groupby(by=["AREAS", "TECHNOLOGIES"]).sum() / 10 ** 6,
-        left_on=["AREAS", "TECHNOLOGIES"], right_on=["AREAS", "TECHNOLOGIES"],
-        how="outer")
-    EnergyCapacity_df.columns = ["Capacity_GW", "Production_TWh"]
 
-    return EnergyCapacity_df
+    res = {}
+    res["production"] = (model.solution["production_op_power"]/ 10 ** 6).sum(["Date"]).to_dataframe()
+    res["production"].columns = ["Energy_TWh"]
+    res["production"]["type"] = "prod_energy"
+    res["capacity"] = (model.solution["production_pl_capacity"]/ 10 ** 3).to_dataframe()
+    res["capacity"].columns = ["Capacity_GW"]
+    res["capacity"]["type"] = "prod_capacity"
+    if "flexconso_pl_increased_max_power_costs" in model.solution :
+        res["flexconso_capacity"]= (model.solution["flexconso_pl_increased_max_power"]/ 10 ** 3).to_dataframe()
+        res["flexconso_capacity"].columns = ["Capacity_GW"]
+        res["flexconso_capacity"]["type"] = "flexconso_capacity"
+    if "storage_pl_capacity_costs" in model.solution:
+        res["storage_capacity"] = (model.solution["storage_pl_max_power"]/ 10 ** 3).to_dataframe()
+        res["storage_capacity"].columns = ["Capacity_GW"]
+        res["storage_capacity"]["type"] = "storage_capacity"
+        res["Variable_storage_in"] = (model.solution["storage_op_power_in"] / 10 ** 6).sum(["Date"]).to_dataframe()
+        res["Variable_storage_in"].columns = ["Energy_TWh"]
+        res["Variable_storage_in"]["type"] = "storage_in"
+        res["Variable_storage_out"] = (model.solution["storage_op_power_out"] / 10 ** 6).sum(["Date"]).to_dataframe()
+        res["Variable_storage_out"].columns = ["Energy_TWh"]
+        res["Variable_storage_out"]["type"] = "storage_out"
+
+    Myres={}
+    Myres["Capacity_GW"] = pd.concat([res[r] for r in res]).set_index(["type"], append=True)[["Capacity_GW"]].\
+        dropna().rename({"Capacity_GW": "Capacity_GW"})
+    Myres["Energy_TWh"] = pd.concat([res[r] for r in res]).set_index(["type"], append=True)[["Energy_TWh"]].\
+        dropna().rename({"Capacity_GW": "Energy_TWh"})
+    return Myres
 
 
 def EnergyAndExchange2Prod(Variables, EnergyName='energy', exchangeName='Exchange'):
