@@ -12,8 +12,6 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
-
-
 from EnergyAlternativesPlanning.f_graphicalTools import *
 from EnergyAlternativesPlanning.f_consumptionModels import *
 from Models.Linopy.f_tools import *
@@ -119,7 +117,7 @@ InputConsumptionFolder='Models/Basic_France_Germany_models/Consumption/Data/'
 InputProductionFolder='Models/Basic_France_Germany_models/Production/Data/'
 InputPlanningFolder='Models/Basic_France_Germany_models/Planning_optimisation/Data/'
 GraphicalResultsFolder="Models/Basic_France_Germany_models/Planning_optimisation/GraphicalResults/"
-InputEcoAndTech = 'Models/Basic_France_Germany_models/Economic_And_Tech_Assumptions/'
+InputEcoAndTech = 'Models/Basic_France_Germany_models/Economic_And_Tech_assumptions/'
 
 Zones="FR_DE_GB_ES"
 year=2016
@@ -148,6 +146,7 @@ Parameters["availabilityFactor"]=Parameters["availabilityFactor"].fillna(1) ## 1
 #region III -- multi-zone without storage -: building and solving problem, results visualisation
 #building model and solving the problem
 model = Build_EAP_Model(Parameters=Parameters)
+model.solve(solver_name='highs',parallel = "on")
 model.solve(solver_name='cbc')
 #res= run_highs(model) #res= linopy.solvers.run_highs(model)
 
@@ -172,9 +171,16 @@ Zones="FR" ; year=2013
 #### reading areaConsumption availabilityFactor and TechParameters CSV files
 #areaConsumption = pd.read_csv(InputConsumptionFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"])
 
+
+InputConsumptionFolder='Models/Basic_France_models/Consumption/Data/'
+InputProductionFolder='Models/Basic_France_models/Production/Data/'
+InputPlanningFolder='Models/Basic_France_models/Planning_optimisation/Data/'
+GraphicalResultsFolder="Models/Basic_France_models/Planning_optimisation/GraphicalResults/"
+
+
 TemperatureThreshold = 15
 ConsoTempe_df=pd.read_csv(InputConsumptionFolder+'ConsumptionTemperature_1996TO2019_FR.csv',parse_dates=['Date']).\
-    set_index(["Date"])[str(year)]
+    set_index(["Date"]).loc[str(year)]
 ConsoTempe_df=ConsoTempe_df[~ConsoTempe_df.index.duplicated(keep='first')]
 (ConsoTempeYear_decomposed_df,Thermosensibilite)=Decomposeconso(ConsoTempe_df,TemperatureThreshold=TemperatureThreshold)
 
@@ -330,7 +336,8 @@ Parameters["availabilityFactor"]=Parameters["availabilityFactor"].fillna(1) ## 1
 #region V -- 7node EU model : building and solving problem, results visualisation
 #building model and solving the problem
 model = Build_EAP_Model(Parameters=Parameters)
-model.solve(solver_name='cbc')# highs but cbc is faster
+model.solve(solver_name='highs',parallel = "on")
+model.solve(solver_name='cbc')
 #res= run_highs(model) #res= linopy.solvers.run_highs(model)
 
 ## synthèse Energie/Puissance/Coûts
