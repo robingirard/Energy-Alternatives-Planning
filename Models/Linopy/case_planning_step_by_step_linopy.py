@@ -13,10 +13,6 @@ pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
 
-InputConsumptionFolder='Models/Basic_France_models/Consumption/Data/'
-InputProductionFolder='Models/Basic_France_models/Production/Data/'
-InputPlanningFolder='Models/Basic_France_models/Planning_optimisation/Data/'
-GraphicalResultsFolder="Models/Basic_France_models/Planning_optimisation/GraphicalResults/"
 
 from EnergyAlternativesPlanning.f_graphicalTools import *
 from EnergyAlternativesPlanning.f_consumptionModels import *
@@ -29,6 +25,11 @@ from Models.Linopy.f_planningModels_linopy import Build_EAP_Model,run_highs
 Zones="FR"
 year=2013
 Selected_TECHNOLOGIES=['OldNuke', 'CCG',"curtailment"] #you'll add 'Solar' after
+
+InputConsumptionFolder='Models/Basic_France_models/Consumption/Data/'
+InputProductionFolder='Models/Basic_France_models/Production/Data/'
+InputPlanningFolder='Models/Basic_France_models/Planning_optimisation/Data/'
+GraphicalResultsFolder="Models/Basic_France_models/Planning_optimisation/GraphicalResults/"
 
 #### reading areaConsumption availabilityFactor and TechParameters CSV files
 areaConsumption = pd.read_csv(InputConsumptionFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"]).to_xarray()
