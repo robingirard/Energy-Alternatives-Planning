@@ -94,10 +94,7 @@ Parameters["availabilityFactor"]=Parameters["availabilityFactor"].fillna(1) ## 1
 #region II -addition of Storage to single area with ramp : building and solving problem, results visualisation
 #building model and solving the problem
 model = Build_EAP_Model(Parameters=Parameters)
-model.solve(solver_name='highs',parallel="on",simplex_max_concurrency=8)
-# https://ergo-code.github.io/HiGHS/dev/parallel/
-#"Unless an LP has significantly more variables than constraints, the parallel dual simplex solver is unlikely to be worth using."
-#model.solve(solver_name='cbc',threads = 16) ## multi-threads does not improve results ?
+model.solve(solver_name='cbc')
 #res= run_highs(model) #res= linopy.solvers.run_highs(model)
 
 ## synthèse Energie/Puissance/Coûts
