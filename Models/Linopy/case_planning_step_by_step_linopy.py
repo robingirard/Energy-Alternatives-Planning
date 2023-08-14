@@ -13,10 +13,6 @@ pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
 
-InputConsumptionFolder='Models/Basic_France_models/Consumption/Data/'
-InputProductionFolder='Models/Basic_France_models/Production/Data/'
-InputPlanningFolder='Models/Basic_France_models/Planning_optimisation/Data/'
-GraphicalResultsFolder="Models/Basic_France_models/Planning_optimisation/GraphicalResults/"
 
 from EnergyAlternativesPlanning.f_graphicalTools import *
 from EnergyAlternativesPlanning.f_consumptionModels import *
@@ -29,6 +25,13 @@ from Models.Linopy.f_planningModels_linopy import Build_EAP_Model,run_highs
 Zones="FR"
 year=2013
 Selected_TECHNOLOGIES=['OldNuke', 'CCG',"curtailment"] #you'll add 'Solar' after
+
+#TODO construire les liens vers les données par modèle
+InputConsumptionFolder='Models/Basic_France_models/Consumption/Data/'
+InputProductionFolder='Models/Basic_France_models/Production/Data/'
+InputPlanningFolder='Models/Basic_France_models/Planning_optimisation/Data/'
+GraphicalResultsFolder="Models/Basic_France_models/Planning_optimisation/GraphicalResults/"
+
 
 #### reading areaConsumption availabilityFactor and TechParameters CSV files
 areaConsumption = pd.read_csv(InputConsumptionFolder+'areaConsumption'+str(year)+'_'+str(Zones)+'.csv',sep=',',decimal='.',skiprows=0,parse_dates=['Date']).set_index(["Date"]).to_xarray()
@@ -69,6 +72,12 @@ plotly.offline.plot(fig, filename=GraphicalResultsFolder+'file.html') ## offline
 Zones="FR"
 year=2013
 
+InputConsumptionFolder='Models/Basic_France_models/Consumption/Data/'
+InputProductionFolder='Models/Basic_France_models/Production/Data/'
+InputPlanningFolder='Models/Basic_France_models/Planning_optimisation/Data/'
+GraphicalResultsFolder="Models/Basic_France_models/Planning_optimisation/GraphicalResults/"
+
+
 Selected_TECHNOLOGIES=['OldNuke','WindOnShore', 'CCG',"curtailment",'HydroRiver', 'HydroReservoir',"Solar"] ## try adding 'HydroRiver', 'HydroReservoir'
 
 #### reading CSV files
@@ -94,7 +103,7 @@ Parameters["availabilityFactor"]=Parameters["availabilityFactor"].fillna(1) ## 1
 #region II -addition of Storage to single area with ramp : building and solving problem, results visualisation
 #building model and solving the problem
 model = Build_EAP_Model(Parameters=Parameters)
-model.solve(solver_name='cbc')
+model.solve(solver_name='mosec')
 #res= run_highs(model) #res= linopy.solvers.run_highs(model)
 
 ## synthèse Energie/Puissance/Coûts
@@ -173,7 +182,7 @@ Zones="FR" ; year=2013
 
 TemperatureThreshold = 15
 ConsoTempe_df=pd.read_csv(InputConsumptionFolder+'ConsumptionTemperature_1996TO2019_FR.csv',parse_dates=['Date']).\
-    set_index(["Date"])[str(year)]
+    set_index(["Date"])[2013]
 ConsoTempe_df=ConsoTempe_df[~ConsoTempe_df.index.duplicated(keep='first')]
 (ConsoTempeYear_decomposed_df,Thermosensibilite)=Decomposeconso(ConsoTempe_df,TemperatureThreshold=TemperatureThreshold)
 
