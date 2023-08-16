@@ -337,7 +337,7 @@ Parameters["availabilityFactor"]=Parameters["availabilityFactor"].fillna(1) ## 1
 #building model and solving the problem
 model = Build_EAP_Model(Parameters=Parameters)
 model.solve(solver_name='highs',parallel = "on")
-model.solve(solver_name='cbc')
+model.solve(solver_name='cplex')
 #res= run_highs(model) #res= linopy.solvers.run_highs(model)
 
 ## synthèse Energie/Puissance/Coûts
