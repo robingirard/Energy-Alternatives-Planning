@@ -1,11 +1,24 @@
 
 #region initialisation
 #sys.path.append("/Users/robin.girard/opt/anaconda3/envs/energyalternatives/lib/python3.10/site-packages/highspy/.dylibs/")
-import highspy
 
-import pandas as pd
+import os
+import subprocess
 import sys
 sys.path.extend(['.'])
+os.environ['CPLEX_CPXCHECKLIC_BINDIR'] = "/Users/robin.girard/Documents/Code/Packages/CPLEX_Studio1210/cplex/bin/x86-64_osx" # visible in this process + all children
+os.environ['CPLEX_STUDIO_KEY'] = "/Users/robin.girard/Documents/Code/Packages/CPLEX_Studio1210/cplex/bin/x86-64_osx/access.ilm"
+#subprocess.check_call(['sqsub', '-np', sys.argv[1], '/path/to/executable'],
+#                      env=dict(os.environ, SQSUB_VAR="visible in this subprocess")
+#sys.path.extend(["/Users/robin.girard/Documents/Code/Packages/CPLEX_Studio1210/cplex/bin/x86-64_osx"])
+for var in ("CPLEX_STUDIO_KEY",
+            "CPLEX_STUDIO_DIR1210",
+            "CPLEX_CPXCHECKLIC_BINDIR"):
+    print(var, "=", os.getenv(var))
+import cplex
+import highspy
+import linopy
+import pandas as pd
 
 pd.options.display.width = 0
 pd.set_option('display.max_rows', 500)
@@ -48,7 +61,7 @@ Parameters["availabilityFactor"]=Parameters["availabilityFactor"].fillna(1) ## 1
 #region I - Simple single area (with ramp) : building and solving problem, results visualisation
 #building model and solving the problem
 model = Build_EAP_Model(Parameters=Parameters)
-model.solve(solver_name='highs')
+model.solve(solver_name='cplex')
 ## synthèse Energie/Puissance/Coûts
 print(extractCosts_l(model))
 print(extractEnergyCapacity_l(model))
@@ -356,3 +369,9 @@ fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title=
 plotly.offline.plot(fig, filename=GraphicalResultsFolder+'file.html') ## offline
 #endregion
 
+
+## sur le nombre de contraintes
+A_T = 4; A_ST = 3; D_A = 2; D_A_T = 4; D_A_ST = 5
+A = 7 ; ST =2 ; D = 8760 ; T = 10
+
+A*T*A_T + A*ST*A_ST+D*A*D_A+D*A*T*D_A_T+D*A*ST*D_A_ST
