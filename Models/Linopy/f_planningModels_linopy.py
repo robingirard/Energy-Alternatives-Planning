@@ -224,33 +224,39 @@ def run_highs_(
     )
 
 
-def Build_EAP_Model(Parameters):
+def Build_EAP_Model(parameters):
     """
-    This function creates the pyomo model and initlize the Parameters and (pyomo) Set values
-    :param Parameters is a dictionnary with different panda tables :
-        - areaConsumption: panda table with consumption
-        - availabilityFactor: panda table
-        - TechParameters : panda tables indexed by TECHNOLOGIES with eco and tech parameters
+    This function creates the pyomo model and initlize the parameters and (pyomo) Set values
+    :param parameters is a dictionnary with different panda tables :
+        - energy_demand: panda table with consumption
+        - operation_conversion_availability_factor: panda table
+        - conversion_technology_parameters : panda tables indexed by conversion_technology with eco and tech parameters
     """
 
     ## Starting with an empty model object
     m = linopy.Model()
 
     ### Obtaining dimensions values
-    Date = Parameters.get_index('Date').unique()
-    AREAS = Parameters.get_index('AREAS')
-    TECHNOLOGIES = Parameters.get_index('TECHNOLOGIES').unique()
+    date = parameters.get_index('date').unique()
+    energy_vector_out = parameters.get_index('energy_vector_out').unique()
+    energy_vector_in = parameters.get_index('energy_vector_in').unique()
+    area_to = parameters.get_index('area_to')
+    conversion_technology = parameters.get_index('conversion_technology').unique()
+    #TODO : remove french
 
     # Variables - Base - Operation & Planning
-    production_op_power = m.add_variables(name="production_op_power", lower=0, coords=[Date,AREAS, TECHNOLOGIES]) ### Energy produced by a production mean at time t
-    production_op_variable_costs = m.add_variables(name="production_op_variable_costs", lower=0, coords=[AREAS,TECHNOLOGIES]) ### Energy total marginal cost for production mean p
-    production_pl_capacity_costs = m.add_variables(name="production_pl_capacity_costs", lower=0, coords=[AREAS,TECHNOLOGIES]) ### Energy produced by a production mean at time t
-    production_pl_capacity = m.add_variables(name="production_pl_capacity", lower=0, coords=[AREAS,TECHNOLOGIES]) ### Energy produced by a production mean at time t
-    conso_op_totale = m.add_variables(name="conso_op_totale",lower=0, coords=[Date, AREAS])
+    operation_conversion_power_out = m.add_variables(name="operation_conversion_power_out", lower=0, coords=[energy_vector_out,area_to,date,conversion_technology]) ### Energy produced by a production mean at time t
+    operation_energy_cost = m.add_variables(name="operation_energy_cost", lower=0, coords=[area_to,energy_vector_in]) ### Energy total marginal cost for production mean p
+
+    planning_conversion_cost = m.add_variables(name="planning_conversion_cost", lower=0, coords=[energy_vector_out,area_to,conversion_technology]) ### Energy produced by a production mean at time t
+    conversion_planning_capacity_out = m.add_variables(name="conversion_planning_capacity_out", lower=0, coords=[energy_vector_out,area_to,conversion_technology]) ### Energy produced by a production mean at time t
+    total_hourly_demand = m.add_variables(name="total_hourly_demand",lower=0, coords=[energy_vector_out, area_to,date])
+    operation_yearly_importation = m.add_variables(name="operation_yearly_importation",lower=0, coords=[energy_vector_in, area_to])
+    total_yearly_demand = m.add_variables(name="total_yearly_demand",lower=0, coords=[energy_vector_out, area_to])
 
     # Variable - Storage - Operation & Planning
     # Objective Function (terms to be added later in the code for storage and flexibility)
-    Cost_Function = production_op_variable_costs.sum() + production_pl_capacity_costs.sum()
+    Cost_Function = planning_conversion_cost.sum()+ operation_energy_cost.sum()
     m.add_objective( Cost_Function)
 
     #################
@@ -262,177 +268,197 @@ def Build_EAP_Model(Parameters):
     # 2 - Optional constraints
     # 3 - Storage constraints
     # 4 - exchange constraints
+    # 5 - DSM constraints
+
 
     #####################
     # 1 - a - Main Constraints - Operation (Op) & Planning (Pl)
 
-    Ctr_Op_energyCosts = m.add_constraints(name="Ctr_Op_energyCosts", # contrainte de définition de energyCosts
-        lhs = production_op_variable_costs == Parameters["energyCost"] * production_op_power.sum(["Date"]) )
+    Ctr_Op_operation_costs = m.add_constraints(name="Ctr_Op_operation_costs",
+        # [ area_to x energy_vector_in ]
+        lhs = operation_energy_cost == parameters["energy_vector_cost"] * operation_yearly_importation)
 
-    Ctr_Op_conso = m.add_constraints(name="Ctr_Op_conso",
-        lhs = conso_op_totale == Parameters["areaConsumption"])
+    Ctr_Op_conso_hourly = m.add_constraints(name="Ctr_Op_conso_hourly",
+        # [area_to x energy_vector_out x date]
+        lhs = total_hourly_demand == parameters["exogeneous_energy_demand"])
 
-    Ctr_Op_energy = m.add_constraints(name="Ctr_Op_energy",
-        lhs = production_op_power.sum(["TECHNOLOGIES"]) == conso_op_totale)
+    conversion_mean_energy_vector_in = parameters['energy_vector_in'] == parameters["energy_vector_in_value"]
+    Ctr_Op_conso_yearly_1 = m.add_constraints(name="Ctr_Op_conso_yearly_1",
+        # [energy_vector_in x area_to ]
+        ## case where energy_vector_in value is not in energy_vector_out (e.g. all but elec), meaning that there is no Ctr_Op_conso_hourly associated constraint
+        lhs = operation_yearly_importation == (operation_conversion_power_out.sum(["date"]) * conversion_mean_energy_vector_in).sum(["energy_vector_out","conversion_technology"]),
+        mask= ~parameters["energy_vector_cost"]['energy_vector_in'].isin(energy_vector_out))
+
+    #parameters["energy_vector_cost"]['energy_vector_in_value']
+    #(operation_conversion_power_out * parameters["operation_efficiency"]).sum(["conversion_technology"]))
+    energy_vector_in_in_energy_vector_out = parameters["energy_vector_cost"]['energy_vector_in']==parameters["energy_vector_out"]
+    Ctr_Op_operation_demand = m.add_constraints(name="Ctr_Op_operation_demand",
+        # [energy_vector_out x area_to ]
+        ## case where energy_vector_in value is in energy_vector_out, meaning that there is Ctr_Op_conso_hourly associated constraint
+        lhs =  total_hourly_demand  == operation_conversion_power_out.sum(["conversion_technology"])
+    )
+    #(operation_yearly_importation * energy_vector_in_in_energy_vector_out).sum(["energy_vector_in"]) +
 
     Ctr_Op_capacity = m.add_constraints(name="Ctr_Op_capacit", # contrainte de maximum de production
-        lhs = production_op_power <= production_pl_capacity * Parameters["availabilityFactor"])
+        lhs = operation_conversion_power_out <= conversion_planning_capacity_out * parameters["operation_conversion_availability_factor"])
 
-    Ctr_Pl_capacityCosts = m.add_constraints(name="Ctr_Pl_capacityCosts", # contrainte de définition de capacityCosts
-        lhs = production_pl_capacity_costs == Parameters["capacityCost"] * production_pl_capacity )
+    Ctr_Pl_planning_conversion_costs = m.add_constraints(name="Ctr_Pl_planning_conversion_costs", # contrainte de définition de planning_conversion_costs
+        lhs = planning_conversion_cost == parameters["planning_conversion_cost"] * conversion_planning_capacity_out )
 
-    Ctr_Pl_maxCapacity = m.add_constraints(name="Ctr_Pl_maxCapacity",
-        lhs = production_pl_capacity <= Parameters["maxCapacity"],
-        mask=Parameters["maxCapacity"] > 0)
+    Ctr_Pl_planning_max_capacity = m.add_constraints(name="Ctr_Pl_planning_max_capacity",
+        lhs = conversion_planning_capacity_out <= parameters["planning_max_capacity"],
+        mask=parameters["planning_max_capacity"] > 0)
 
-    Ctr_Pl_minCapacity = m.add_constraints(name="Ctr_Pl_minCapacity",
-        lhs = production_pl_capacity >= Parameters["minCapacity"],
-        mask=Parameters["minCapacity"] > 0)
+    Ctr_Pl_planning_min_capacity = m.add_constraints(name="Ctr_Pl_planning_min_capacity",
+        lhs = conversion_planning_capacity_out >= parameters["planning_min_capacity"],
+        mask=parameters["planning_min_capacity"] > 0)
 
 
     #####################
     # 2 - Optional Constraints - Operation (Op) & Planning (Pl)
 
-    if "EnergyNbhourCap" in Parameters: Ctr_Op_stock = m.add_constraints(name="stockCtr",
-            lhs = Parameters["EnergyNbhourCap"] * production_pl_capacity >= production_op_power.sum(["Date"]),
-            mask=Parameters["EnergyNbhourCap"] > 0)
+    if "operation_conversion_maximum_working_hours" in parameters: Ctr_Op_stock = m.add_constraints(name="stockCtr",
+            lhs = parameters["operation_conversion_maximum_working_hours"] * conversion_planning_capacity_out >= operation_conversion_power_out.sum(["date"]),
+            mask = parameters["operation_conversion_maximum_working_hours"] > 0)
 
-    if "RampConstraintPlus" in Parameters: Ctr_Op_rampPlus = m.add_constraints(name="Ctr_Op_rampPlus",
-            lhs = production_op_power.diff("Date", n=1) <=production_pl_capacity
-                  * (Parameters["RampConstraintPlus"] * Parameters["availabilityFactor"])  ,
-            mask= (Parameters["RampConstraintPlus"] > 0) *
-                  (xr.DataArray(Date, coords=[Date])!=Date[0]))
+    if "operation_max_1h_ramp_rate" in parameters: Ctr_Op_rampPlus = m.add_constraints(name="Ctr_Op_rampPlus",
+            lhs = operation_conversion_power_out.diff("date", n=1) <=conversion_planning_capacity_out
+                  * (parameters["operation_max_1h_ramp_rate"] * parameters["operation_conversion_availability_factor"])  ,
+            mask= (parameters["operation_max_1h_ramp_rate"] > 0) *
+                  (xr.DataArray(date, coords=[date])!=date[0]))
 
-    if "RampConstraintMoins" in Parameters: Ctr_Op_rampMoins = m.add_constraints(name="Ctr_Op_rampMoins",
-            lhs = production_op_power.diff("Date", n=1) + production_pl_capacity
-                  * (Parameters["RampConstraintMoins"] * Parameters["availabilityFactor"]) >= 0,
+    if "operation_min_1h_ramp_rate" in parameters: Ctr_Op_rampMoins = m.add_constraints(name="Ctr_Op_rampMoins",
+            lhs = operation_conversion_power_out.diff("date", n=1) + conversion_planning_capacity_out
+                  * (parameters["operation_min_1h_ramp_rate"] * parameters["operation_conversion_availability_factor"]) >= 0,
             # remark : "-" sign not possible in lhs, hence the inequality alternative formulation
-            mask=(Parameters["RampConstraintMoins"] > 0) *
-                 (xr.DataArray(Date, coords=[Date])!=Date[0]))
+            mask=(parameters["operation_min_1h_ramp_rate"] > 0) *
+                 (xr.DataArray(date, coords=[date])!=date[0]))
 
-    if "RampConstraintPlus2" in Parameters:
+    if "operation_max_1h_ramp_rate2" in parameters:
         Ctr_Op_rampPlus2 = m.add_constraints(name="Ctr_Op_rampPlus2",
-            lhs = production_op_power.diff("Date", n=2) <= production_pl_capacity
-                  * (Parameters["RampConstraintPlus2"] * Parameters["availabilityFactor"]),
-            mask=(Parameters["RampConstraintPlus2"] > 0) *
-                 (xr.DataArray(Date, coords=[Date])!=Date[0]))
+            lhs = operation_conversion_power_out.diff("date", n=2) <= conversion_planning_capacity_out
+                  * (parameters["operation_max_1h_ramp_rate2"] * parameters["operation_conversion_availability_factor"]),
+            mask=(parameters["operation_max_1h_ramp_rate2"] > 0) *
+                 (xr.DataArray(date, coords=[date])!=date[0]))
 
-    if "RampConstraintMoins2" in Parameters:
+    if "operation_min_1h_ramp_rate2" in parameters:
         Ctr_Op_rampMoins2 = m.add_constraints(name="Ctr_Op_rampMoins2",
-            lhs = production_op_power.diff("Date", n=2)+production_pl_capacity
-                  * (Parameters["RampConstraintMoins2"] * Parameters["availabilityFactor"]) >= 0,
-            mask=(Parameters["RampConstraintMoins2"] > 0) *
-                 (xr.DataArray(Date, coords=[Date])!=Date[0]))
+            lhs = operation_conversion_power_out.diff("date", n=2)+conversion_planning_capacity_out
+                  * (parameters["operation_min_1h_ramp_rate2"] * parameters["operation_conversion_availability_factor"]) >= 0,
+            mask=(parameters["operation_min_1h_ramp_rate2"] > 0) *
+                 (xr.DataArray(date, coords=[date])!=date[0]))
 
 
 
     #####################
     # 3 -  Storage Constraints - Operation (Op) & Planning (Pl)
 
-    if "STOCK_TECHNO" in Parameters:
-        STOCK_TECHNO = Parameters.get_index('STOCK_TECHNO')
+    if "storage_technology" in parameters:
+        storage_technology = parameters.get_index('storage_technology')
 
-        storage_op_power_in = m.add_variables(name="storage_op_power_in", lower=0,coords = [Date,AREAS,STOCK_TECHNO])  ### Energy stored in a storage mean at time t
-        storage_op_power_out = m.add_variables(name="storage_op_power_out", lower=0,coords = [Date,AREAS,STOCK_TECHNO])  ### Energy taken out of a storage mean at time t
-        storage_op_stock_level = m.add_variables(name="storage_op_stock_level", lower=0,coords = [Date,AREAS,STOCK_TECHNO])  ### level of the energy stock in a storage mean at time t
-        storage_pl_capacity_costs = m.add_variables(name="storage_pl_capacity_costs",coords = [AREAS,STOCK_TECHNO])  ### Cost of storage for a storage mean, explicitely defined by definition storageCostsDef
-        storage_pl_max_capacity = m.add_variables(name="storage_pl_max_capacity",coords = [AREAS,STOCK_TECHNO])  # Maximum capacity of a storage mean
-        storage_pl_max_power = m.add_variables(name="storage_pl_max_power",coords = [AREAS,STOCK_TECHNO])  # Maximum flow of energy in/out of a storage mean
-        #storage_op_stockLevel_ini = m.add_variables(name="storage_op_stockLevel_ini",coords = [AREAS,STOCK_TECHNO], lower=0)
+        operation_storage_power_in = m.add_variables(name="operation_storage_power_in", lower=0,coords = [date,area_to,energy_vector_out,storage_technology])  ### Energy stored in a storage mean at time t
+        operation_storage_power_out = m.add_variables(name="operation_storage_power_out", lower=0,coords = [date,area_to,energy_vector_out,storage_technology])  ### Energy taken out of a storage mean at time t
+        operation_storage_internal_energy_level = m.add_variables(name="operation_storage_internal_energy_level", lower=0,coords = [date,area_to,energy_vector_out,storage_technology])  ### level of the energy stock in a storage mean at time t
+        planning_storage_capacity_cost = m.add_variables(name="planning_storage_capacity_cost",coords = [area_to,energy_vector_out,storage_technology])  ### Cost of storage for a storage mean, explicitely defined by definition planning_storage_capacity_costsDef
+        planning_storage_max_energy_level = m.add_variables(name="planning_storage_max_energy_level",coords = [area_to,energy_vector_out,storage_technology])  # Maximum capacity of a storage mean
+        planning_storage_max_power = m.add_variables(name="planning_storage_max_power",coords = [area_to,energy_vector_out,storage_technology])  # Maximum flow of energy in/out of a storage mean
+        #storage_op_stockLevel_ini = m.add_variables(name="storage_op_stockLevel_ini",coords = [area_from,storage_technology], lower=0)
 
         #update of the cost function and of the prod = conso constraint
-        m.objective += storage_pl_capacity_costs.sum()
-        m.constraints['Ctr_Op_energy'].lhs += storage_op_power_out.sum(['STOCK_TECHNO'])-storage_op_power_in.sum(['STOCK_TECHNO'])
+        m.objective += planning_storage_capacity_cost.sum()
+        m.constraints['Ctr_Op_energy'].lhs += operation_storage_power_out.sum(['storage_technology'])-operation_storage_power_in.sum(['storage_technology'])
 
         Ctr_Op_storage_level_definition = m.add_constraints(name="Ctr_Op_storage_level_definition",
-            lhs=storage_op_stock_level.shift(Date=1) == storage_op_stock_level * (1 - Parameters["dissipation"])+storage_op_power_in* Parameters["efficiency_in"]
-                                                        - storage_op_power_out / Parameters["efficiency_out"],
-            mask=xr.DataArray(Date, coords=[Date]) != Date[0])
+            lhs=operation_storage_internal_energy_level.shift(date=1) == operation_storage_internal_energy_level * (1 - parameters["operation_storage_dissipation"])+operation_storage_power_in* parameters["operation_storage_efficiency_in"]
+                                                        - operation_storage_power_out / parameters["operation_storage_efficiency_out"],
+            mask=xr.DataArray(date, coords=[date]) != date[0]) # voir si ce filtre est vraiment nécessaire
 
         Ctr_Op_storage_initial_level = m.add_constraints(name="Ctr_Op_storage_initial_level",
-            lhs= storage_op_stock_level.loc[{"Date" : Date[0] }] == storage_op_stock_level.loc[{"Date" : Date[-1] }])
+            lhs= operation_storage_internal_energy_level.loc[{"date" : date[0] }] == operation_storage_internal_energy_level.loc[{"date" : date[-1] }])
 
         Ctr_Op_storage_power_in_max = m.add_constraints(name="Ctr_Op_storage_power_in_max",
-            lhs=storage_op_power_in <= storage_pl_max_power)
+            lhs=operation_storage_power_in <= planning_storage_max_power)
 
         Ctr_Op_storage_power_out_max = m.add_constraints(name="Ctr_Op_storage_power_out_max",
-            lhs=storage_op_power_out <= storage_pl_max_power)
+            lhs=operation_storage_power_out <= planning_storage_max_power)
 
         Ctr_Op_storage_capacity_max = m.add_constraints(name="Ctr_Op_storage_capacity_max",
-            lhs=storage_op_stock_level <= storage_pl_max_capacity)
+            lhs=operation_storage_internal_energy_level <= planning_storage_max_energy_level)
 
-        Ctr_Pl_storageCosts = m.add_constraints(name="Ctr_Pl_storageCosts",
-             lhs=storage_pl_capacity_costs == Parameters["storageCost"] * storage_pl_max_capacity)
+        Ctr_Pl_planning_storage_capacity_costs = m.add_constraints(name="Ctr_Pl_planning_storage_capacity_costs",
+             lhs=planning_storage_capacity_cost == parameters["planning_storage_capacity_cost"] * planning_storage_max_energy_level)
 
         Ctr_Pl_storage_max_capacity = m.add_constraints(name="Ctr_Pl_storage_max_capacity",
-             lhs=storage_pl_max_capacity <= Parameters["c_max"])
+             lhs=planning_storage_max_energy_level <= parameters["planning_storage_max_capacity"])
 
         Ctr_Pl_storage_max_power = m.add_constraints(name="Ctr_Pl_storage_max_power",
-             lhs=storage_pl_max_power <= Parameters["p_max"])
+             lhs=planning_storage_max_power <= parameters["planning_storage_max_power"])
 
     #####################
     # 4 -  Exchange Constraints - Operation (Op) & Planning (Pl)
 
-    if len(AREAS)>1:
-        AREAS_1=  Parameters.get_index('AREAS_1')
-        exchange_op_power = m.add_variables(name="exchange_op_power", lower=0,coords = [Date, AREAS,AREAS_1])  ### Energy stored in a storage mean at time t
-        m.constraints['Ctr_Op_energy'].lhs += exchange_op_power.sum(['AREAS_1']) - exchange_op_power.rename({'AREAS_1':'AREAS','AREAS':'AREAS_1'}).sum(['AREAS_1'])
+    if len(area_to)>1:
+        area_from=  parameters.get_index('area_from')
+        exchange_op_power = m.add_variables(name="exchange_op_power", lower=0,coords = [date, area_to,area_from,energy_vector_out])  ### Energy stored in a storage mean at time t
+        #TODO utiliser swap_dims https://docs.xarray.dev/en/stable/generated/xarray.Dataset.swap_dims.html#xarray.Dataset.swap_dims
+        m.constraints['Ctr_Op_energy'].lhs += exchange_op_power.sum(['area_from']) - exchange_op_power.rename({'area_to':'area_from','area_from':'area_to'}).sum(['area_from'])
         Ctr_Op_exchange_max = m.add_constraints(name="Ctr_Op_exchange_max",
-            lhs=exchange_op_power<= Parameters["maxExchangeCapacity"])
-        m.objective += 0.00001 * exchange_op_power.sum()
+            lhs=exchange_op_power<= parameters["operation_exchange_max_capacity"])
+        m.objective += 0.01 * exchange_op_power.sum()
+        #TODO change area_from_1 area_from_from  area_from_to
 
 
     # Flex consumption
-    if "FLEX_CONSUM" in Parameters:
-        FLEX_CONSUM = Parameters.get_index('FLEX_CONSUM')
+    if "flexible_demand" in parameters:
+        flexible_demand = parameters.get_index('flexible_demand')
         # inscrire les équations ici ?
-        # flexconso_pl_increased_max_power_costs = "LoadCost" * flexconso_pl_increased_max_power
-        # conso_op_totale <= flexconso_pl_increased_max_power + "max_power"
-        # flexconso_op_conso +"to_flex_consumption"*flexconso_op_flex_ratio == "to_flex_consumption"
-        flexconso_op_conso = m.add_variables(name="flexconso_op_conso",
-                                             lower=0, coords=[Date, AREAS,FLEX_CONSUM])
-        flexconso_pl_increased_max_power = m.add_variables(name="flexconso_pl_increased_max_power",
-                                                 lower=0, coords=[AREAS,FLEX_CONSUM])
-        flexconso_pl_increased_max_power_costs = m.add_variables(name="flexconso_pl_increased_max_power_costs",
-                                                                coords=[AREAS,FLEX_CONSUM])
-        flexconso_op_flex_ratio = m.add_variables(name="flexconso_op_flex_ratio",coords=[AREAS,FLEX_CONSUM])
+        # planning_flexible_demand_max_power_increase_cost_costs = "flexible_demand_planning_cost" * planning_flexible_demand_max_power_increase_cost
+        # total_hourly_demand <= planning_flexible_demand_max_power_increase_cost + "max_power"
+        # operation_flexible_demand +"to_flex_consumption"*operation_flexible_demand_variation_ratio == "to_flex_consumption"
+        operation_flexible_demand = m.add_variables(name="operation_flexible_demand",
+                                             lower=0, coords=[date, area_to,energy_vector_out,flexible_demand])
+        planning_flexible_demand_max_power_increase_cost = m.add_variables(name="planning_flexible_demand_max_power_increase_cost",
+                                                 lower=0, coords=[area_to,energy_vector_out,flexible_demand])
+        planning_flexible_demand_max_power_increase_cost_costs = m.add_variables(name="planning_flexible_demand_max_power_increase_cost_costs",
+                                                                coords=[area_to,energy_vector_out,flexible_demand])
+        operation_flexible_demand_variation_ratio = m.add_variables(name="operation_flexible_demand_variation_ratio",coords=[date,area_to,energy_vector_out,flexible_demand])
 
         # update of the cost function and of the prod = conso constraint
-        m.objective += flexconso_pl_increased_max_power_costs.sum()
-        m.constraints['Ctr_Op_conso'].lhs += flexconso_op_conso.sum(['FLEX_CONSUM'])
+        m.objective += planning_flexible_demand_max_power_increase_cost_costs.sum()
+        m.constraints['Ctr_Op_conso'].lhs += operation_flexible_demand.sum(['flexible_demand'])
 
-        Ctr_Op_flexconso_pl_increased_max_power_costs_def = m.add_constraints(name="Ctr_Op_flexconso_pl_increased_max_power_costs_def",
-            lhs=flexconso_pl_increased_max_power_costs == Parameters["LoadCost"] * flexconso_pl_increased_max_power)
+        Ctr_Op_planning_flexible_demand_max_power_increase_cost_costs_def = m.add_constraints(name="Ctr_Op_planning_flexible_demand_max_power_increase_cost_costs_def",
+            lhs=planning_flexible_demand_max_power_increase_cost_costs == parameters["flexible_demand_planning_cost"] * planning_flexible_demand_max_power_increase_cost)
 
-        Ctr_Op_max_power = m.add_constraints(name="Ctr_Op_max_power",
-            lhs=flexconso_op_conso <= flexconso_pl_increased_max_power+ Parameters["max_power"])
+        Ctr_Oplanning_storage_max_power_power = m.add_constraints(name="Ctr_Oplanning_storage_max_power_power",
+            lhs=operation_flexible_demand <= planning_flexible_demand_max_power_increase_cost+ parameters["max_power"])
 
         Ctr_Op_conso_flex = m.add_constraints(name="Ctr_Op_conso_flex",
-            lhs=flexconso_op_conso +Parameters["to_flex_consumption"]*flexconso_op_flex_ratio == Parameters["to_flex_consumption"])
+            lhs=operation_flexible_demand +parameters["to_flex_consumption"]*operation_flexible_demand_variation_ratio == parameters["to_flex_consumption"])
 
         Ctr_Op_conso_flex_sup_rule = m.add_constraints(name="Ctr_Op_conso_flex_sup_rule",
-            lhs=flexconso_op_flex_ratio <= Parameters["flex_ratio"]) ## Parameters["flex_ratio"] should bve renamed --> Parameters["flex_ratio_max"]
+            lhs=operation_flexible_demand_variation_ratio <= parameters["flexible_demand_ratio"]) ## parameters["flexible_demand_ratio"] should bve renamed --> parameters["flexible_demand_ratio_max"]
 
         Ctr_Op_conso_flex_inf_rule = m.add_constraints(name="Ctr_Op_conso_flex_inf_rule",
-            lhs=flexconso_op_flex_ratio + Parameters["flex_ratio"] >= 0 )
+            lhs=operation_flexible_demand_variation_ratio + parameters["flexible_demand_ratio"] >= 0 )
 
 
-        Week_of_year_table = period_boolean_table(Date, period="weekofyear")
+        week_of_year_table = period_boolean_table(date, period="weekofyear")
         Ctr_Op_consum_eq_week = m.add_constraints(name="Ctr_Op_consum_eq_week",
-            lhs=(flexconso_op_conso*Week_of_year_table).sum(["Date"])
-                <= (Parameters["to_flex_consumption"]*Week_of_year_table).sum(["Date"]),
-            mask = Parameters["flex_type"] == "week")
+            lhs=(operation_flexible_demand*week_of_year_table).sum(["date"])
+                <= (parameters["to_flex_consumption"]*week_of_year_table).sum(["date"]),
+            mask = parameters["flexible_demand_period"] == "week")
 
-        Day_of_year_table = period_boolean_table(Date, period="day_of_year")
+        day_of_year_table = period_boolean_table(date, period="day_of_year")
         Ctr_Op_consum_eq_day = m.add_constraints(name="Ctr_Op_consum_eq_day",
-            lhs=(flexconso_op_conso*Day_of_year_table).sum(["Date"])
-                <= (Parameters["to_flex_consumption"]*Day_of_year_table).sum(["Date"]),
-            mask = Parameters["flex_type"] == "day")
+            lhs=(operation_flexible_demand*day_of_year_table).sum(["date"])
+                <= (parameters["to_flex_consumption"]*day_of_year_table).sum(["date"]),
+            mask = parameters["flexible_demand_period"] == "day")
 
         Ctr_Op_consum_eq_year = m.add_constraints(name="Ctr_Op_consum_eq_year",
-            lhs=(flexconso_op_conso).sum(["Date"])
-                <= (Parameters["to_flex_consumption"]).sum(["Date"]),
-            mask = Parameters["flex_type"] == "year")
+            lhs=(operation_flexible_demand).sum(["date"])
+                <= (parameters["to_flex_consumption"]).sum(["date"]),
+            mask = parameters["flexible_demand_period"] == "year")
 
 
     return m;
