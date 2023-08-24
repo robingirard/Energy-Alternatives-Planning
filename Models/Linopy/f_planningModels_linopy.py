@@ -404,7 +404,7 @@ def Build_EAP_Model(parameters):
         area_from=  parameters.get_index('area_from')
         exchange_op_power = m.add_variables(name="exchange_op_power", lower=0,coords = [date, area_to,area_from,energy_vector_out])  ### Energy stored in a storage mean at time t
         #TODO utiliser swap_dims https://docs.xarray.dev/en/stable/generated/xarray.Dataset.swap_dims.html#xarray.Dataset.swap_dims
-        m.constraints['Ctr_Op_energy'].lhs += exchange_op_power.sum(['area_from']) - exchange_op_power.rename({'area_to':'area_from','area_from':'area_to'}).sum(['area_from'])
+        m.constraints['Ctr_Op_operation_demand'].lhs += - exchange_op_power.sum(['area_from']) + exchange_op_power.rename({'area_to':'area_from','area_from':'area_to'}).sum(['area_from'])
         Ctr_Op_exchange_max = m.add_constraints(name="Ctr_Op_exchange_max",
             lhs=exchange_op_power<= parameters["operation_exchange_max_capacity"])
         m.objective += 0.01 * exchange_op_power.sum()

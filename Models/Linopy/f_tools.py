@@ -91,16 +91,17 @@ def extractEnergyCapacity_l(model):
     return Myres
 
 
-def EnergyAndExchange2Prod(Variables, EnergyName='energy', exchangeName='Exchange'):
+def EnergyAndExchange2Prod(model, EnergyName='energy', exchangeName='Exchange'):
+    Variables = {name: model.solution[name].to_dataframe().reset_index() for name in list(model.solution.keys())}
     #Variables["exchange_op_power"].columns = ['area_from', 'area_from_1', 'exchange_op_power']
-    area_from = Variables['operation_conversion_power_out'].area_from.unique()
-    production_df = Variables['operation_conversion_power_out'].pivot(index=["area_from", "date"], columns='conversion_technology', values='operation_conversion_power_out')
-    Import_Export = Variables['exchange_op_power'].groupby(["area_from", "date"]).sum()- Variables['exchange_op_power'].rename(columns={"area_from":"area_from_1","area_from_1":"area_from"}).\
+    area_to = Variables['operation_conversion_power_out'].area_to.unique()
+    production_df = Variables['operation_conversion_power_out'].pivot(index=["area_to", "date"], columns='conversion_technology', values='operation_conversion_power_out')
+    Import_Export = Variables['exchange_op_power'].groupby(["area_to", "date"]).sum()- Variables['exchange_op_power'].\
         groupby(["area_from", "date"]).sum()
-    if ((Variables['exchange_op_power'].groupby(["area_from", "date"]).sum()*Variables['exchange_op_power'].\
-            rename(columns={"area_from":"area_from_1","area_from_1":"area_from"}).groupby(["area_from", "date"]).sum()).sum() >0).bool():
-        print("Problem with import - export")
+    #if ((Variables['exchange_op_power'].groupby(["area_to", "date"]).sum()*Variables['exchange_op_power'].\
+    #        rename(columns={"area_from":"area_from_1","area_from_1":"area_from"}).groupby(["area_from", "date"]).sum()).sum() >0).bool():
+    #    print("Problem with import - export")
 
-    production_df = production_df.merge(Import_Export, how='inner', left_on=["area_from", "date"], right_on=["area_from", "date"])
+    production_df = production_df.merge(Import_Export, how='inner', left_on=["area_to", "date"], right_on=["area_to", "date"])
     # exchange analysis
     return (production_df);

@@ -21,87 +21,12 @@ from io import StringIO
 
 # Global variables
 
-area_from_ORDER = ['FR','DE','GB','ES','IT','BE','CH']
+area_to_ORDER = ['FR','DE','GB','ES','IT','BE','CH']
 TECHNO_ORDER = ['old_nuke', 'new_nuke', 'biomass', 'wind_power_off_shore', 'wind_power_on_shore', 'solar', 'hydro_river', 'hydro_reservoir','ccgt_h2', 'ocgt_h2','ccgt', 'ocgt', 'demand_not_served']
 
 # Post Processing tools
 
-def extractCosts(Variables):
-    
-    if "area_from" in Variables['energy'].columns:
-        if 'planning_conversion_costs' in Variables.keys():
-            df = Variables['planning_conversion_costs'].set_index(["area_from", "conversion_technology"]) / 10 ** 9;
-            df = df.merge(pd.DataFrame(Variables['operation_fuel_costs'].set_index(["area_from", "conversion_technology"]) / 10 ** 9),left_on=["area_from", "conversion_technology"], right_on=["area_from", "conversion_technology"])
-            df.columns = ["Capacity_Milliards_euros", "Energy_Milliards_euros"]
-            
-            # compute total 
-            df["Total_Milliards_euros"] = df.sum(axis=1)
-            # df = df.sort_values("Total_Milliards_euros", ascending=False)
 
-        else:
-            df = pd.DataFrame(Variables['operation_fuel_costs'].set_index(["area_from", "conversion_technology"]) / 10 ** 9)
-            df.columns = ["Energy_Milliards_euros"]
-            # df = df.sort_values("Energy_Milliards_euros", ascending=False)
-
-
-    else:
-        if 'planning_conversion_costs' in Variables.keys():
-            df = Variables['planning_conversion_costs'].set_index("conversion_technology") / 10 ** 9;
-            df = df.merge(pd.DataFrame(Variables['operation_fuel_costs'].set_index("conversion_technology") / 10 ** 9),
-                          left_on="conversion_technology", right_on="conversion_technology")
-            df.columns = ["Capacity_Milliards_euros", "Energy_Milliards_euros"]
-            # compute total 
-            df["Total_Milliards_euros"] = df.sum(axis=1)
-            # df = df.sort_values("Total_Milliards_euros", ascending=False)
-        else :
-            df = pd.DataFrame(Variables['operation_fuel_costs'].set_index("conversion_technology") / 10 ** 9)
-            df.columns = ["Energy_Milliards_euros"]
-            # df = df.sort_values("Energy_Milliards_euros", ascending=False)
-            
-            
-    return df
-
-
-
-
-
-
-def extractEnergyCapacity(Variables) :
-    
-    if "area_from" in Variables['energy'].columns:
-
-        if len(Variables['energy']['area_from'].unique())==1:
-            production_df = Variables['energy'].pivot(index=['area_from',"date"], columns='conversion_technology', values='energy')
-        else:
-            production_df = EnergyAndExchange2Prod(Variables)
-        EnergyCapacity_df = Variables['capacity'].set_index(["area_from","conversion_technology"]) / 10 ** 3;
-        EnergyCapacity_df = EnergyCapacity_df.merge(pd.DataFrame(Variables['energy'].groupby(by=["area_from","conversion_technology"]).sum() / 10 ** 6), left_on=["area_from","conversion_technology"], right_on=["area_from","conversion_technology"])
-        EnergyCapacity_df.columns = ["Capacity_GW", "Production_TWh"]
-        
-    else:
-        
-        production_df = Variables['energy'].pivot(index="date", columns='conversion_technology', values='energy')
-        EnergyCapacity_df = Variables['capacity'].set_index("conversion_technology") / 10 ** 3;
-        EnergyCapacity_df = EnergyCapacity_df.merge(pd.DataFrame(production_df.sum(axis=0) / 10 ** 6),left_on="conversion_technology", right_on="conversion_technology")
-        
-        EnergyCapacity_df.columns = ["Capacity_GW", "Production_TWh"]
-        
-    return EnergyCapacity_df 
-
-def EnergyAndExchange2Prod(Variables,EnergyName='energy',exchangeName='Exchange'):
-    Variables["exchange"].columns = ['area_from1', 'area_from2', 'date', 'exchange']
-    area_from = Variables['energy'].area_from.unique()
-    production_df = Variables['energy'].pivot(index=["area_from","date"], columns='conversion_technology', values='energy')
-    
-    ToAREA=[]
-    
-    for AREA in area_from:
-        ToAREA.append(Variables["exchange"].loc[(Variables["exchange"].area_from2 == AREA), ["date", "exchange","area_from1","area_from2"]].rename(columns={"area_from2": "area_from"}).pivot(index=["area_from","date"], columns='area_from1', values='exchange'))
-        
-    ToAREA_pd=pd.concat(ToAREA)
-    production_df = production_df.merge(ToAREA_pd, how='inner', left_on=["area_from","date"], right_on=["area_from","date"])
-    #exchange analysis
-    return(production_df);
 
 def expand_grid(x, y,names):
     
@@ -956,7 +881,7 @@ def AppendMyStackedPlotly(fig,y_df,Conso,isModifyOrder=True):
                                      mode='none', name=Names[i]))  # fill to trace0 y
         i=i+1
     fig.add_trace(go.Scatter(x=Conso.index,
-                             y=Conso["energy_demand"], name="Conso",
+                             y=Conso["exogeneous_energy_demand"], name="Conso",
                              line=dict(color='red', width=0.4)))  # fill down to xaxis
     if "NewConsumption" in Conso.keys():
         fig.add_trace(go.Scatter(x=Conso.index,
@@ -969,19 +894,19 @@ def AppendMyStackedPlotly(fig,y_df,Conso,isModifyOrder=True):
     fig.update_xaxes(rangeslider_visible=True)
     return(fig)
 
-def MyAreaStackedPlot(df_,Conso=-1,selected_conversion_technology=-1,AREA_name="area_from"):
+def MyAreaStackedPlot(df_,Conso=-1,selected_conversion_technology=-1,AREA_name="area_to",energy_vector_out="electricity"):
     df=df_.copy()
     #df.reset_index(inplace=True)
     if (selected_conversion_technology.__class__ == int):
         selected_conversion_technology=df.columns.unique().tolist()
-    area_from=df.index.get_level_values('area_from').unique().tolist()
+    area_to=df.index.get_level_values('area_to').unique().tolist()
     selected_conversion_technology=ModifyOrder(selected_conversion_technology)
     df=ModifyOrder_df(df)
 
     visible={}
-    for AREA in area_from: visible[AREA] = []
-    for AREA in area_from:
-        for AREA2 in area_from:
+    for AREA in area_to: visible[AREA] = []
+    for AREA in area_to:
+        for AREA2 in area_to:
             if AREA2==AREA:
                 for TECH in selected_conversion_technology:
                     visible[AREA2].append(True)
@@ -996,13 +921,13 @@ def MyAreaStackedPlot(df_,Conso=-1,selected_conversion_technology=-1,AREA_name="
                 if 'Storage' in Conso.columns: visible[AREA2].append(False)
     fig = go.Figure()
     dicts=[]
-    for AREA in area_from:
+    for AREA in area_to:
         production_df_ = df.loc[(AREA,slice(None)),:]#.reset_index()
-        Conso_=Conso.loc[(AREA,slice(None)),:];
-        Conso_ = Conso.loc[(AREA,slice(None)),:].reset_index().set_index("date").drop(["area_from"], axis=1);
-        production_df_ = df.loc[(AREA,slice(None)),:].reset_index().set_index("date").drop(["area_from"], axis=1);
+        Conso_=Conso.loc[(energy_vector_out,AREA,slice(None)),:];
+        Conso_ = Conso.loc[(energy_vector_out,AREA,slice(None)),:].reset_index().set_index("date").drop(["area_to"], axis=1);
+        production_df_ = df.loc[(AREA,slice(None)),:].reset_index().set_index("date").drop(["area_to"], axis=1);
         #Conso_.reset_index(inplace=True)
-        Conso_.loc[:,"ConsoImportExport"] = Conso_.loc[:,"energy_demand"] - production_df_.sum(axis=1)
+        Conso_.loc[:,"ConsoImportExport"] = Conso_.loc[:,"exogeneous_energy_demand"] - production_df_.sum(axis=1)
 
         fig = AppendMyStackedPlotly(fig,
                             y_df=production_df_,
