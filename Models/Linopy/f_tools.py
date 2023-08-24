@@ -47,11 +47,11 @@ def extractCosts_l(model):
     res["capacity_costs"].columns = ["Cost_10e9_euros"]
     res["capacity_costs"]["type"] = "installed_capacity"
     if "planning_flexible_demand_max_power_increase_cost_costs" in model.solution :
-        res["flexible_demand_capacity_cost"]= (model.solution["planning_flexible_demand_max_power_increase_cost_costs"]/ 10 ** 9).to_dataframe()
+        res["flexible_demand_capacity_cost"]= (model.solution["planning_flexible_demand_max_power_increase_cost_cost"]/ 10 ** 9).to_dataframe()
         res["flexible_demand_capacity_cost"].columns = ["Cost_10e9_euros"]
         res["flexible_demand_capacity_cost"]["type"] = "flexible_demand_capacity"
     if "planning_storage_capacity_cost" in model.solution:
-        res["storage_capacity_costs"] = (model.solution["storage_planning_capacity_costs"]/ 10 ** 9).to_dataframe()
+        res["storage_capacity_costs"] = (model.solution["planning_storage_capacity_cost"]/ 10 ** 9).to_dataframe()
         res["storage_capacity_costs"].columns = ["Cost_10e9_euros"]
         res["storage_capacity_costs"]["type"] = "storage_capacity"
     return res ## implicitly assuming second index is conversion_technology... strange
