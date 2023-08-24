@@ -16,16 +16,9 @@ from Models.Linopy.f_graphicalTools import *
 from Models.Linopy.f_consumptionModels import *
 from Models.Linopy.f_tools import *
 from Models.Linopy.f_planningModels_linopy import Build_EAP_Model,run_highs
-
 #endregion
 
-def download_file(url,filename):
-    response = requests.get(url)
-    with open(filename, mode="wb") as file:
-        file.write(response.content)
-    print(f"Downloaded file {filename}")
-
-
+#region Download data
 graphical_results_folder="Models/Basic_France_models/Planning_optimisation/GraphicalResults/"
 InputExcelFolder="Models/Linopy/"
 from urllib.request import urlretrieve
@@ -35,13 +28,16 @@ if not os.path.isfile(xls_7_nodes_file):
     response = requests.get("https://cloud.minesparis.psl.eu/index.php/s/cyYnD3nV2BJgYeg")
     with open(xls_7_nodes_file, mode="wb") as file:
         file.write(response.content)
-    print(f"Downloaded EU_7_2050.xlsx and saved to {xls_7_nodes_file}")
+    print(f"Downloaded EU_7_2050.xlsx and saved to {xls_7_nodes_file}\n Do not sync excel file with git.")
+#endregion
 
 #region I - Simple single area (with ramp) : loading parameters
 selected_area_to=["FR"]
 selected_conversion_technology=['old_nuke', 'ccgt',"demand_not_served"] #you'll add 'solar' after
-xls_file=pd.ExcelFile(InputExcelFolder+"EU_7_2050.xlsx")
+#selected_conversion_technology=['old_nuke','wind_power_on_shore', 'ccgt',"demand_not_served",'hydro_river', 'hydro_reservoir',"solar"] ## try adding 'hydro_river', 'hydro_reservoir'
 
+xls_file=pd.ExcelFile(InputExcelFolder+"EU_7_2050.xlsx")
+#TODO create an excel file with only two country to accelerate the code here
 conversion_technology_parameters = pd.read_excel(xls_file, "conversion_technology").dropna().\
     set_index(["area_to", "conversion_technology","energy_vector_out"]).to_xarray()
 storage_parameters = pd.read_excel(xls_file, "storage_technology").set_index(["energy_vector_out","area_to", "storage_technology"]).to_xarray()
@@ -53,7 +49,7 @@ operation_conversion_availability_factor = pd.read_excel(xls_file, "operation_co
     dropna().set_index(["area_to", "date", "conversion_technology"]).to_xarray()
 energy_vector_in = pd.read_excel(xls_file, "energy_vector_in").dropna().set_index(["area_to", "energy_vector_in"]).to_xarray()
 
-selected_energy_vector_in_value = conversion_technology_parameters.loc[{"conversion_technology" : selected_conversion_technology,"area_to": selected_area_to}]["energy_vector_in_value"].squeeze().to_numpy()
+selected_energy_vector_in_value = list(np.unique(conversion_technology_parameters.loc[{"conversion_technology" : selected_conversion_technology,"area_to": selected_area_to}]["energy_vector_in_value"].squeeze().to_numpy()))
 
 parameters= xr.merge([  exogeneous_energy_demand.select({"area_to": selected_area_to}),
                         operation_conversion_availability_factor.select({"conversion_technology" : selected_conversion_technology,
@@ -82,39 +78,50 @@ print(extractCosts_l(model))
 print(extractEnergyCapacity_l(model))
 
 ### Check sum Prod = Consumption
-abs(model.solution['operation_conversion_power_out'].sum(['conversion_technology'])-parameters['energy_demand']).max()
+abs(model.solution['operation_conversion_power_out'].sum(['conversion_technology'])-parameters['exogeneous_energy_demand']).max()
 
 ## visualisation de la série
 production_df=model.solution['operation_conversion_power_out'].to_dataframe().\
     reset_index().pivot(index="date",columns='conversion_technology', values='operation_conversion_power_out')
-fig=MyStackedPlotly(y_df=production_df,Conso = energy_demand.to_dataframe())
+fig=MyStackedPlotly(y_df=production_df,Conso = exogeneous_electricity_demand.to_dataframe())
 fig=fig.update_layout(title_text="Production électrique (en KWh)", xaxis_title="heures de l'année")
 plotly.offline.plot(fig, filename=graphical_results_folder+'file.html') ## offline
 #endregion
 
 #region II - addition of Storage to single area with ramp : loading parameters
-Zones="FR"
-year=2013
-
+selected_area_to=["FR"]
 selected_conversion_technology=['old_nuke','wind_power_on_shore', 'ccgt',"demand_not_served",'hydro_river', 'hydro_reservoir',"solar"] ## try adding 'hydro_river', 'hydro_reservoir'
+selected_storage_technology = ['storage_hydro']
+xls_file=pd.ExcelFile(InputExcelFolder+"EU_7_2050.xlsx")
+#TODO create an excel file with only two country to accelerate the code here
+conversion_technology_parameters = pd.read_excel(xls_file, "conversion_technology").dropna().\
+    set_index(["area_to", "conversion_technology","energy_vector_out"]).to_xarray()
+storage_parameters = pd.read_excel(xls_file, "storage_technology").set_index(["energy_vector_out","area_to", "storage_technology"]).to_xarray()
+exogeneous_electricity_demand = pd.read_excel(xls_file, "electricity_demand",parse_dates=['date']).dropna().\
+    set_index(["area_to", "date"]).to_xarray().expand_dims(dim={"energy_vector_out": ["electricity"]}, axis=1).transpose("energy_vector_out","area_to", "date")
+conversion_technology_parameters["operation_efficiency"].sum(["conversion_technology"])
+exogeneous_energy_demand = exogeneous_electricity_demand
+operation_conversion_availability_factor = pd.read_excel(xls_file, "operation_conversion_availabili",parse_dates=['date']).\
+    dropna().set_index(["area_to", "date", "conversion_technology"]).to_xarray()
+energy_vector_in = pd.read_excel(xls_file, "energy_vector_in").dropna().set_index(["area_to", "energy_vector_in"]).to_xarray()
 
-#### reading CSV files
-energy_demand = pd.read_csv(InputConsumptionFolder+'energy_demand'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0,parse_dates=['date']).set_index(["date"]).to_xarray()
-operation_conversion_availability_factor = pd.read_csv(InputProductionFolder+'operation_conversion_availability_factor'+str(year)+'_'+str(Zones)+'.csv',
-                                sep=',',decimal='.',skiprows=0,parse_dates=['date']).set_index(["date","conversion_technology"]).to_xarray()
-conversion_technology_parameters = pd.read_csv(InputPlanningFolder+'Planning-RAMP1BIS_conversion_technology.csv',
-                             sep=',',decimal='.',skiprows=0,comment="#").set_index(["conversion_technology"]).to_xarray()
-storage_parameters = pd.read_csv(InputPlanningFolder+'Planning-RAMP1_storage_technology.csv',sep=',',decimal='.',skiprows=0).set_index(["storage_technology"]).to_xarray()
+selected_energy_vector_in_value = list(np.unique(conversion_technology_parameters.loc[{"conversion_technology" : selected_conversion_technology,"area_to": selected_area_to}]["energy_vector_in_value"].squeeze().to_numpy()))
 
-
-parameters= xr.merge([  energy_demand,
-                        operation_conversion_availability_factor.select({"conversion_technology" : selected_conversion_technology}),
-                        conversion_technology_parameters.loc[{"conversion_technology" : selected_conversion_technology}],
-                        storage_parameters])
-parameters=parameters.expand_dims(dim={"area_from": [Zones]}, axis=0)
+parameters= xr.merge([  storage_parameters.select({"area_to": selected_area_to,
+                                                   "storage_technology" : selected_storage_technology}),
+                        exogeneous_energy_demand.select({"area_to": selected_area_to}),
+                        operation_conversion_availability_factor.select({"conversion_technology" : selected_conversion_technology,
+                                                            "area_to": selected_area_to}),
+                        conversion_technology_parameters.loc[{"conversion_technology" : selected_conversion_technology,"area_to": selected_area_to}],
+                        energy_vector_in.loc[{"energy_vector_in" : selected_energy_vector_in_value,"area_to": selected_area_to}]])
 
 parameters["operation_conversion_availability_factor"]=parameters["operation_conversion_availability_factor"].fillna(1) ## 1 is the default value for availability factor
+parameters["operation_efficiency"]=parameters["operation_efficiency"].fillna(0)
+
+parameters["operation_min_1h_ramp_rate"].loc[{"conversion_technology" :"old_nuke"}] = 0.01
+parameters["operation_max_1h_ramp_rate"].loc[{"conversion_technology" :"old_nuke"}] = 0.02
+parameters["planning_max_capacity"].loc[{"conversion_technology" :"old_nuke"}]=80000
+parameters["planning_max_capacity"].loc[{"conversion_technology" :"ccgt"}]=50000
 
 #endregion
 

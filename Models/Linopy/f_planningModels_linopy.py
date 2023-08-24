@@ -282,11 +282,11 @@ def Build_EAP_Model(parameters):
         # [area_to x energy_vector_out x date]
         lhs = total_hourly_demand == parameters["exogeneous_energy_demand"])
 
-    conversion_mean_energy_vector_in = parameters['energy_vector_in'] == parameters["energy_vector_in_value"]
+    conversion_mean_energy_vector_in = (parameters['energy_vector_in'] == parameters["energy_vector_in_value"])
     Ctr_Op_conso_yearly_1 = m.add_constraints(name="Ctr_Op_conso_yearly_1",
         # [energy_vector_in x area_to ]
         ## case where energy_vector_in value is not in energy_vector_out (e.g. all but elec), meaning that there is no Ctr_Op_conso_hourly associated constraint
-        lhs = operation_yearly_importation == (operation_conversion_power_out.sum(["date"]) * conversion_mean_energy_vector_in).sum(["energy_vector_out","conversion_technology"]),
+        lhs = operation_yearly_importation == (conversion_mean_energy_vector_in * operation_conversion_power_out).sum(["date","energy_vector_out","conversion_technology"]),
         mask= ~parameters["energy_vector_cost"]['energy_vector_in'].isin(energy_vector_out))
 
     #parameters["energy_vector_cost"]['energy_vector_in_value']
@@ -366,7 +366,10 @@ def Build_EAP_Model(parameters):
 
         #update of the cost function and of the prod = conso constraint
         m.objective += planning_storage_capacity_cost.sum()
-        m.constraints['Ctr_Op_energy'].lhs += operation_storage_power_out.sum(['storage_technology'])-operation_storage_power_in.sum(['storage_technology'])
+        m.constraints['Ctr_Op_operation_demand'].lhs += -operation_storage_power_out.sum(['storage_technology'])+operation_storage_power_in.sum(['storage_technology'])
+
+        Ctr_Pl_planning_storage_capacity_costs = m.add_constraints(name="Ctr_Pl_planning_storage_capacity_costs",
+             lhs=planning_storage_capacity_cost == parameters["planning_storage_capacity_cost"] * planning_storage_max_energy_level)
 
         Ctr_Op_storage_level_definition = m.add_constraints(name="Ctr_Op_storage_level_definition",
             lhs=operation_storage_internal_energy_level.shift(date=1) == operation_storage_internal_energy_level * (1 - parameters["operation_storage_dissipation"])+operation_storage_power_in* parameters["operation_storage_efficiency_in"]
@@ -385,14 +388,14 @@ def Build_EAP_Model(parameters):
         Ctr_Op_storage_capacity_max = m.add_constraints(name="Ctr_Op_storage_capacity_max",
             lhs=operation_storage_internal_energy_level <= planning_storage_max_energy_level)
 
-        Ctr_Pl_planning_storage_capacity_costs = m.add_constraints(name="Ctr_Pl_planning_storage_capacity_costs",
-             lhs=planning_storage_capacity_cost == parameters["planning_storage_capacity_cost"] * planning_storage_max_energy_level)
+        # TODO problem when parameters["planning_storage_max_capacity"] is set to zero
 
         Ctr_Pl_storage_max_capacity = m.add_constraints(name="Ctr_Pl_storage_max_capacity",
              lhs=planning_storage_max_energy_level <= parameters["planning_storage_max_capacity"])
 
         Ctr_Pl_storage_max_power = m.add_constraints(name="Ctr_Pl_storage_max_power",
              lhs=planning_storage_max_power <= parameters["planning_storage_max_power"])
+
 
     #####################
     # 4 -  Exchange Constraints - Operation (Op) & Planning (Pl)

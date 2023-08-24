@@ -3,6 +3,13 @@ import linopy
 import xarray as xr
 import pandas as pd
 
+
+def download_file(url,filename):
+    response = requests.get(url)
+    with open(filename, mode="wb") as file:
+        file.write(response.content)
+    print(f"Downloaded file {filename}")
+
 def period_boolean_table(date, period):
     """
     returns a boolean xarray table with the dimension date x value(period) with date == value(period)
@@ -33,7 +40,7 @@ xr.Dataset.select = select
 def extractCosts_l(model):
 
     res = {}
-    res["Variable_costs"] = (model.solution["operation_conversion_cost"]/ 10 ** 9).to_dataframe()
+    res["Variable_costs"] = (model.solution["operation_energy_cost"]/ 10 ** 9).to_dataframe()
     res["Variable_costs"].columns = ["Cost_10e9_euros"]
     res["Variable_costs"]["type"] = "annual_energy"
     res["capacity_costs"] = (model.solution["planning_conversion_cost"]/ 10 ** 9).to_dataframe()
@@ -47,7 +54,7 @@ def extractCosts_l(model):
         res["storage_capacity_costs"] = (model.solution["storage_planning_capacity_costs"]/ 10 ** 9).to_dataframe()
         res["storage_capacity_costs"].columns = ["Cost_10e9_euros"]
         res["storage_capacity_costs"]["type"] = "storage_capacity"
-    return pd.concat([res[r] for r in res]).set_index(["type"],append=True) ## implicitly assuming second index is conversion_technology... strange
+    return res ## implicitly assuming second index is conversion_technology... strange
     # compute total
 
     return res
