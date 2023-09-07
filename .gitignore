@@ -148,3 +148,4 @@ cython_debug/
 /Data/input/MultiRessource_RESSOURCES.csv
 /ampl.mswin64/
 /Models/HeatPump_models/data/era-nuts-t2m-nuts2-hourly-singleindex.csv
+/Models/Linopy/data/

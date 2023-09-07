@@ -881,7 +881,7 @@ def AppendMyStackedPlotly(fig,y_df,Conso,isModifyOrder=True):
                                      mode='none', name=Names[i]))  # fill to trace0 y
         i=i+1
     fig.add_trace(go.Scatter(x=Conso.index,
-                             y=Conso["exogeneous_energy_demand"], name="Conso",
+                             y=Conso["exogenous_energy_demand"], name="Conso",
                              line=dict(color='red', width=0.4)))  # fill down to xaxis
     if "NewConsumption" in Conso.keys():
         fig.add_trace(go.Scatter(x=Conso.index,
@@ -927,7 +927,7 @@ def MyAreaStackedPlot(df_,Conso=-1,selected_conversion_technology=-1,AREA_name="
         Conso_ = Conso.loc[(energy_vector_out,AREA,slice(None)),:].reset_index().set_index("date").drop(["area_to"], axis=1);
         production_df_ = df.loc[(AREA,slice(None)),:].reset_index().set_index("date").drop(["area_to"], axis=1);
         #Conso_.reset_index(inplace=True)
-        Conso_.loc[:,"ConsoImportExport"] = Conso_.loc[:,"exogeneous_energy_demand"] - production_df_.sum(axis=1)
+        Conso_.loc[:,"ConsoImportExport"] = Conso_.loc[:,"exogenous_energy_demand"] - production_df_.sum(axis=1)
 
         fig = AppendMyStackedPlotly(fig,
                             y_df=production_df_,
